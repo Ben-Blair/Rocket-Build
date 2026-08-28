@@ -1,0 +1,109 @@
+==========================================================================================
+PART 1: FIXED TOTAL IMPULSE (817 N s), BURN TIME VARIED
+==========================================================================================
+ burn  thrust   T/W  rail  g_pk   V_bo  q_max  apogee  Jsteer   Jall ctrl_s   xrng  status
+------------------------------------------------------------------------------------------
+  0.6    1362  24.1  41.1  24.1  139.1  11.80     800    39.7   42.6    9.1    211  OK
+  0.9     908  16.1  34.2  15.6  135.8  11.23     791    37.3   41.3    8.9    194  OK
+  1.2     681  12.0  28.4  11.4  132.5  10.66     780    35.1   39.9    8.7    178  OK
+  1.6     511   9.0  24.6   8.2  128.1   9.95     765    32.2   38.1    8.4    157  OK
+  2.0     408   7.2  21.5   6.4  123.7   9.27     749    29.5   36.3    8.2    139  OK
+  2.5     327   5.8  18.9   4.9  118.5   8.48     730    26.3   34.2    7.8    119  OK
+  3.0     272   4.8  17.0   3.9  113.3   7.74     707    23.5   32.0    7.5    101  T/W 4.8 < 5.0
+  4.0     204   3.6  13.9   2.7  103.2   6.40     657    18.5   27.9    6.9     71  T/W 3.6 < 5.0; rail exit 14 m/s low
+  5.0     163   2.9  11.8   1.9   93.7   5.27     601    14.5   24.2    6.4     49  T/W 2.9 < 5.0; rail exit 12 m/s low
+  6.5     126   2.2   9.4   1.4   81.1   3.94     490    11.6   20.2    6.9     27  T/W 2.2 < 5.0; rail exit 9 m/s low
+  8.0     102   1.8   7.7   1.4   75.6   3.43     305    10.3   18.6    4.2     12  T/W 1.8 < 5.0; rail exit 8 m/s low
+------------------------------------------------------------------------------------------
+thrust N, V_bo m/s at burnout, q_max kPa. Jsteer = integral of q dt over the
+controllable coast, Jall = the same integral over the entire flight including boost, both
+in kPa*s. xrng = one-sided crossrange in m. Note that Jall falls with burn time too, so
+the conclusion does not depend on excluding the boost phase.
+
+===================================================================================
+PART 2: REAL MOTORS, 770-880 N s ONLY, sorted by burn time
+===================================================================================
+motor                   Ns  burn  g_pk   V_bo  q_max  apogee   Jsteer ctrl_s   xrng
+-----------------------------------------------------------------------------------
+J1299N                 847  0.68  25.2  143.7  12.63     853     43.1    9.4    240
+821-J430-WT-18A        817  1.96   8.2  124.7   9.57     770     30.0    8.2    143
+J460T                  848  2.16   8.9  129.5  10.70     853     32.9    8.5    162
+J293BS                 831  2.90   5.2  115.6   8.17     739     24.7    7.7    108
+867-J244-WH-14A        847  3.50   3.7  112.3   7.64     733     22.9    7.5     97
+J275W                  834  3.90   5.0  106.3   7.55     766     19.6    7.0     79
+J210                   830  3.99   4.9  100.7   6.17     687     17.3    6.7     71
+J180T                  773  4.81   4.6   88.6   5.67     689     11.9    5.6     39
+-----------------------------------------------------------------------------------
+Shortest burn (0.68 s) vs longest (4.81 s) at essentially equal impulse:
+  crossrange 240 m vs 39 m (+510%)
+  steering impulse 43.1 vs 11.9 kPa*s
+  peak acceleration 25.2 g vs 4.6 g
+
+====================================================================================
+WHY LONGER IS WORSE, AND WHERE THE REAL TRADE LIVES
+====================================================================================
+
+The mechanism is gravity loss. Total impulse buys you a fixed momentum budget. While the
+motor burns, gravity is spending part of that budget: over a burn of duration tb you lose
+roughly g*tb of velocity that never becomes airspeed. Stretch a 2 s burn to 6 s and you
+hand about 40 m/s straight to gravity.
+
+Authority then punishes you twice for that, because q goes as V^2:
+
+    burnout velocity   V_bo  ~  I/m - g*tb        (linear loss)
+    dynamic pressure   q     ~  V^2               (squared penalty)
+
+For an ideal vertical flight with no drag, integrating q over the whole coast gives
+
+    integral of q dt  ~  V0 * (V0 - g*tb)^2 / (3g)
+
+which is strictly decreasing in tb. A long burn does keep you moving for longer, but at a
+lower speed, and the V^2 term means the slower flight loses more than the longer duration
+gains. The control *window* barely changes; the control *authority* inside it drops.
+
+There is also a second-order penalty: a low-thrust motor spends longer at low speed just
+off the rail, where fin authority is weakest and gusts are most damaging.
+
+WHERE THE INTUITION COMES FROM, AND WHEN IT IS RIGHT
+
+"Longer burn means more time to steer" is exactly correct -- for thrust vector control. On
+a TVC vehicle the actuator *is* the motor: gimbal the nozzle and you get a control moment
+proportional to thrust, available only while the motor burns. Burn time and control time
+are the same quantity. That is why TVC hobby rockets and real boost-phase missile guidance
+care so much about burn duration, and it is almost certainly where the intuition comes
+from.
+
+Canards invert that relationship completely. The actuator is airspeed, not thrust. The
+motor's only job is to hand you kinetic energy as efficiently as possible and then get out
+of the way, and the control phase is the coast that follows. On this vehicle the motor
+burns for 2 s and the controllable coast lasts 8.7 s: the burn is not the control phase,
+it is the wind-up before it.
+
+A useful consequence: if you ever want control authority that does not decay, TVC during
+boost and canards during coast are complementary, not competing. That is out of scope here
+-- TVC on a solid motor is a large separate project and raises its own range-approval
+questions -- but it is the correct answer to "how do I steer for longer."
+
+So what is a long burn actually good for? Real things, none of which are steering:
+
+  * Lower peak acceleration. Protects your accelerometer from clipping at +/-16 g and
+    reduces structural and shear-pin loads.
+  * Lower peak Mach, keeping the aerodynamics comfortably subsonic and linear.
+  * Lower apogee for the same impulse, which can keep you inside a tight waiver.
+
+That is the actual trade: burn time buys you gentler flight, and you pay for it in
+steering authority. It is not a control-time knob.
+
+The selected Cesaroni J430 at 1.96 s sits deliberately in the middle. Short enough to bank
+velocity efficiently, long enough that peak acceleration is only 8.7 g. The extreme case
+proves the point: the AeroTech J1299N burns for 0.65 s and produces the largest crossrange
+of any compliant motor in the catalogue -- and it was rejected at 26 g, on accelerometer
+and structural grounds, not on steering.
+
+If you want more control authority, the levers that actually work, in order:
+  1. More total impulse (subject to your waiver ceiling) -- roughly triples crossrange
+     going from a ~820 N s J to a ~1260 N s J.
+  2. Larger canards, paid for in static margin.
+  3. Lower static margin, since trim angle of attack scales as 1/margin.
+  4. Lower vehicle mass.
+Burn time is not on that list.

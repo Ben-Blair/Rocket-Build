@@ -1,0 +1,57 @@
+================================================================================================
+CANARD ACTUATOR PACKAGING  --  4 canards, direct radial drive
+================================================================================================
+Servo dimensions are APPROXIMATE class representatives. Verify before ordering.
+
+54 mm  (2.14in) fiberglass   OD 57.2 mm, ID 53.2 mm
+    submicro     (20x9mm, 0.05 Nm)  NO FIT direct/pinwheel  need ID  62.6 mm, have  50.2 mm ( -12.4 mm)  servo too long for the radius
+    micro        (24x12mm, 0.20 Nm)  NO FIT direct/pinwheel  need ID  70.2 mm, have  50.2 mm ( -20.0 mm)  servo too long for the radius
+    mini_ht      (23x10mm, 0.55 Nm)  NO FIT direct/pinwheel  need ID  68.7 mm, have  50.2 mm ( -18.5 mm)  servo too long for the radius
+    standard_ht  (40x20mm, 1.50 Nm)  NO FIT direct/pinwheel  need ID 104.6 mm, have  50.2 mm ( -54.4 mm)  4 servos will not fit around the circumference
+    standard_ht  via linkage                    NO FIT bellcrank/axial  need ID  62.4 mm, have  50.2 mm ( -12.2 mm)  circumference
+
+66 mm  (2.6in)  fiberglass   OD 66.0 mm, ID 62.0 mm
+    submicro     (20x9mm, 0.05 Nm)  NO FIT direct/pinwheel  need ID  62.6 mm, have  59.0 mm (  -3.6 mm)  servo too long for the radius
+    micro        (24x12mm, 0.20 Nm)  NO FIT direct/pinwheel  need ID  70.2 mm, have  59.0 mm ( -11.2 mm)  servo too long for the radius
+    mini_ht      (23x10mm, 0.55 Nm)  NO FIT direct/pinwheel  need ID  68.7 mm, have  59.0 mm (  -9.7 mm)  servo too long for the radius
+    standard_ht  (40x20mm, 1.50 Nm)  NO FIT direct/pinwheel  need ID 104.6 mm, have  59.0 mm ( -45.6 mm)  4 servos will not fit around the circumference
+    standard_ht  via linkage                    NO FIT bellcrank/axial  need ID  62.4 mm, have  59.0 mm (  -3.4 mm)  circumference
+
+75 mm  (3.0in)  fiberglass   OD 79.4 mm, ID 74.8 mm
+    submicro     (20x9mm, 0.05 Nm)  FITS   direct/pinwheel  need ID  62.6 mm, have  71.8 mm (  +9.2 mm)  ok
+    micro        (24x12mm, 0.20 Nm)  FITS   direct/pinwheel  need ID  70.2 mm, have  71.8 mm (  +1.6 mm)  ok
+    mini_ht      (23x10mm, 0.55 Nm)  FITS   direct/pinwheel  need ID  68.7 mm, have  71.8 mm (  +3.1 mm)  ok
+    standard_ht  (40x20mm, 1.50 Nm)  NO FIT direct/pinwheel  need ID 104.6 mm, have  71.8 mm ( -32.8 mm)  servo too long for the radius
+    standard_ht  via linkage                    FITS   bellcrank/axial  need ID  62.4 mm, have  71.8 mm (  +9.4 mm)  ok
+
+98 mm  (3.9in)  fiberglass   OD 101.6 mm, ID 96.8 mm
+    submicro     (20x9mm, 0.05 Nm)  FITS   direct/pinwheel  need ID  62.6 mm, have  93.8 mm ( +31.2 mm)  ok
+    micro        (24x12mm, 0.20 Nm)  FITS   direct/pinwheel  need ID  70.2 mm, have  93.8 mm ( +23.6 mm)  ok
+    mini_ht      (23x10mm, 0.55 Nm)  FITS   direct/pinwheel  need ID  68.7 mm, have  93.8 mm ( +25.1 mm)  ok
+    standard_ht  (40x20mm, 1.50 Nm)  NO FIT direct/pinwheel  need ID 104.6 mm, have  93.8 mm ( -10.8 mm)  servo too long for the radius
+    standard_ht  via linkage                    FITS   bellcrank/axial  need ID  62.4 mm, have  93.8 mm ( +31.4 mm)  ok
+
+129 mm (5.15in) fiberglass   OD 130.8 mm, ID 125.8 mm
+    submicro     (20x9mm, 0.05 Nm)  FITS   direct/pinwheel  need ID  62.6 mm, have 122.8 mm ( +60.2 mm)  ok
+    micro        (24x12mm, 0.20 Nm)  FITS   direct/pinwheel  need ID  70.2 mm, have 122.8 mm ( +52.6 mm)  ok
+    mini_ht      (23x10mm, 0.55 Nm)  FITS   direct/pinwheel  need ID  68.7 mm, have 122.8 mm ( +54.1 mm)  ok
+    standard_ht  (40x20mm, 1.50 Nm)  FITS   direct/pinwheel  need ID 104.6 mm, have 122.8 mm ( +18.2 mm)  ok
+    standard_ht  via linkage                    FITS   bellcrank/axial  need ID  62.4 mm, have 122.8 mm ( +60.4 mm)  ok
+
+------------------------------------------------------------------------------------------------
+Reading this table:
+
+* 54 mm is dead for direct drive. Even a sub-micro servo cannot fit radially, and the
+  circumference will not take four of anything plus a flight computer, battery and
+  recovery hardware. Do not design around it.
+* 75 mm is the smallest size that works with micro/mini servos on direct drive, and it is
+  the sweet spot: 54 mm motor mount, huge motor selection, affordable, and light enough to
+  reach a sane altitude on a J motor.
+* 98 mm buys comfort -- standard-size servos, easy wiring, room to iterate -- at the cost
+  of mass, drag area and a more expensive motor for the same altitude.
+* The bellcrank column shows that linkages let a small tube carry a big servo. It is a
+  real option, but backlash in a linkage becomes deadband in your control loop, which is
+  a genuinely hard problem to tune around. Prefer direct drive if the diameter allows it.
+
+Torque is checked separately against the aerodynamic hinge moment -- see
+scripts/baseline.py, which reports required hinge moment at max dynamic pressure.

@@ -1,0 +1,42 @@
+====================================================================================================
+RECOVERY FOOTPRINT  --  the constraint that replaces the altitude waiver
+====================================================================================================
+motor               apogee  Mach   xrng  descent   main      KE | walk @5mph   @10mph   @15mph   @20mph
+-------------------------------------------------------------------------------------------------------
+821-J430-WT-18A        770  0.37    143      70s    56"     50f |       303m     459m     614m     770m
+J449BS                1354  0.52    428      98s    57"     51f |       479m     698m     918m    1137m
+1266-J760-WT-19A      1405  0.57    569     101s    57"     51f |       466m     690m     916m    1140m
+K535                  1584  0.58    565     109s    57"     52f |       532m     775m    1020m    1263m
+K445                  1851  0.62    700     121s    58"     53f |       612m     881m    1152m    1421m
+K630BS                1898  0.68    893     124s    57"     52f |       609m     885m    1163m    1439m
+-------------------------------------------------------------------------------------------------------
+apogee m, xrng = steering crossrange m, descent = time under canopy, main = main
+canopy diameter for a 5 m/s landing, KE = landing energy in ft-lbf, walk = distance from
+the pad to the landing point including ascent downrange.
+
+Read the last four columns as "how far do I walk, and is that still on the property?"
+Drift scales with descent time, which scales with apogee. Doubling apogee roughly doubles
+the walk, and a 15 mph day is not unusual.
+
+====================================================================================================
+WHAT TO DO WITH AN UNLIMITED CEILING
+====================================================================================================
+An unlimited waiver removes a constraint; it does not create an objective. Nothing
+about this project gets better by flying higher, and several things get worse:
+
+  * Recovery risk per flight. You need five or six flights. Every one that lands off the
+    property, in a tree, or unfound costs you a vehicle, a flight computer, and -- worst --
+    the logged data that the whole thesis depends on.
+  * Transonic aerodynamics. Above roughly Mach 0.8 the Barrowman method, the linear control
+    derivatives and the controller derived from them all stop being valid, and the centre
+    of pressure moves sharply. A guidance project that strays transonic has to solve a much
+    harder aero problem for no additional credit.
+  * Visibility. The deliverable is a demonstration of steering. A manoeuvre you can see and
+    film at 3-5000 ft is worth more in a defence than a dot at 15,000 ft.
+  * Cost per flight, which directly limits how many flights you get.
+
+What the freedom is genuinely worth: buying more total impulse, because control authority
+scales with dynamic pressure. Going from ~820 N s to ~1260 N s roughly triples crossrange
+while staying comfortably subsonic. That is the trade worth taking.
+
+Take some of the freedom, not all of it.

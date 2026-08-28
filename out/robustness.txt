@@ -1,0 +1,107 @@
+========================================================================================
+STATIC MARGIN ROBUSTNESS  (20000 samples, rail exit, motor loaded)
+========================================================================================
+1-sigma assumptions: structural mass 8%, budgeted mass 20%, component position 15 mm,
+CP 0.35 cal, motor mass 3%.
+
+  as designed, no ballast
+    median                      1.94 cal
+    5th - 95th percentile       1.31 - 2.57 cal
+    1st percentile              1.06 cal
+    P(SM < 1.4 safety floor)     8.1 %
+    P(SM < 1.5 R1 target)      12.6 %
+    P(SM < 1.0 unsafe)           0.7 %
+    P(SM > 3.0 over-stable)     0.3 %
+
+    wet mass  6.19 kg (5-95%: 5.78 - 6.59)
+
+========================================================================================
+SENSITIVITY: WHAT ACTUALLY MOVES THE MARGIN
+========================================================================================
+  nominal rail-exit static margin 1.94 cal
+  effect on SM of a +1 sigma error in each input:
+
+    input                             delta SM  direction
+    CP prediction error                 +0.350  more stable ########################################
+    avionics bay (budget)               +0.103  more stable ############
+    aft fins                            -0.043  LESS stable #####
+    structure: motor_mount_centering_rings    -0.036  LESS stable ####
+    propellant                          -0.036  LESS stable ####
+    contingency                         +0.033  more stable ###
+    structure: couplers_bulkheads       +0.032  more stable ###
+    canard shafts/bearings/sled         +0.032  more stable ###
+    canard servos x4                    +0.029  more stable ###
+    motor case (dry)                    -0.029  LESS stable ###
+    tube: booster                       -0.022  LESS stable ##
+    recovery (budget)                   +0.021  more stable ##
+
+========================================================================================
+REDESIGN OPTION: GROW THE AFT FINS?
+========================================================================================
+     aft span  nom SM  P(<1.4)  P(<1.0)  Cm_delta  authority  roll lost
+         1.05    0.63    97.9%    83.6%     11.95       100%       6.8%
+         1.15    0.96    87.4%    54.8%     12.05        66%       8.3%
+         1.25    1.26    65.2%    25.5%     12.16        51%       9.9%
+         1.40    1.63    27.7%     5.0%     12.31        40%      12.6%
+         1.55    1.94     8.0%     0.7%     12.45        34%      15.6%
+
+========================================================================================
+SIZING CANARDS AND AFT FINS TOGETHER
+========================================================================================
+  constraints: P(SM < 1.0 cal) <= 1%, flutter margin >= 1.5,
+               servo torque margin >= 2.0, plus every limit in configure.LIMITS
+
+     canard   aft     SM  P(<1.0)  lat g  xrange  flut  torq  verdict
+       0.70  1.25   1.60     6.3%   1.78    396m  2.59  3.5x  risk 6.3%
+       0.70  1.40   1.95     0.7%   1.57    345m  2.25  3.8x  ok
+       0.70  1.55   2.24     0.1%   1.42    309m  1.99  4.0x  ok
+       0.70  1.70   2.48     0.0%   1.32    282m  1.79  4.2x  ok
+       0.70  1.85   2.67     0.0%   1.23    260m  1.62  4.3x  SM 3.16 > 3.0 cal
+       0.85  1.25   1.25    25.8%   2.58    573m  2.60  2.5x  SM 1.28 < 1.4 cal; risk 25.8%
+       0.85  1.40   1.62     5.4%   2.22    485m  2.27  2.7x  risk 5.4%
+       0.85  1.55   1.93     0.8%   1.98    428m  2.00  2.9x  ok
+       0.85  1.70   2.19     0.1%   1.82    386m  1.80  3.1x  ok
+       0.85  1.85   2.39     0.0%   1.69    354m  1.63  3.2x  ok
+       1.00  1.25   0.94    56.1%   3.61    795m  2.62  1.9x  SM 0.97 < 1.4 cal; risk 56.1%; torque 
+       1.00  1.40   1.32    20.1%   3.00    652m  2.28  2.1x  SM 1.36 < 1.4 cal; risk 20.1%
+       1.00  1.55   1.64     4.9%   2.63    563m  2.02  2.3x  risk 4.9%
+       1.00  1.70   1.91     1.0%   2.38    502m  1.81  2.4x  risk 1.0%
+       1.00  1.85   2.13     0.2%   2.19    456m  1.64  2.5x  ok
+       1.15  1.25   0.66    81.2%   4.95    650m  2.63  1.4x  SM 0.70 < 1.4 cal; canard stall at 8 d
+       1.15  1.40   1.05    44.7%   3.94    851m  2.29  1.6x  SM 1.08 < 1.4 cal; risk 44.7%; torque 
+       1.15  1.55   1.38    16.3%   3.38    719m  2.03  1.8x  risk 16.3%; torque 1.8x
+       1.15  1.70   1.66     4.5%   3.01    631m  1.82  1.9x  risk 4.5%; torque 1.9x
+       1.15  1.85   1.89     1.1%   2.74    567m  1.65  2.0x  risk 1.1%
+       1.30  1.25   0.42    93.6%   6.78    885m  2.64  1.1x  SM 0.45 < 1.4 cal; canard stall at 8 d
+       1.30  1.40   0.81    69.1%   5.11   1095m  2.30  1.3x  SM 0.84 < 1.4 cal; risk 69.1%; torque 
+       1.30  1.55   1.14    35.9%   4.25    898m  2.04  1.5x  SM 1.17 < 1.4 cal; risk 35.9%; torque 
+       1.30  1.70   1.42    13.9%   3.71    775m  1.83  1.6x  risk 13.9%; torque 1.6x
+       1.30  1.85   1.66     4.4%   3.35    688m  1.66  1.7x  risk 4.4%; torque 1.7x
+
+  BEST: canard 1.00 cal, aft 1.85 cal -- 456 m crossrange, 2.19 g, median SM 2.13, P(unsafe) 0.2%
+
+========================================================================================
+NOSE BALLAST TRADE
+========================================================================================
+  ballast station 191 mm from the nose tip
+
+     ballast  median SM  5th pct  P(<1.4)  authority
+         0 g       1.94     1.31     8.1%       100%
+        50 g       2.00     1.38     5.7%        97%
+       100 g       2.07     1.45     3.9%        94%
+       150 g       2.13     1.51     2.5%        91%
+       200 g       2.19     1.57     1.8%        88%
+       300 g       2.32     1.70     0.7%        84%
+       400 g       2.43     1.82     0.3%        80%
+
+Reading the ballast table: ballast buys margin and spends control authority, roughly
+proportionally, because a_lat ~ 1/SM. The right answer is not to pick a number now. It is
+to *design in the provision* -- a threaded rod and washer stack in the nose shoulder --
+and set it after weighing the built vehicle. That converts static margin from a prediction
+you are betting on into a parameter you measure and tune, which is the single cheapest
+risk reduction available on this airframe.
+
+Note also which way the sensitivity points: the dominant uncertainty is not any mass line,
+it is the CP prediction itself. No amount of ballast fixes that. What fixes it is the
+OpenRocket cross-check (an independent Barrowman implementation), and ultimately the
+GV-1 flight.

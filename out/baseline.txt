@@ -1,0 +1,228 @@
+
+============================================================================================
+BASELINE VEHICLE
+============================================================================================
+  airframe            79.4 mm OD fiberglass, 1361 mm long, L/D 17.1
+  motor               J449BS  (1260 N s, class J, needs L2)
+  wet / dry mass      6.19 / 5.57 kg
+  feasible            YES
+
+============================================================================================
+GEOMETRY  (stations measured from nose tip)
+============================================================================================
+  nose cone           ogive, 318 mm (fineness 4.0), CP at 148 mm
+  nav bay                127 mm   station    318 ->    445 mm   ID 74.8 mm
+  canard module          143 mm   station    445 ->    588 mm   ID 74.8 mm
+  recovery bay           357 mm   station    588 ->    945 mm   ID 74.8 mm
+  booster                416 mm   station    945 ->   1361 mm   ID 74.8 mm
+  canards             4 panels, root 55.6 / tip 38.9 / semispan 67.5 mm, sweep 8.3 mm
+                      root LE at 488 mm, CP at 500 mm
+  aft fins            4 panels, root 150.9 / tip 67.9 / semispan 123.1 mm, sweep 87.3 mm
+                      root LE at 1210 mm, CP at 1259 mm
+
+============================================================================================
+MASS BUDGET
+============================================================================================
+component                               mass (kg)    x (m)    moment
+--------------------------------------------------------------------
+recovery (budget)                           0.700    0.766    0.5363
+aft fins                                    0.637    1.259    0.8026
+propellant                                  0.624    1.201    0.7492
+avionics bay (budget)                       0.560    0.381    0.2134
+contingency                                 0.506    0.681    0.3445
+motor case (dry)                            0.498    1.201    0.5979
+tube: booster                               0.429    1.153    0.4947
+tube: recovery bay                          0.368    0.766    0.2822
+structure: couplers_bulkheads               0.300    0.574    0.1721
+structure: motor_mount_centering_rings      0.250    1.201    0.3002
+canard shafts/bearings/sled                 0.240    0.516    0.1239
+canard servos x4                            0.220    0.516    0.1135
+structure: epoxy_and_fillets                0.200    0.916    0.1833
+nose cone                                   0.180    0.191    0.0343
+tube: canard module                         0.147    0.516    0.0760
+canards                                     0.142    0.500    0.0708
+tube: nav bay                               0.131    0.381    0.0499
+structure: rail_buttons_fasteners           0.060    1.153    0.0692
+--------------------------------------------------------------------
+DRY TOTAL                                   5.569    0.802
+WET TOTAL (incl. propellant)                6.193    0.842
+
+============================================================================================
+FLIGHT
+============================================================================================
+  T/W at ignition          7.29
+  rail exit velocity       23.1 m/s
+  max acceleration          8.2 g
+  burnout                  2.85 s at    280 m, 174.8 m/s
+  max Mach                0.523
+  max dynamic pressure    18.81 kPa
+  apogee                   1354 m (4444 ft) at 16.8 s
+  static margin range      1.96 to 2.44 cal
+  usable control window    11.3 s (q > 500 Pa after burnout)
+
+============================================================================================
+STATIC STABILITY at max coast dynamic pressure
+============================================================================================
+  component          CNa (/rad)    CP (mm)    share
+  aft_fins                21.77       1259    66.9%
+  canards                  6.74        500    20.7%
+  nose                     2.33        148     7.2%
+  body_lift                1.73        756     5.3%
+  TOTAL                   32.57        996
+
+  CG 802 mm, CP 996 mm, static margin 2.44 cal
+  Cm_alpha -79.6 /rad
+  same airframe with canards removed: 4.07 cal
+  --> the canards cost 1.63 cal of static margin. That is the price of control authority,
+      and it is why you cannot simply make the canards bigger.
+
+============================================================================================
+PITCH AUTHORITY vs DEFLECTION
+============================================================================================
+   delta   a_trim  lat accel  canard a  hinge Nm  wn (Hz)  stall
+      2d    0.32d      0.50g     2.32d    0.0145     4.05  ok
+      4d    0.64d      0.99g     4.64d    0.0291     4.05  ok
+      6d    0.96d      1.49g     6.96d    0.0436     4.05  ok
+      8d    1.29d      1.98g     9.29d    0.0582     4.05  ok
+     10d    1.61d      2.48g    11.61d    0.0727     4.05  ok
+     12d    1.93d      2.98g    13.93d    0.0873     4.05  STALL
+
+  Cm_delta 12.79 /rad
+  one-sided manoeuvre crossrange at 8 deg: 428 m over 11.6 s
+
+============================================================================================
+ROLL AUTHORITY  --  the canard / aft-fin interference problem
+============================================================================================
+
+  aligned (0 deg offset)
+    canard-to-fin spacing          9.56 cal
+    interference strength         0.161
+    Cl_delta from canards        +6.064 /rad
+    Cl_delta from aft fins       -4.132 /rad  (opposing)
+    Cl_delta NET                 +1.932 /rad
+    cancellation                   68.1% of canard authority lost
+    SIGN correct
+    Cl_p (roll damping)          -71.24 /rad
+    roll accel at 2 deg          5256 deg/s^2
+    steady roll rate                239 deg/s
+
+  interdigitated (45 deg)
+    canard-to-fin spacing          9.56 cal
+    interference strength         0.037
+    Cl_delta from canards        +6.064 /rad
+    Cl_delta from aft fins       -0.936 /rad  (opposing)
+    Cl_delta NET                 +5.127 /rad
+    cancellation                   15.4% of canard authority lost
+    SIGN correct
+    Cl_p (roll damping)          -71.24 /rad
+    roll accel at 2 deg         13951 deg/s^2
+    steady roll rate                634 deg/s
+
+  Sensitivity: where does the net roll moment change sign?
+  Sweeping aft fin semispan (which sets how much fin area sits in the canard
+  wake) against interference strength, aligned canards:
+
+     aft span     SM  Cl_d can  Cl_d fin      net    lost  verdict
+         0.85   0.08    +6.064    -1.155   +4.908   19.1%  ok
+         1.05   0.96    +6.064    -1.809   +4.254   29.8%  ok
+         1.25   1.66    +6.064    -2.620   +3.443   43.2%  ok
+         1.45   2.21    +6.064    -3.589   +2.475   59.2%  ok
+         1.65   2.65    +6.064    -4.714   +1.350   77.7%  fragile
+         1.85   3.01    +6.064    -5.995   +0.068   98.9%  fragile
+
+  Read this table carefully -- it is the core engineering argument of the project. Growing
+  the aft fins raises static margin (good for a safe flight) while simultaneously feeding
+  more fin area into the canard wake (bad for roll control). Push far enough and the net
+  roll moment reverses: you command right roll and the vehicle rolls left. Any controller
+  tuned on the assumed sign then saturates and diverges.
+
+  Two things follow:
+    1. Interdigitating the canards at 45 deg is not a cosmetic choice. It cuts the
+       opposing term by roughly a factor of four in this model and moves the design well
+       away from the reversal boundary.
+    2. Because the interference factors are the least trustworthy numbers in this whole
+       analysis, the first powered flight must measure them. Fly an open-loop deflection
+       sweep, log commanded deflection against measured roll rate, and fit the sign and
+       magnitude of Cl_delta before you ever close the loop.
+
+============================================================================================
+ACTUATOR CHECK
+============================================================================================
+  servo               mini high-torque HV class (~20 g)
+  packaging           FITS   direct/pinwheel  need ID  68.7 mm, have  71.8 mm (  +3.1 mm)  ok
+  peak hinge moment   0.0604 N m per panel at q = 18.8 kPa
+  usable servo torque 0.2200 N m (stall x 0.4 derate, gear 1.0:1)
+  torque margin       3.6x  OK
+  servo speed         0.07 s/60deg --> 857 deg/s slew rate
+  pitch mode          4.1 Hz; loop rate should be >= 82 Hz
+
+============================================================================================
+FIN FLUTTER
+============================================================================================
+  worst case 177 m/s at 245 m altitude. Flutter speed scales as
+  1/sqrt(ambient pressure), so the danger is speed low down, not Mach at apogee.
+
+    fin set     semispan   thick    AR     t/c  V_flutter  margin
+    aft fins      123.1mm    3.2mm  1.13  0.0212       355   2.00x  OK   (>=1.5x needs 2.6 mm)
+    canards        67.5mm    3.0mm  1.43  0.0540       976   5.50x  OK   (>=1.5x needs 1.3 mm)
+
+  Built from G10 at the stated thickness with the tab bonded through to the motor mount.
+  Shear modulus is the weak input here -- published G10 spans 3 to 7 GPa and the result
+  goes as sqrt(G), so read these as +/-25%. Surface-mounting the fins instead of
+  through-the-wall invalidates the estimate entirely.
+
+============================================================================================
+OPENROCKET ENTRY VALUES
+============================================================================================
+  Nose cone
+    shape                 ogive  (parameter 1.0 for tangent ogive)
+    length                318 mm
+    base diameter         79.4 mm
+    wall thickness        2.3 mm
+    shoulder length       79 mm (1 caliber, typical)
+
+  Body tubes (79.4 mm OD, 2.3 mm wall, fiberglass)
+    nav bay             127 mm
+    canard module       143 mm
+    recovery bay        357 mm
+    booster             416 mm
+
+  Canards (add as a FREEFORM or TRAPEZOIDAL fin set on the canard module)
+    count                 4
+    root chord            55.6 mm
+    tip chord             38.9 mm
+    height (semispan)     67.5 mm
+    sweep length          8.3 mm
+    thickness             3.0 mm
+    position              43.7 mm
+                          from the front of the canard module
+    fin rotation          45 deg relative to the aft fins  (interdigitated)
+
+  Aft fins
+    count                 4
+    root chord            150.9 mm
+    tip chord             67.9 mm
+    height (semispan)     123.1 mm
+    sweep length          87.3 mm
+    thickness             3.2 mm
+    position              bottom of booster tube, trailing edge flush with aft end
+
+  Mass overrides -- OpenRocket cannot know about your avionics, so override these
+    canard module         add 0.460 kg
+                          (servos, shafts, bearings, sled)
+    avionics bay          add 0.560 kg
+    recovery              add 1.068 kg
+
+  Simulation settings
+    launch rod / rail     3.66 m (12 ft), 5 deg from vertical
+    motor                 J449BS
+
+  Cross-check against this tool:
+    expected CG           802 mm from nose tip (dry-ish, mid coast)
+    expected CP           996 mm
+    expected margin       2.44 cal
+    expected apogee       1354 m (4444 ft)
+    expected max Mach     0.52
+
+  If OpenRocket disagrees by more than about 15% on CP or apogee, find out why before
+  trusting either result. Disagreement is information, not an inconvenience.
