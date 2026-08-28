@@ -130,6 +130,8 @@ def main() -> None:
     masses = build_mass(
         rocket, params.motor,
         servo_mass_each=SERVOS[params.servo].mass, n_servos=params.n_canards,
+        nose_ballast_kg=params.nose_ballast_kg,
+        nose_ballast_station=params.nose_ballast_station,
     )
     ev = evaluate(params, deflection_deg=8.0)
     stab = aero.stability(rocket, masses.wet_cg, args.mach)

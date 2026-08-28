@@ -4,7 +4,7 @@ STATIC MARGIN ROBUSTNESS  (20000 samples, rail exit, motor loaded)
 1-sigma assumptions: structural mass 8%, budgeted mass 20%, component position 15 mm,
 CP 0.35 cal, motor mass 3%.
 
-  as designed, no ballast
+  bare vehicle, no ballast
     median                      1.80 cal
     5th - 95th percentile       1.17 - 2.44 cal
     1st percentile              0.91 cal
@@ -12,8 +12,16 @@ CP 0.35 cal, motor mass 3%.
     P(SM < 1.5 R1 target)      21.2 %
     P(SM < 1.0 unsafe)           1.8 %
     P(SM > 3.0 over-stable)     0.1 %
+  as designed (100 g nose ballast)
+    median                      1.94 cal
+    5th - 95th percentile       1.31 - 2.57 cal
+    1st percentile              1.05 cal
+    P(SM < 1.4 safety floor)     7.9 %
+    P(SM < 1.5 R1 target)      12.5 %
+    P(SM < 1.0 unsafe)           0.6 %
+    P(SM > 3.0 over-stable)     0.3 %
 
-    wet mass  5.99 kg (5-95%: 5.59 - 6.38)
+    wet mass  6.09 kg (5-95%: 5.69 - 6.48)
 
 ========================================================================================
 SENSITIVITY: WHAT ACTUALLY MOVES THE MARGIN
@@ -39,11 +47,11 @@ SENSITIVITY: WHAT ACTUALLY MOVES THE MARGIN
 REDESIGN OPTION: GROW THE AFT FINS?
 ========================================================================================
      aft span  nom SM  P(<1.4)  P(<1.0)  Cm_delta  authority  roll lost
-         1.05    0.50    99.1%    90.5%     12.33       100%       6.8%
-         1.15    0.83    93.0%    67.6%     12.43        60%       8.3%
-         1.25    1.12    76.7%    38.4%     12.54        45%       9.9%
-         1.40    1.50    41.0%     9.8%     12.69        34%      12.6%
-         1.55    1.81    14.7%     1.8%     12.84        29%      15.6%
+         1.05    0.50    97.7%    83.1%     12.33       100%       6.8%
+         1.15    0.83    87.1%    54.1%     12.43        60%       8.3%
+         1.25    1.12    64.7%    24.9%     12.54        45%       9.9%
+         1.40    1.50    27.2%     4.8%     12.69        34%      12.6%
+         1.55    1.81     7.9%     0.6%     12.84        29%      15.6%
 
 ========================================================================================
 SIZING CANARDS AND AFT FINS TOGETHER
@@ -52,33 +60,33 @@ SIZING CANARDS AND AFT FINS TOGETHER
                servo torque margin >= 2.0, plus every limit in configure.LIMITS
 
      canard   aft     SM  P(<1.0)  lat g  xrange  flut  torq  verdict
-       0.70  1.25   1.46    11.8%   2.14    480m  2.50  3.0x  risk 11.8%
-       0.70  1.40   1.82     1.8%   1.87    414m  2.17  3.2x  risk 1.8%
-       0.70  1.55   2.11     0.2%   1.69    369m  1.93  3.4x  ok
-       0.70  1.70   2.35     0.0%   1.55    335m  1.73  3.6x  ok
-       0.70  1.85   2.54     0.0%   1.45    308m  1.57  3.7x  SM 3.03 > 3.0 cal
-       0.85  1.25   1.12    38.1%   3.15    701m  2.51  2.1x  SM 1.15 < 1.4 cal; risk 38.1%
-       0.85  1.40   1.49    10.5%   2.66    586m  2.19  2.3x  risk 10.5%
-       0.85  1.55   1.80     2.1%   2.36    513m  1.94  2.5x  risk 2.1%
-       0.85  1.70   2.05     0.4%   2.15    460m  1.74  2.6x  ok
-       0.85  1.85   2.26     0.1%   1.98    420m  1.57  2.8x  ok
-       1.00  1.25   0.81    68.5%   4.46    989m  2.53  1.6x  SM 0.84 < 1.4 cal; risk 68.5%; torque 
-       1.00  1.40   1.19    30.9%   3.63    795m  2.20  1.8x  SM 1.22 < 1.4 cal; risk 30.9%; torque 
-       1.00  1.55   1.51     9.5%   3.15    680m  1.95  1.9x  risk 9.5%; torque 1.9x
-       1.00  1.70   1.78     2.4%   2.82    601m  1.75  2.1x  risk 2.4%
-       1.00  1.85   2.00     0.5%   2.58    543m  1.58  2.2x  ok
-       1.15  1.25   0.54    88.7%   6.24    825m  2.54  1.2x  SM 0.57 < 1.4 cal; canard stall at 8 d
-       1.15  1.40   0.92    57.8%   4.83   1051m  2.21  1.4x  SM 0.95 < 1.4 cal; risk 57.8%; torque 
-       1.15  1.55   1.25    26.1%   4.07    874m  1.96  1.5x  SM 1.28 < 1.4 cal; risk 26.1%; torque 
-       1.15  1.70   1.53     8.9%   3.59    761m  1.75  1.7x  risk 8.9%; torque 1.7x
-       1.15  1.85   1.76     2.6%   3.25    679m  1.59  1.8x  risk 2.6%; torque 1.8x
-       1.30  1.25   0.29    96.8%   8.79   1154m  2.55  0.9x  SM 0.32 < 1.4 cal; canard stall at 8 d
-       1.30  1.40   0.68    80.0%   6.34    823m  2.22  1.1x  SM 0.71 < 1.4 cal; canard stall at 8 d
-       1.30  1.55   1.01    48.9%   5.17   1103m  1.97  1.2x  SM 1.04 < 1.4 cal; risk 48.9%; torque 
-       1.30  1.70   1.30    22.3%   4.46    940m  1.76  1.4x  SM 1.33 < 1.4 cal; risk 22.3%; torque 
-       1.30  1.85   1.54     8.5%   3.99    829m  1.60  1.5x  risk 8.5%; torque 1.5x
+       0.70  1.25   1.60     6.1%   1.86    417m  2.55  3.2x  risk 6.1%
+       0.70  1.40   1.96     0.7%   1.64    363m  2.22  3.4x  ok
+       0.70  1.55   2.25     0.1%   1.50    326m  1.96  3.6x  ok
+       0.70  1.70   2.49     0.0%   1.38    297m  1.76  3.8x  ok
+       0.70  1.85   2.68     0.0%   1.30    274m  1.60  3.9x  SM 3.18 > 3.0 cal
+       0.85  1.25   1.26    25.4%   2.70    600m  2.56  2.3x  SM 1.29 < 1.4 cal; risk 25.4%
+       0.85  1.40   1.63     5.2%   2.33    510m  2.23  2.5x  risk 5.2%
+       0.85  1.55   1.94     0.8%   2.08    450m  1.97  2.7x  ok
+       0.85  1.70   2.19     0.1%   1.90    407m  1.77  2.8x  ok
+       0.85  1.85   2.40     0.0%   1.77    373m  1.60  2.9x  ok
+       1.00  1.25   0.95    55.4%   3.77    832m  2.57  1.7x  SM 0.98 < 1.4 cal; risk 55.4%; torque 
+       1.00  1.40   1.33    19.7%   3.14    684m  2.24  1.9x  SM 1.37 < 1.4 cal; risk 19.7%; torque 
+       1.00  1.55   1.65     4.7%   2.75    592m  1.98  2.1x  risk 4.7%
+       1.00  1.70   1.92     0.9%   2.49    528m  1.78  2.2x  ok
+       1.00  1.85   2.14     0.2%   2.29    480m  1.61  2.3x  ok
+       1.15  1.25   0.67    80.7%   5.15    678m  2.59  1.3x  SM 0.71 < 1.4 cal; canard stall at 8 d
+       1.15  1.40   1.06    44.1%   4.11    892m  2.25  1.5x  SM 1.09 < 1.4 cal; risk 44.1%; torque 
+       1.15  1.55   1.39    16.0%   3.53    755m  1.99  1.6x  risk 16.0%; torque 1.6x
+       1.15  1.70   1.66     4.4%   3.14    663m  1.79  1.8x  risk 4.4%; torque 1.8x
+       1.15  1.85   1.89     1.1%   2.87    597m  1.62  1.9x  risk 1.1%; torque 1.9x
+       1.30  1.25   0.43    93.4%   7.01    918m  2.60  1.0x  SM 0.46 < 1.4 cal; canard stall at 8 d
+       1.30  1.40   0.81    68.2%   5.31   1144m  2.26  1.2x  SM 0.85 < 1.4 cal; risk 68.2%; torque 
+       1.30  1.55   1.15    35.3%   4.43    941m  2.00  1.3x  SM 1.18 < 1.4 cal; risk 35.3%; torque 
+       1.30  1.70   1.43    13.5%   3.88    813m  1.80  1.5x  risk 13.5%; torque 1.5x
+       1.30  1.85   1.67     4.2%   3.50    724m  1.63  1.6x  risk 4.2%; torque 1.6x
 
-  BEST: canard 1.00 cal, aft 1.85 cal -- 543 m crossrange, 2.58 g, median SM 2.00, P(unsafe) 0.5%
+  BEST: canard 1.00 cal, aft 1.70 cal -- 528 m crossrange, 2.49 g, median SM 1.92, P(unsafe) 0.9%
 
 ========================================================================================
 NOSE BALLAST TRADE

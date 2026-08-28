@@ -67,10 +67,20 @@ def is_budgeted(name: str) -> bool:
     return any(k in name for k in BUDGETED)
 
 
-def sample(n: int, seed: int = 0, ballast_kg: float = 0.0, ballast_x: float = 0.15,
-           params: DesignParams | None = None):
-    """Monte Carlo over mass, position and CP uncertainty. Returns rail-exit SM samples."""
+def sample(n: int, seed: int = 0, ballast_kg: float | None = None,
+           ballast_x: float | None = None, params: DesignParams | None = None):
+    """Monte Carlo over mass, position and CP uncertainty. Returns rail-exit SM samples.
+
+    `ballast_kg` is ABSOLUTE, not additional: it defaults to the frozen design's ballast so
+    the headline run describes the vehicle you would actually fly, and the ballast sweep
+    passes explicit values to override it. build_mass() is deliberately called with no
+    ballast so the two cannot double-count.
+    """
     params = params or BASELINE
+    if ballast_kg is None:
+        ballast_kg = params.nose_ballast_kg
+    if ballast_x is None:
+        ballast_x = params.nose_ballast_station
     rng = np.random.default_rng(seed)
     rocket = build_vehicle(params)
     masses = build_mass(rocket, params.motor,
@@ -287,8 +297,10 @@ def main() -> None:
           f"component position {SIGMA['position'] * 1000:.0f} mm,\n"
           f"CP {SIGMA['cp_calibers']:.2f} cal, motor mass {SIGMA['motor_mass']:.0%}.\n")
 
-    sm, total_m, cg = sample(n, seed=1)
-    report(sm, "as designed, no ballast")
+    sm, _, _ = sample(n, seed=1, ballast_kg=0.0)
+    report(sm, "bare vehicle, no ballast")
+    sm_d, total_m, cg = sample(n, seed=1)
+    report(sm_d, f"as designed ({BASELINE.nose_ballast_kg * 1000:.0f} g nose ballast)")
     print(f"\n    wet mass  {np.median(total_m):.2f} kg "
           f"(5-95%: {np.percentile(total_m, 5):.2f} - {np.percentile(total_m, 95):.2f})")
 

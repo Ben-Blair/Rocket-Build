@@ -130,12 +130,12 @@ note after the reasoning bullets:
 
 | Motor | Apogee | Mach | Peak g | Crossrange | Descent | Main | Walk @ 15 mph |
 |---|---|---|---|---|---|---|---|
-| J430 White Thunder | 814 m | 0.39 | 8.2 | 178 m | 72 s | 55" | 641 m |
-| **J449 Blue Streak** | **1409 m** | **0.54** | **8.6** | **513 m** | **102 s** | **56"** | **951 m** |
-| J760 White Thunder | 1456 m | 0.59 | 14.4 | 678 m | 104 s | 56" | 946 m |
-| K535 | 1638 m | 0.60 | — | 667 m | 113 s | 56" | 1052 m |
-| K445 | 1907 m | 0.64 | — | 818 m | 125 s | 57" | 1186 m |
-| K630 Blue Streak | 1950 m | 0.70 | — | 1038 m | 128 s | 56" | 1194 m |
+| J430 White Thunder | 790 m | 0.38 | 8.4 | 152 m | 71 s | 55" | 626 m |
+| **J449 Blue Streak** | **1379 m** | **0.53** | **8.4** | **450 m** | **100 s** | **56"** | **932 m** |
+| J760 White Thunder | 1428 m | 0.58 | 14.1 | 597 m | 102 s | 56" | 930 m |
+| K535 | 1609 m | 0.59 | — | 592 m | 111 s | 56" | 1034 m |
+| K445 | 1877 m | 0.63 | — | 731 m | 123 s | 57" | 1167 m |
+| K630 Blue Streak | 1922 m | 0.69 | — | 931 m | 126 s | 57" | 1177 m |
 
 K445 and K630 now sit above R6's 1600 m apogee window and are **rejected outright by the
 trade study**, which is why they carry no peak-g figure — `motor_trade.py` never scores a
@@ -143,18 +143,18 @@ motor it has already screened out. They remain in the recovery table above as re
 points, not as candidates.
 
 **Selected: Cesaroni Pro54 J449 Blue Streak (`1261J449-15A`).** 1260 N·s, 2.85 s burn,
-T/W 7.5, 8.6 g, Mach 0.542, apogee 1409 m, static margin 1.83–2.32 cal, 11.5 s usable
-control window, and **2.36 g of lateral authority at 8° deflection for 513 m of
-crossrange** — roughly 3.6× the J430.
+T/W 7.4, 8.4 g, Mach 0.531, apogee 1379 m, static margin 1.97–2.46 cal, 11.4 s usable
+control window, and **2.08 g of lateral authority at 8° deflection for 450 m of
+crossrange** — roughly 2.7× the J430. Figures include the 100 g of nose ballast.
 
 Reasoning for stopping here rather than going to a K:
 
-- 513 m of crossrange is already an unmistakable, filmable, easily-measured manoeuvre. The
+- 450 m of crossrange is already an unmistakable, filmable, easily-measured manoeuvre. The
   deliverable is a working closed-loop controller, not a crossrange record. Past the point
   where the correction is clearly measurable, extra authority buys nothing.
-- Mach 0.542 keeps every assumption in the analysis valid with real margin. K630 at Mach
-  0.68 starts approaching where centre-of-pressure movement and drag rise matter.
-- 8.6 g stays well clear of accelerometer clipping.
+- Mach 0.531 keeps every assumption in the analysis valid with real margin. K630 at Mach
+  0.70 starts approaching where centre-of-pressure movement and drag rise matter.
+- 8.4 g stays well clear of accelerometer clipping.
 - ~~Roughly 0.96 km walk per flight instead of 1.2–1.5 km, across five or six flights.~~
   **Void as of Aug 2026** — with an unbounded recovery area this is a longer walk, not a
   lost vehicle. It is the only one of these five reasons that field size ever supported.
@@ -162,8 +162,8 @@ Reasoning for stopping here rather than going to a K:
   is actually short of.
 
 **Re-examined after C5a was resolved (Aug 2026).** Four of the five reasons above never
-depended on field size: crossrange is already unmistakably measurable, Mach 0.542 keeps
-every modelling assumption valid, 8.6 g stays clear of accelerometer clipping, and J-class
+depended on field size: crossrange is already unmistakably measurable, Mach 0.531 keeps
+every modelling assumption valid, 8.4 g stays clear of accelerometer clipping, and J-class
 reloads buy more flights than K-class. The J449 stands. Flying a K now costs the same
 vehicle and buys crossrange this project does not need, at a Mach number that makes the
 aero harder to defend.
@@ -183,33 +183,33 @@ Mach margin and visibility. Budget for a K-class reload either way.
 ## The full trade, current airframe
 
 `scripts/motor_trade.py`, 102 real L2 certification curves, apogee window 450–1600 m AGL,
-preferred max Mach 0.60. **29 fully compliant, 5 compliant with caveats, 68 rejected
-outright.** Rejection reasons: apogee ×51, T/W ×25, static margin ×21, Mach ×11, rail ×5,
-other ×2. Apogee is still the largest single rejection reason, which is R6 doing its job.
+preferred max Mach 0.60. **28 fully compliant, 6 compliant with caveats, 68 rejected
+outright.** Rejection reasons: apogee ×50, static margin ×26, T/W ×26, Mach ×10, rail ×5,
+other ×5. Apogee is still the largest single rejection reason, which is R6 doing its job.
 
 Ranked by crossrange, the top of the compliant list:
 
 | Motor | Cls | N·s | Burn | T/W | Peak g | Mach | Apogee | Static margin | Ctrl | Crossrange |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1266J760-19A | J | 1264 | 1.73 s | 12.5 | 14.4 | 0.59 | 1456 m | 1.89–2.35 | 12.5 s | 678 m |
-| K513FJ | K | 1473 | 2.73 s | 8.3 | 9.6 | 0.59 | 1590 m | 1.84–2.52 | 12.7 s | 675 m |
-| K610-SK | K | 1530 | 2.70 s | 8.4 | 10.1 | 0.59 | 1589 m | 2.08–2.66 | 12.7 s | 654 m |
-| K530SS | K | 1401 | 2.67 s | 8.1 | 8.7 | 0.58 | 1524 m | 1.82–2.55 | 12.6 s | 646 m |
-| J800T | J | 1248 | 2.09 s | 10.2 | 13.5 | 0.59 | 1483 m | 1.83–2.31 | 12.3 s | 632 m |
-| J670-LB | J | 1267 | 1.96 s | 10.8 | 12.7 | 0.56 | 1409 m | 1.81–2.24 | 12.2 s | 614 m |
-| K475 | K | 1392 | 2.94 s | 7.5 | 8.5 | 0.56 | 1477 m | 1.91–2.42 | 12.2 s | 562 m |
-| 1281K360-13A | J | 1275 | 3.50 s | 6.2 | 6.1 | 0.53 | 1450 m | 1.41–1.98 | 11.9 s | 534 m |
-| **1261J449-15A** | **J** | **1260** | **2.85 s** | **7.5** | **8.6** | **0.54** | **1409 m** | **1.83–2.32** | **11.8 s** | **513 m** |
-| K454-SK | K | 1364 | 3.15 s | 6.9 | 7.8 | 0.55 | 1472 m | 1.98–2.59 | 12.0 s | 511 m |
+| K513FJ | K | 1473 | 2.73 s | 8.2 | 9.4 | 0.58 | 1562 m | 1.98–2.67 | 12.6 s | 600 m |
+| 1266J760-19A | J | 1264 | 1.73 s | 12.3 | 14.1 | 0.58 | 1428 m | 2.04–2.49 | 12.4 s | 597 m |
+| K610-SK | K | 1530 | 2.70 s | 8.3 | 9.9 | 0.58 | 1562 m | 2.22–2.81 | 12.6 s | 584 m |
+| K530SS | K | 1401 | 2.67 s | 8.0 | 8.6 | 0.57 | 1496 m | 1.96–2.70 | 12.5 s | 574 m |
+| J800T | J | 1248 | 2.09 s | 10.1 | 13.2 | 0.57 | 1454 m | 1.97–2.46 | 12.2 s | 557 m |
+| J670-LB | J | 1267 | 1.96 s | 10.6 | 12.4 | 0.55 | 1381 m | 1.95–2.39 | 12.1 s | 539 m |
+| K475 | K | 1392 | 2.94 s | 7.3 | 8.4 | 0.55 | 1448 m | 2.05–2.57 | 12.1 s | 497 m |
+| 1281K360-13A | J | 1275 | 3.50 s | 6.1 | 6.0 | 0.52 | 1418 m | 1.55–2.12 | 11.8 s | 464 m |
+| K454-SK | K | 1364 | 3.15 s | 6.8 | 7.6 | 0.54 | 1443 m | 2.12–2.74 | 11.9 s | 453 m |
+| **1261J449-15A** | **J** | **1260** | **2.85 s** | **7.4** | **8.4** | **0.53** | **1379 m** | **1.97–2.46** | **11.7 s** | **450 m** |
 
-**The J449 ranks 9th on crossrange, and that is fine** — the selection above rests on
-peak g, Mach margin, and cost per flight, not on topping this column. Of the eight motors
-that beat it, four are K-class (cost, and fewer flights for the same budget) and three of
-the four J-class ones do it at 12.7–14.4 g, which presses accelerometer clipping.
+**The J449 ranks 10th on crossrange, and that is fine** — the selection above rests on
+peak g, Mach margin, and cost per flight, not on topping this column. Of the nine motors
+that beat it, five are K-class (cost, and fewer flights for the same budget) and three of
+the four J-class ones do it at 12.4–14.1 g, which presses accelerometer clipping.
 
 **One candidate is worth a second look before you order:** `1281K360-13A` beats the J449
-on crossrange (534 m vs 513 m) *and* on peak g (6.1 vs 8.6), at the same Mach. Its cost is
-static margin — 1.41 cal at rail exit against the J449's 1.83, which eats most of the
+on crossrange (464 m vs 450 m) *and* on peak g (6.0 vs 8.4), at the same Mach. Its cost is
+static margin — 1.55 cal at rail exit against the J449's 1.97, which eats most of the
 robustness buffer that §7 of the requirements spent two thirds of the control authority to
 buy. That is very likely the wrong trade, but it is the one alternative the numbers do not
 immediately dismiss, and it deserves an explicit sentence in your report rather than

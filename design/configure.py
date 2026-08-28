@@ -45,6 +45,12 @@ class DesignParams:
     # Key into packaging.SERVOS. Drives BOTH the actuator packaging check and the
     # servo line of the mass budget, so the two cannot disagree.
     servo: str = "kst_x08_plus"
+    # Threaded rod + washer stack in the nose shoulder, metres from the nose tip.
+    # REQUIRED, not optional: without it P(SM < 1.0) is 1.8% against R1's 1% limit,
+    # because the real 9 g servos removed ~180 g from ahead of the CG. 75 g is the
+    # minimum that satisfies R1; 100 g is the design point. See docs 7.1.
+    nose_ballast_kg: float = 0.100
+    nose_ballast_station: float = 0.191
     canard_thickness: float = 0.0030
     material_density: float = 1850.0
 
@@ -192,7 +198,9 @@ def evaluate(
 ) -> Evaluation:
     rocket = build_vehicle(p)
     masses = mass_mod.build_mass(
-        rocket, p.motor, servo_mass_each=SERVOS[p.servo].mass, n_servos=p.n_canards
+        rocket, p.motor,
+        servo_mass_each=SERVOS[p.servo].mass, n_servos=p.n_canards,
+        nose_ballast_kg=p.nose_ballast_kg, nose_ballast_station=p.nose_ballast_station,
     )
     flight = trajectory.simulate(
         rocket, p.motor, masses, rail_length=rail_length, rail_angle_deg=rail_angle_deg

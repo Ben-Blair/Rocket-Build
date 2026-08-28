@@ -117,17 +117,17 @@ Values marked *(computed)* are outputs of `scripts/sweep.py` and
 
 | # | Requirement | Target | Rationale |
 |---|---|---|---|
-| R1 | Static margin, canards at zero, at rail exit | 1.5 – 2.5 cal **nominal**, and P(SM < 1.0) < 1% under mass/CP uncertainty. **Currently met only with 75 g+ of nose ballast** — see §7 | Below ~1.0 unsafe; above ~3 the vehicle weathercocks hard and fights the controller. The probabilistic half of this requirement is what sized the aft fins — see §7 |
+| R1 | Static margin, canards at zero, at rail exit | 1.5 – 2.5 cal **nominal**, and P(SM < 1.0) < 1% under mass/CP uncertainty. **Met with the 100 g of nose ballast now carried in the design** — see §7.1 | Below ~1.0 unsafe; above ~3 the vehicle weathercocks hard and fights the controller. The probabilistic half of this requirement is what sized the aft fins — see §7 |
 | R2 | Static margin must stay > 1.0 cal with canards at full deflection | *(computed)* | Canards are ahead of the CG and are *destabilizing*; this is the trap in canard design |
 | R3 | Rail exit velocity | ≥ 15 m/s (prefer ≥ 20) | Fin authority at rail exit; standard HPR practice |
 | R4 | Thrust-to-weight at ignition | ≥ 5:1 | Standard HPR practice |
 | R5 | Max Mach | ≤ 0.8 | Keeps you subsonic. Transonic aero invalidates Barrowman, makes the controller design far harder, and adds no value to a controls project |
 | R6 | Apogee | ≤ 1600 m (5250 ft) AGL | **Neither a waiver limit nor a field-size limit** — both are unbounded at this site (C5, C5a). The cap is retained on the three grounds that survive: keeping max Mach under 0.8 with real margin (R5), keeping the manoeuvre visible and filmable from the pad, and holding search time and cost per flight low enough to fly five or six times *with the data intact*. An unbounded field removes the risk of landing off the property; it does not make a rocket easier to find. See `scripts/recovery_study.py` |
 | R7 | Internal diameter for actuator bay | ≥ 69 mm → **75 mm airframe minimum** (see §4) | Drives airframe diameter |
-| R8 | Commanded lateral acceleration authority early in coast | ≥ 0.5 g | Enough for a measurable, visible correction. Baseline achieves 2.36 g at 8°, for 513 m of crossrange |
+| R8 | Commanded lateral acceleration authority early in coast | ≥ 0.5 g | Enough for a measurable, visible correction. Baseline achieves 2.08 g at 8°, for 450 m of crossrange |
 | R9 | Roll authority | Net Cl_delta must retain correct sign at all conditions, with ≥ 50% of canard-only authority surviving interference | See §5 |
 | R10 | Control loop rate | ≥ 100 Hz | Baseline pitch mode is 2.4 Hz, so 100 Hz gives ~40x margin |
-| R11 | Recovery | Dual deploy: 18 in drogue at apogee, **56 in** main at 200 m (650 ft). 5.0 m/s landing, 49 ft·lbf, 102 s descent | Sized by `design/recovery.py`, drogue fixed at 18 in and main solved for the landing rate. Landing energy is inside the ~75 ft·lbf guidance; confirm the current figure with your prefect |
+| R11 | Recovery | Dual deploy: 18 in drogue at apogee, **56 in** main at 200 m (650 ft). 5.0 m/s landing, 50 ft·lbf, 100 s descent | Sized by `design/recovery.py`, drogue fixed at 18 in and main solved for the landing rate. Landing energy is inside the ~75 ft·lbf guidance; confirm the current figure with your prefect |
 | R12 | Canards centered + locked on any fault, loss of nav, or after burnout+N s | Mandatory | Safety, and required to get range approval |
 
 ---
@@ -161,18 +161,18 @@ lands the apogee inside the target window. The packaging margin is only about +3
 the servo choice must be confirmed against real datasheet dimensions before ordering.
 
 **Both torque and packaging bind, and they bind on different servo classes.** Peak
-aerodynamic hinge moment is **0.0665 N·m per panel** at max dynamic pressure and 8°
+aerodynamic hinge moment is **0.0626 N·m per panel** at max dynamic pressure and 8°
 deflection (`scripts/baseline.py`), with the hinge at 0.20c, forward of the 0.25c panel CP
 so the panel is restoring rather than divergent. After a 0.4 derate on stall torque:
 
 | Servo | Length | Stall | Packaging margin | Torque margin | Verdict |
 |---|---|---|---|---|---|
-| sub-micro class | 20.0 mm | 0.05 N·m | +9.2 mm | 0.30× | fits easily, nowhere near the torque |
-| micro class | 23.6 mm | 0.20 N·m | +1.6 mm | 1.20× | fails both |
-| mini class | 22.8 mm | 0.25 N·m | +3.1 mm | 1.50× | fails torque |
-| mini high-torque class | 23.0 mm | 0.55 N·m | +3.1 mm | 3.31× | ok, but generic |
-| **KST X08 Plus V6.0** | **23.5 mm** | **0.52 N·m** | **+2.3 mm** | **3.13×** | **selected (D4)** |
-| MKS HV6100 | 22.5 mm | 0.333 N·m | +4.1 mm | 2.00× | fallback, exactly at the limit |
+| sub-micro class | 20.0 mm | 0.05 N·m | +9.2 mm | 0.32× | fits easily, nowhere near the torque |
+| micro class | 23.6 mm | 0.20 N·m | +1.6 mm | 1.28× | fails both |
+| mini class | 22.8 mm | 0.25 N·m | +3.1 mm | 1.60× | fails torque |
+| mini high-torque class | 23.0 mm | 0.55 N·m | +3.1 mm | 3.51× | ok, but generic |
+| **KST X08 Plus V6.0** | **23.5 mm** | **0.52 N·m** | **+2.3 mm** | **3.32×** | **selected (D4)** |
+| MKS HV6100 | 22.5 mm | 0.333 N·m | +4.1 mm | 2.13× | fallback, little margin |
 
 Note "micro" is *longer* than "mini high-torque" (23.6 vs 23.0 mm) despite the name — class
 names track mass, not the dimension that consumes tube radius. A physically
@@ -183,10 +183,21 @@ buys +2.1 mm of bushing room against the KST's +1.2 mm, but it must run at 8.2 V
 growth in hinge moment puts it under the requirement. Prefer the KST unless the bushing
 turns out not to fit.
 
-**Unresolved before ordering:** KST publish a 23.5 mm case but a 29.5 mm maximum dimension
-including mounting lugs. These numbers use the case. If the lugs sit in the radial path
-they consume 6 mm the 75 mm airframe does not have. Check the dimensioned drawing and the
-output shaft position before buying four.
+**The mounting lugs must not sit in the radial path.** KST publish a 23.5 mm case and a
+29.5 mm envelope including lugs, and confirm the 8.0 mm thickness is unchanged by them —
+so the lugs extend along the *radial* axis, which is the one axis with no room:
+
+| Effective radial length | Required ID | Margin | |
+|---|---|---|---|
+| 23.5 mm, body only (lugs trimmed, body bonded into the printed cradle) | 69.5 mm | +2.3 mm | fits |
+| 26.5 mm, one 3 mm lug in the path | 75.4 mm | −3.6 mm | does not fit |
+| 29.5 mm, full envelope | 81.4 mm | −9.6 mm | does not fit |
+
+**Even one lug kills it.** The mounting scheme must therefore clamp or bond the servo body
+in the printed bay rather than use the stock tabs — which is normal practice for this class
+of servo in thin wings, and is the arrangement a custom bay was going to use anyway. The
+numbers in the table above assume it. Confirm against the dimensioned drawing, and treat
+"trim the lugs" as a design commitment rather than a field fix.
 
 An earlier version of this section quoted 0.027 N·m and an 8× margin. That was computed on
 the old 0.45 cal canards; the joint fin sizing in §7 grew them to 0.85 cal, which roughly
@@ -240,7 +251,7 @@ reports the deflection/geometry region where the net roll moment changes sign.
 | D5 | Aft fin count and size | 3 / 4, semispan 0.95–1.85 cal | **4 panels, semispan 1.55 cal.** Set jointly with the canards (D11) by the margin robustness study (§7), not by nominal stability. Larger fins raise static margin but cost authority and push toward roll reversal (§5) | RESOLVED |
 | D11 | Canard size | semispan 0.70–1.00 cal | **0.85 cal semispan**, 0.70 cal root, 0.70 taper. Sized jointly with the aft fins (D5) under the probabilistic margin constraint — see §7. Sizing the two sets independently was the original mistake | RESOLVED |
 | D10 | Nose ballast provision | none / fixed / adjustable | **Adjustable** threaded rod + washers in the nose shoulder. Lets you set margin after weighing the real vehicle (§7) | RESOLVED |
-| D6 | Motor | 102 available 54 mm J/K motors | **Cesaroni Pro54 J449 Blue Streak** (`1261J449-15A`). ~2.9× the crossrange of the J430 while staying at Mach 0.542 and 8.6 g. Ranks 9th on crossrange alone; chosen on peak g, Mach margin and cost per flight. See `02-motor-selection.md` | RESOLVED |
+| D6 | Motor | 102 available 54 mm J/K motors | **Cesaroni Pro54 J449 Blue Streak** (`1261J449-15A`). ~2.7× the crossrange of the J430 while staying at Mach 0.531 and 8.4 g. Ranks 9th on crossrange alone; chosen on peak g, Mach margin and cost per flight. See `02-motor-selection.md` | RESOLVED |
 | D7 | Flight computer | COTS + custom controller board / full custom | TBD | TBD |
 | D8 | State estimation | IMU-only / IMU+baro / IMU+baro+GNSS | IMU+baro+GNSS for L3 | TBD |
 | D9 | Airframe material | cardboard / Blue Tube / fiberglass | fiberglass, at minimum for the canard module | TBD |
@@ -256,17 +267,17 @@ On the selected Cesaroni J449 Blue Streak:
 | Bays, nose to tail | nav 127 mm, canard module 143 mm, recovery 357 mm, booster 416 mm |
 | Canards | 4 panels, 55.6 root / 38.9 tip / **67.5 mm semispan**, 45° interdigitated |
 | Aft fins | 4 panels, 151 root / 68 tip / **123.1 mm semispan**, 87 mm sweep |
-| Mass | 5.37 kg dry, 5.99 kg wet |
-| Static margin | 1.83 cal at rail exit, 2.32 cal in coast |
-| Flight | apogee 1409 m (4623 ft), max Mach 0.542, max q 20.2 kPa, 8.6 g peak, T/W 7.5 |
-| Control | 2.36 g lateral at 8° deflection, 513 m crossrange over an 11.5 s window |
-| Roll | Cl_delta +6.15 /rad canards vs −0.95 /rad aft fins interdigitated (15.4% cancellation) |
-| Actuator | KST X08 Plus V6.0, 3.1× torque margin, +2.3 mm packaging margin |
-| Hinge | 0.0665 N·m per panel, hinge at 0.20c — forward of the 0.25c panel CP, so restoring |
-| Fin flutter | aft fins 1.94× margin, canards 5.31× (see §8) |
-| Recovery | 102 s descent, ~0.95 km walk at 15 mph wind, 56 in main |
-| Nose ballast | **75 g minimum, 100 g design point** — required to meet R1 (see §7.1) |
-| Margin robustness | P(SM < 1.0) = 1.8% bare / 0.58% with 100 g ballast, P(SM < 1.4) = 14.6% / 7.9% |
+| Mass | 5.48 kg dry, 6.10 kg wet (includes 100 g nose ballast) |
+| Static margin | 1.97 cal at rail exit, 2.46 cal in coast |
+| Flight | apogee 1379 m (4525 ft), max Mach 0.531, max q 19.4 kPa, 8.4 g peak, T/W 7.4 |
+| Control | 2.08 g lateral at 8° deflection, 450 m crossrange over an 11.4 s window |
+| Roll | Cl_delta +6.10 /rad canards vs −0.94 /rad aft fins interdigitated (15.4% cancellation) |
+| Actuator | KST X08 Plus V6.0, 3.3× torque margin, +2.3 mm packaging margin |
+| Hinge | 0.0626 N·m per panel, hinge at 0.20c — forward of the 0.25c panel CP, so restoring |
+| Fin flutter | aft fins 1.97× margin, canards 5.42× (see §8) |
+| Recovery | 100 s descent, ~0.93 km walk at 15 mph wind, 56 in main |
+| Nose ballast | **100 g at 191 mm from the nose tip**, 75 g minimum for R1, provision 300 g (§7.1) |
+| Margin robustness | P(SM < 1.0) = 0.6% as designed, 1.8% bare; P(SM < 1.4) = 7.9% / 14.6% |
 | OpenRocket correlation | CNa agrees to 0.3%, CP to 0.17 cal (see `03-openrocket-correlation.md`) |
 
 ## 7. Static margin robustness
@@ -283,11 +294,11 @@ semispan alone walks that back, but pays for it in control authority:
 
 | Aft semispan | Nominal SM | P(SM<1.4) | P(SM<1.0) | Relative authority |
 |---|---|---|---|---|
-| 1.05 cal | 0.50 | 99.1% | 90.5% | 100% |
-| 1.15 cal | 0.83 | 93.0% | 67.6% | 60% |
-| 1.25 cal | 1.12 | 76.7% | 38.4% | 45% |
-| 1.40 cal | 1.50 | 41.0% | 9.8% | 34% |
-| 1.55 cal | 1.81 | 14.7% | 1.8% | 29% |
+| 1.05 cal | 0.50 | 97.7% | 83.1% | 100% |
+| 1.15 cal | 0.83 | 87.1% | 54.1% | 60% |
+| 1.25 cal | 1.12 | 64.7% | 24.9% | 45% |
+| 1.40 cal | 1.50 | 27.2% | 4.8% | 34% |
+| 1.55 cal | 1.81 | 7.9% | 0.6% | 29% |
 
 Buying acceptable risk this way costs over two thirds of the lateral authority.
 
@@ -300,22 +311,25 @@ crossrange and on safety at the same time instead of trading one against the oth
 
 | Canard semispan | Aft semispan | Nominal SM | P(SM<1.0) | Lateral g | Crossrange | Flutter | Torque | Verdict |
 |---|---|---|---|---|---|---|---|---|
-| 0.70 cal | 1.55 cal | 2.11 | 0.2% | 1.69 g | 369 m | 1.93 | 3.4× | ok |
-| 0.70 cal | 1.70 cal | 2.35 | 0.0% | 1.55 g | 335 m | 1.73 | 3.6× | ok |
-| 0.85 cal | 1.40 cal | 1.49 | 10.5% | 2.66 g | 586 m | 2.19 | 2.3× | risk 10.5% |
-| **0.85 cal** | **1.55 cal** | **1.80** | **2.1%** | **2.36 g** | **513 m** | **1.94** | **2.5×** | **selected, + ballast** |
-| 0.85 cal | 1.70 cal | 2.05 | 0.4% | 2.15 g | 460 m | 1.74 | 2.6× | ok |
-| 0.85 cal | 1.85 cal | 2.26 | 0.1% | 1.98 g | 420 m | 1.57 | 2.8× | ok |
-| 1.00 cal | 1.70 cal | 1.78 | 2.4% | 2.82 g | 601 m | 1.75 | 2.1× | risk 2.4% |
-| 1.00 cal | 1.85 cal | 2.00 | 0.5% | 2.58 g | 543 m | 1.58 | 2.2× | ok |
+| 0.70 cal | 1.40 cal | 1.96 | 0.7% | 1.64 g | 363 m | 2.22 | 3.4× | ok |
+| 0.70 cal | 1.55 cal | 2.25 | 0.1% | 1.50 g | 326 m | 1.96 | 3.6× | ok |
+| 0.85 cal | 1.25 cal | 1.26 | 25.4% | 2.70 g | 600 m | 2.56 | 2.3× | SM 1.29 < 1.4 |
+| 0.85 cal | 1.40 cal | 1.63 | 5.2% | 2.33 g | 510 m | 2.23 | 2.5× | risk 5.2% |
+| **0.85 cal** | **1.55 cal** | **1.94** | **0.8%** | **2.08 g** | **450 m** | **1.97** | **2.7×** | **selected** |
+| 0.85 cal | 1.70 cal | 2.19 | 0.1% | 1.90 g | 407 m | 1.77 | 2.8× | ok |
+| 0.85 cal | 1.85 cal | 2.40 | 0.0% | 1.77 g | 373 m | 1.60 | 2.9× | ok |
+| 1.00 cal | 1.40 cal | 1.33 | 19.7% | 3.14 g | 684 m | 2.24 | 1.9× | SM 1.37 < 1.4; torque |
 
-**Decisions D11 and D5: canard semispan 0.85 cal, aft semispan 1.55 cal, plus nose
-ballast.**
+**Decisions D11 and D5: canard semispan 0.85 cal, aft semispan 1.55 cal.** It satisfies
+every constraint — P(SM<1.0) at 0.8% against a 1% limit, flutter 1.97 against 1.5, servo
+torque 2.7× against 2.0 — at the highest crossrange of any row that does. Note the table is
+computed **with** the 100 g of nose ballast the design now carries; §7.1 explains why that
+ballast is not optional.
 
-### 7.1 Why the selected point needs ballast
+### 7.1 Why the design carries ballast
 
-Note the selected row sits at **2.1%**, above the 1% limit. That is a change from the
-earlier answer, and the cause is hardware, not aerodynamics: the mass budget originally
+Without it the selected point sits at **1.8%**, above the 1% limit. The cause is hardware,
+not aerodynamics: the mass budget originally
 carried a 55 g placeholder per servo, and the real part (KST X08 Plus, 9 g) removed ~180 g
 from the canard module, which sits *forward* of the CG. CG moved 10.5 mm aft and nominal
 margin fell 1.94 → 1.80 cal.
@@ -324,8 +338,8 @@ There are two ways to buy that back, and they are not equally good:
 
 | | Crossrange | Flutter margin | Reversible after build? |
 |---|---|---|---|
-| Grow aft fins to 1.70 cal | 460 m | 1.74× | No — cut once |
-| **Keep 1.55 cal, add nose ballast** | **~480 m at 100 g** | **1.94×** | **Yes — it is a washer stack** |
+| Grow aft fins to 1.70 cal | 407 m | 1.77× | No — cut once |
+| **Keep 1.55 cal, add 100 g ballast** | **450 m** | **1.97×** | **Yes — it is a washer stack** |
 
 **Ballast wins.** It preserves flutter margin, costs less crossrange, and — the real
 argument — it is the one variable you can still set *after* weighing the finished vehicle.
@@ -337,11 +351,11 @@ Ballast at a station 191 mm from the nose tip:
 
 | Ballast | Median SM | 5th pct | P(SM<1.0) | P(SM<1.4) | Authority | R1 |
 |---|---|---|---|---|---|---|
-| 0 g | 1.80 | 1.17 | 1.79% | 14.6% | 100% | **FAIL** |
-| 50 g | 1.87 | 1.24 | 1.09% | 10.8% | 96% | **FAIL** |
-| **75 g** | **1.91** | — | **0.81%** | 8.9% | ~94% | **PASS** |
-| 100 g | 1.94 | 1.31 | 0.58% | 7.9% | 93% | PASS |
-| 200 g | 2.07 | 1.45 | 0.15% | 3.7% | 87% | PASS |
+| 0 g | 1.80 | 1.17 | 1.8% | 14.6% | 100% | **FAIL** |
+| 50 g | 1.87 | 1.24 | 1.1% | 10.8% | 96% | **FAIL** |
+| 75 g | 1.91 | — | 0.8% | 8.9% | ~94% | PASS (minimum) |
+| **100 g** | **1.94** | **1.31** | **0.6%** | **7.9%** | **93%** | **PASS — design point** |
+| 200 g | 2.07 | 1.45 | 0.2% | 3.7% | 87% | PASS |
 | 300 g | 2.20 | 1.58 | — | 1.7% | 82% | PASS |
 
 **75 g is the minimum that satisfies R1; carry 100 g as the design point** and provision

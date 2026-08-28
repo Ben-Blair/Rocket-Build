@@ -182,6 +182,8 @@ def build_xml(params: DesignParams) -> tuple[str, dict[str, float]]:
     masses = mass_mod.build_mass(
         rocket, params.motor,
         servo_mass_each=SERVOS[params.servo].mass, n_servos=params.n_canards,
+        nose_ballast_kg=params.nose_ballast_kg,
+        nose_ballast_station=params.nose_ballast_station,
     )
     motor = params.motor
     d = params.outer_diameter
@@ -210,7 +212,14 @@ def build_xml(params: DesignParams) -> tuple[str, dict[str, float]]:
     def fin_extra(fins) -> float:
         return fins.count * fins.planform_area_single * fins.thickness * fins.material_density
 
-    transfers: list[tuple[str, float, float]] = [
+    # Nose ballast is a real lump of steel at a known station, so it must reach OpenRocket
+    # like any other transferred mass. Omitting it silently biases the CG comparison.
+    ballast: list[tuple[str, float, float]] = (
+        [("Nose ballast", by_name["nose ballast"].mass, by_name["nose ballast"].x)]
+        if "nose ballast" in by_name else []
+    )
+
+    transfers: list[tuple[str, float, float]] = ballast + [
         ("Avionics bay", by_name["avionics bay (budget)"].mass, by_name["avionics bay (budget)"].x),
         ("Recovery hardware", by_name["recovery (budget)"].mass - chute_mass,
          by_name["recovery (budget)"].x),
@@ -231,10 +240,15 @@ def build_xml(params: DesignParams) -> tuple[str, dict[str, float]]:
         ("Mass contingency 10%", by_name["contingency"].mass, by_name["contingency"].x),
     ]
 
-    # Bucket the transferred masses by which tube they land in.
+    # Bucket the transferred masses by which component they land in. Stations forward of
+    # the first body tube belong to the nose cone; locate() cannot express that.
+    nose_masses: list[tuple[str, float, float]] = []
     per_tube: dict[int, list[tuple[str, float, float]]] = {i: [] for i in range(len(rocket.tubes))}
     for name, m, station in transfers:
         if m <= 0:
+            continue
+        if station < rocket.tube_station(0):
+            nose_masses.append((name, m, min(station, rocket.nose.length)))
             continue
         i, off = locate(rocket, station)
         per_tube[i].append((name, m, off))
@@ -288,6 +302,14 @@ def build_xml(params: DesignParams) -> tuple[str, dict[str, float]]:
     x.leaf("aftshoulderthickness", f"{params.wall_thickness:.5f}")
     x.leaf("aftshouldercapped", "true")
     x.leaf("isflipped", "false")
+    # Anything stationed inside the nose cone (the ballast stack) is a child of it.
+    # locate() only searches body tubes, so without this the mass would fall through to
+    # its last-tube fallback and land ~750 mm aft of where it actually sits.
+    if nose_masses:
+        x.open("subcomponents")
+        for name, m, station in nose_masses:
+            mass_component(x, name, m, station, radius)
+        x.close("subcomponents")
     x.close("nosecone")
 
     # ---- body tubes

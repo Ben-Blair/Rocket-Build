@@ -89,11 +89,19 @@ def build_mass(
     servo_mass_each: float = 0.055,
     n_servos: int = 4,
     contingency: float = 0.10,
+    nose_ballast_kg: float = 0.0,
+    nose_ballast_station: float = 0.191,
 ) -> MassResult:
     """Assemble the mass list and compute dry/wet CG.
 
     `contingency` is added as a uniformly distributed mass. Carry it until the vehicle is
     actually built; every real build comes out heavier than its model.
+
+    `nose_ballast_kg` is the threaded-rod-and-washer stack in the nose shoulder, at
+    `nose_ballast_station` metres from the nose tip. It is not a fudge factor: the design
+    needs it to satisfy R1 once real 9 g servos replace the 55 g budget placeholder, and it
+    is deliberately the last free parameter, set after weighing the built vehicle. See
+    docs/00-requirements.md section 7.1.
     """
     items: list[PointMass] = []
 
@@ -137,6 +145,9 @@ def build_mass(
                 rocket.canards.x_root_le + rocket.canards.root_chord / 2.0,
             )
         )
+
+    if nose_ballast_kg > 0.0:
+        items.append(PointMass("nose ballast", nose_ballast_kg, nose_ballast_station))
 
     avionics = DEFAULT_AVIONICS_BUDGET if avionics is None else avionics
     recovery = DEFAULT_RECOVERY_BUDGET if recovery is None else recovery

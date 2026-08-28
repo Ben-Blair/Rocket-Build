@@ -121,22 +121,23 @@ therefore makes measuring it a flight test objective rather than an assumption.
 
 75 mm (3 in) fiberglass airframe, 79.4 mm OD, 1361 mm long, 4 canards interdigitated 45°
 from 4 aft fins, on a Cesaroni Pro54 J449 Blue Streak, actuated by four KST X08 Plus V6.0
-servos on direct drive. 5.99 kg wet / 5.37 kg dry, apogee 1409 m (4623 ft), max Mach 0.542,
-static margin 1.83 cal at rail exit rising to 2.32 in coast, 2.36 g of lateral authority at
-8° of canard deflection, giving 513 m of crossrange over an 11.5 second usable control
-window. Recovery is an 18 in drogue and 56 in main deployed at 200 m, landing at 5.0 m/s
-and 49 ft·lbf after a ~0.95 km walk in a 15 mph wind.
+servos on direct drive, with 100 g of nose ballast. 6.10 kg wet / 5.48 kg dry, apogee
+1379 m (4525 ft), max Mach 0.531, static margin 1.97 cal at rail exit rising to 2.46 in
+coast, 2.08 g of lateral authority at 8° of canard deflection, giving 450 m of crossrange
+over an 11.4 second usable control window. Recovery is an 18 in drogue and 56 in main
+deployed at 200 m, landing at 5.0 m/s after a ~0.93 km walk in a 15 mph wind.
 
 Both fin sets were sized *together* by a Monte Carlo on margin robustness rather than
 independently by nominal stability — canard semispan 0.85 cal, aft semispan 1.55 cal. They
 pull in opposite directions, and searching them jointly under a probabilistic margin
 constraint beats trading one against the other. See `docs/00-requirements.md` §7.
 
-**The design requires 75–100 g of nose ballast to meet R1.** Real 9 g servos in place of
-the 55 g budget placeholder removed ~180 g from ahead of the CG, which cost 0.13 cal of
-static margin and pushed P(SM < 1.0) to 1.8% against a 1% limit. 75 g of nose ballast
-restores it to 0.81%, 100 g to 0.58%. This is exactly what the ballast provision in §7
-exists for; it is now load-bearing rather than a precaution.
+**The nose ballast is part of the design, not a contingency.** Real 9 g servos in place of
+the 55 g budget placeholder removed ~180 g from ahead of the CG, which took P(SM < 1.0) to
+1.8% against R1's 1% limit. 75 g of ballast is the minimum that satisfies R1; 100 g is the
+design point and brings it to 0.6%. It is deliberately the last free parameter — a washer
+stack you set after weighing the built vehicle, rather than fin area you commit to when you
+cut the tube. See §7.1.
 
 Every number above is an output of `scripts/baseline.py`. Regenerate them rather than
 editing them by hand; they will move as the mass budget is replaced with weighed parts.
