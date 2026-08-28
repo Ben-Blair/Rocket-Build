@@ -150,7 +150,11 @@ ROLL AUTHORITY  --  the canard / aft-fin interference problem
 ACTUATOR CHECK
 ============================================================================================
   servo               KST X08 Plus V6.0 (9 g, 8 mm, 5.3 kgf.cm @ 8.4 V)
-  packaging           FITS   direct/pinwheel  need ID  69.5 mm, have  71.8 mm (  +2.3 mm)  ok
+  packaging, inward   FITS   direct/pinwheel  need ID  69.5 mm, have  71.8 mm (  +2.3 mm)  ok
+  packaging, flat     FITS   flat/tangential  need ID 106.0 mm, have 187.9 mm ( +81.9 mm)  ok, 45 mm central void
+  -> 'inward' assumes the output shaft is on the servo's END face; 'flat' assumes
+     it is on a large face, which is how hobby servos are actually built. Confirm
+     against the part before trusting the tighter of the two.
   peak hinge moment   0.0626 N m per panel at q = 19.4 kPa
   hinge balance       restoring (hinge fwd of panel CP)
   usable servo torque 0.2080 N m (stall x 0.4 derate, gear 1.0:1)

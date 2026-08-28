@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design import aero, control, flutter, trajectory
 from design.configure import baseline, build_vehicle, evaluate
-from design.packaging import SERVOS, check_direct_drive, torque_margin
+from design.packaging import SERVOS, check_direct_drive, check_flat_mount, torque_margin
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -159,8 +159,13 @@ def main() -> None:
     rule("ACTUATOR CHECK")
     servo = SERVOS[SERVO_CHOICE]
     bay = check_direct_drive(r.tubes[1].inner_diameter, servo, BASELINE.n_canards)
+    flat = check_flat_mount(r.tubes[1].inner_diameter, servo, BASELINE.n_canards)
     print(f"  servo               {servo.name}")
-    print(f"  packaging           {bay}")
+    print(f"  packaging, inward   {bay}")
+    print(f"  packaging, flat     {flat}")
+    print("  -> 'inward' assumes the output shaft is on the servo's END face; 'flat' assumes")
+    print("     it is on a large face, which is how hobby servos are actually built. Confirm")
+    print("     against the part before trusting the tighter of the two.")
     worst = max(
         (control.pitch_authority(r, p, p.mass, DEFLECTION_LIMIT_DEG) for p in f.points if p.q > 100),
         key=lambda a: abs(a.hinge_moment_per_panel),

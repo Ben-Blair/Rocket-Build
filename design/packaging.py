@@ -155,6 +155,46 @@ def check_bellcrank(
     return BayLayout(fits, required_id, usable_id, usable_id - required_id, "bellcrank/axial", reason)
 
 
+def check_flat_mount(
+    inner_diameter: float,
+    servo: Servo,
+    n_canards: int = 4,
+    frame_thickness: float = 0.004,
+    clearance: float = 0.003,
+) -> BayLayout:
+    """Servo lying flat against the inner wall, output shaft radial through it.
+
+    This is the OTHER way to arrange a direct drive, and for a servo whose output shaft
+    protrudes from a large face (which is every hobby servo) it is the arrangement that
+    actually matches the hardware. The servo's THICKNESS eats tube radius; its length has
+    to fit around the circumference instead, which is a far weaker constraint.
+
+    check_direct_drive() models the opposite: body pointing inward, length eating radius.
+    That only works if the output shaft is on the servo's END face. Keep both, because
+    which one applies is a property of the part and the mount, not of the airframe -- and
+    the answer moves the required tube diameter by tens of millimetres.
+
+    Commercial servo frames for the KST X08 family (e.g. Hyperflight SRB-KST-X08) carry an
+    outboard ball bearing on the output shaft, which is exactly the load path this
+    arrangement needs: the bearing takes the canard bending moment, not the servo spline.
+    """
+    radial_band = servo.width + frame_thickness + clearance
+    r_mid = inner_diameter / 2.0 - radial_band / 2.0
+    arc_available = 2.0 * math.pi * max(r_mid, 1e-6)
+    arc_needed = n_canards * (servo.length + clearance)
+    central_void = inner_diameter - 2.0 * radial_band
+
+    fits = arc_needed <= arc_available and central_void > 0.0
+    if central_void <= 0.0:
+        reason = "servos meet at the axis"
+    elif not fits:
+        reason = f"{n_canards} servos will not fit around the circumference"
+    else:
+        reason = f"ok, {central_void * 1000:.0f} mm central void"
+    return BayLayout(fits, arc_needed, arc_available, arc_available - arc_needed,
+                     "flat/tangential", reason)
+
+
 def hinge_moment(
     dynamic_pressure: float,
     panel_area: float,
