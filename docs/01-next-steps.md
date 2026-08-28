@@ -93,6 +93,13 @@ numbers, then rerun the robustness script. Every guess you retire shrinks the di
 Deliverable: a frozen `DesignParams` in `design/configure.py`, a dimensioned drawing, and
 a bill of materials with real part numbers and prices.
 
+**Done so far:** the frozen baseline now lives in one place — `design/configure.py` defines
+`BASELINE_OD`, `BASELINE_WALL`, `BASELINE_MOTOR_FILE` and a `baseline()` factory, and the
+fin semispans are the `DesignParams` defaults. Six scripts previously carried their own
+copy of those numbers; they had already drifted from the documentation once. Every script
+now imports. What remains is the physical freeze: real servo dimensions, hinge line, the
+drawing, and the BOM.
+
 ## Step 4 — Avionics, developed on the ground and flown as a passenger
 
 You are a CS student, so this is the part you will be judged hardest on. Build it in this

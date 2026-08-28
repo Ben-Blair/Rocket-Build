@@ -11,11 +11,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from design.configure import DesignParams, evaluate
+from design.configure import BASELINE_OD, BASELINE_WALL, DesignParams, evaluate
 from design.motors import GENERIC
 
 AIRFRAMES = {
-    "75mm": (0.0794, 0.0023),
+    "75mm": (BASELINE_OD, BASELINE_WALL),
     "98mm": (0.1016, 0.0024),
 }
 
@@ -23,8 +23,13 @@ MOTOR_KEYS = ["I-38", "I-54-long", "J-54", "J-54-long", "K-54", "K-54-long"]
 
 # Aft fin semispan sets static stability; canard semispan sets control authority. They
 # pull in opposite directions, which is the central trade of the whole airframe.
-AFT_SPANS = [0.95, 1.05, 1.20]
-CANARD_SPANS = [0.40, 0.55, 0.70]
+#
+# These ranges must bracket the frozen design (canard 0.85, aft 1.55 cal -- see
+# design/configure.py). They previously topped out at aft 1.20 / canard 0.70, which left
+# the selected airframe outside the swept region entirely, so the sweep could not have
+# recommended it and silently disagreed with every other script.
+AFT_SPANS = [1.05, 1.25, 1.40, 1.55, 1.70]
+CANARD_SPANS = [0.55, 0.70, 0.85, 1.00]
 DEFLECTION_DEG = 8.0
 
 

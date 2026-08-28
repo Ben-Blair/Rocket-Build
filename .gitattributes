@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.eng text eol=lf
+*.ork binary
+*.png binary

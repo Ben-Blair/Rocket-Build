@@ -16,23 +16,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from design.configure import LIMITS, DesignParams, evaluate
+from design.configure import BASELINE_MOTOR_FILE, LIMITS, baseline, evaluate
 from design.motors import load_eng
 from design.recovery import Canopy, simulate_descent, size_for_descent_rate
 
 ROOT = Path(__file__).resolve().parents[1]
 MOTOR_DIR = ROOT / "data" / "motors"
 
-BASE = dict(
-    outer_diameter=0.0794,
-    wall_thickness=0.0023,
-    aft_semispan_cal=1.55,
-    canard_semispan_cal=0.85,
-)
 
+# The frozen motor is pulled from configure so this study always compares the vehicle you
+# are actually building against the alternatives, even if the baseline motor changes.
 CANDIDATES = [
     "Cesaroni_821J430-18A.eng",
-    "Cesaroni_1261J449-15A.eng",
+    BASELINE_MOTOR_FILE.name,
     "Cesaroni_1266J760-19A.eng",
     "AeroTech_HP-K535W.eng",
     "Cesaroni_1635K445-17A.eng",
@@ -57,7 +53,7 @@ def main() -> None:
             print(f"  missing {fname}, skipping")
             continue
         motor = load_eng(path)
-        ev = evaluate(DesignParams(motor=motor, **BASE), deflection_deg=8.0)
+        ev = evaluate(baseline(motor=motor), deflection_deg=8.0)
         dry = ev.masses.dry_mass
 
         main_d = size_for_descent_rate(dry, TARGET_LANDING_RATE)

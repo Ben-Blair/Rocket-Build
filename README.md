@@ -48,7 +48,8 @@ design/
   motors.py       RASP .eng thrust curve parser + placeholder generic motors
   trajectory.py   3-DOF RK4 ascent to apogee
   control.py      canard pitch authority, roll authority, wake interference, crossrange
-  configure.py    parameter set -> full vehicle -> requirement scoring
+  configure.py    parameter set -> full vehicle -> requirement scoring, and the
+                  frozen baseline airframe every script imports
 scripts/
   packaging_report.py   diameter vs servo class table
   fetch_motors.py       download real .eng thrust curves from ThrustCurve.org

@@ -101,7 +101,7 @@ of any compliant motor in the catalogue -- and it was rejected at 26 g, on accel
 and structural grounds, not on steering.
 
 If you want more control authority, the levers that actually work, in order:
-  1. More total impulse (subject to your waiver ceiling) -- roughly triples crossrange
+  1. More total impulse (subject to R6's apogee cap, not a waiver) -- roughly triples crossrange
      going from a ~820 N s J to a ~1260 N s J.
   2. Larger canards, paid for in static margin.
   3. Lower static margin, since trim angle of attack scales as 1/margin.

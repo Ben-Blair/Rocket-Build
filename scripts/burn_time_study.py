@@ -24,18 +24,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from design.configure import DesignParams, evaluate
+from design.configure import baseline, evaluate
 from design.motors import Motor, load_eng
 
 ROOT = Path(__file__).resolve().parents[1]
 MOTOR_DIR = ROOT / "data" / "motors"
 
-BASE = dict(
-    outer_diameter=0.0794,
-    wall_thickness=0.0023,
-    aft_semispan_cal=1.55,
-    canard_semispan_cal=0.85,
-)
 DEFLECTION_DEG = 8.0
 
 # Matched to the Cesaroni J430 so the synthetic family is comparable to the real baseline.
@@ -109,7 +103,7 @@ def part1() -> None:
 
     for tb in BURN_TIMES:
         motor = synthetic(tb)
-        ev = evaluate(DesignParams(motor=motor, **BASE), deflection_deg=DEFLECTION_DEG)
+        ev = evaluate(baseline(motor=motor), deflection_deg=DEFLECTION_DEG)
         f = ev.flight
         j_steer, secs = steering_impulse(f)
         v_bo = f.burnout_velocity
@@ -138,7 +132,7 @@ def part2() -> None:
         if not (band[0] <= motor.total_impulse <= band[1]) or motor.burn_time <= 0:
             continue
         try:
-            ev = evaluate(DesignParams(motor=motor, **BASE), deflection_deg=DEFLECTION_DEG)
+            ev = evaluate(baseline(motor=motor), deflection_deg=DEFLECTION_DEG)
         except (ValueError, ZeroDivisionError):
             continue
         j_steer, secs = steering_impulse(ev.flight)
@@ -239,7 +233,7 @@ of any compliant motor in the catalogue -- and it was rejected at 26 g, on accel
 and structural grounds, not on steering.
 
 If you want more control authority, the levers that actually work, in order:
-  1. More total impulse (subject to your waiver ceiling) -- roughly triples crossrange
+  1. More total impulse (subject to R6's apogee cap, not a waiver) -- roughly triples crossrange
      going from a ~820 N s J to a ~1260 N s J.
   2. Larger canards, paid for in static margin.
   3. Lower static margin, since trim angle of attack scales as 1/margin.

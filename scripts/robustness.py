@@ -2,10 +2,14 @@
 
 Run:  python scripts/robustness.py [--samples 20000]
 
-The nominal rail-exit static margin is 1.52 cal, which is a perfectly normal high power
+The nominal rail-exit static margin is 1.94 cal, which is a perfectly normal high power
 value. The question is not whether the nominal number is good -- it is whether it stays
 good once the vehicle is built heavier than the budget, the CG lands somewhere other than
 predicted, and Barrowman turns out to be a few percent off on CP.
+
+That question is what set both fin sizes: this script's constrained search is why the
+airframe carries 0.85 cal canards and 1.55 cal aft fins rather than the smaller sets a
+nominal-stability argument would have accepted.
 
 Important framing: for a canard-controlled vehicle, static margin is NOT a
 "more is better" quantity. Trim angle of attack, and therefore lateral acceleration, goes
@@ -29,19 +33,12 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design import aero
-from design.configure import DesignParams, build_vehicle
+from design.configure import DesignParams, baseline, build_vehicle
 from design.mass import build_mass
-from design.motors import load_eng
 
 ROOT = Path(__file__).resolve().parents[1]
 
-BASELINE = DesignParams(
-    outer_diameter=0.0794,
-    wall_thickness=0.0023,
-    motor=load_eng(ROOT / "data" / "motors" / "Cesaroni_1261J449-15A.eng"),
-    aft_semispan_cal=1.55,
-    canard_semispan_cal=0.85,
-)
+BASELINE = baseline()
 
 # 1-sigma uncertainties. These are judgement calls; they are stated explicitly so a
 # reviewer can argue with them rather than having them buried in an assumption.

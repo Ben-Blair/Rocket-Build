@@ -12,10 +12,12 @@ antenna wants to sit under the (thin, non-conductive) nose shoulder region.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from functools import lru_cache
+from pathlib import Path
 
 from . import aero, control, mass as mass_mod, trajectory
 from .geometry import BodyTube, FinSet, NoseCone, Rocket
-from .motors import Motor
+from .motors import GENERIC, Motor, load_eng
 
 
 @dataclass
@@ -29,10 +31,10 @@ class DesignParams:
     canard_module_cal: float = 1.8
     recovery_bay_cal: float = 4.5
     booster_margin_cal: float = 1.2  # booster length beyond the motor
-    canard_semispan_cal: float = 0.45
+    canard_semispan_cal: float = 0.85
     canard_root_cal: float = 0.70
     canard_taper: float = 0.70
-    aft_semispan_cal: float = 1.05
+    aft_semispan_cal: float = 1.55
     aft_root_cal: float = 1.90
     aft_taper: float = 0.45
     aft_sweep_cal: float = 1.10
@@ -45,6 +47,50 @@ class DesignParams:
     @property
     def label(self) -> str:
         return f"D{self.outer_diameter * 1000:.0f}/{self.motor.name}"
+
+
+# ----------------------------------------------------------------------------------------
+# THE FROZEN BASELINE -- single source of truth
+# ----------------------------------------------------------------------------------------
+# Every script builds its vehicle from baseline() below. Do not copy these numbers into a
+# script; import them. Six scripts each used to carry their own copy, they drifted apart
+# from the documentation, and reconciling that cost a full day.
+#
+# Fin semispans are the dataclass defaults above (canard 0.85 cal, aft 1.55 cal), set
+# jointly by the constrained search in scripts/robustness.py -- see docs/00-requirements.md
+# section 7. Sizing the two sets independently was the original mistake: canard area buys
+# control authority but costs static margin, aft area buys margin but costs authority.
+
+ROOT = Path(__file__).resolve().parents[1]
+
+BASELINE_OD = 0.0794  # 3.0 in fiberglass, 79.4 mm OD
+BASELINE_WALL = 0.0023
+
+# Selected by scripts/motor_trade.py against the real ThrustCurve.org catalogue.
+# Cesaroni Pro54 J449 Blue Streak: ~3.0x the crossrange of the J430 at Mach 0.523 and 8.2 g.
+BASELINE_MOTOR_FILE = ROOT / "data" / "motors" / "Cesaroni_1261J449-15A.eng"
+
+
+@lru_cache(maxsize=1)
+def baseline_motor() -> Motor:
+    """The frozen motor, falling back to a placeholder if the catalogue is not downloaded."""
+    if BASELINE_MOTOR_FILE.exists():
+        return load_eng(BASELINE_MOTOR_FILE)
+    return GENERIC["J-54"]
+
+
+def baseline(motor: Motor | None = None, **overrides) -> DesignParams:
+    """The frozen baseline vehicle.
+
+    Pass a motor to swap it (motor trade studies); pass keyword overrides to probe a
+    variation without disturbing the frozen values.
+    """
+    params = DesignParams(
+        outer_diameter=BASELINE_OD,
+        wall_thickness=BASELINE_WALL,
+        motor=motor if motor is not None else baseline_motor(),
+    )
+    return replace(params, **overrides) if overrides else params
 
 
 def build_vehicle(p: DesignParams) -> Rocket:

@@ -12,34 +12,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design import aero, control, flutter, trajectory
-from design.configure import DesignParams, build_vehicle, evaluate
-from design.motors import GENERIC, load_eng
+from design.configure import baseline, build_vehicle, evaluate
 from design.packaging import SERVOS, check_direct_drive, torque_margin
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# Motor selected by scripts/motor_trade.py against the real ThrustCurve.org catalogue, and
-# confirmed against scripts/recovery_study.py now that the field has no altitude ceiling.
-# Cesaroni Pro54 J449 Blue Streak: roughly triples crossrange over the J430 while staying
-# at Mach 0.55 and 8.6 g, and keeps the recovery walk near 1 km rather than 1.5 km.
-MOTOR_FILE = ROOT / "data" / "motors" / "Cesaroni_1261J449-15A.eng"
-MOTOR = load_eng(MOTOR_FILE) if MOTOR_FILE.exists() else GENERIC["J-54"]
-
-# Airframe from scripts/sweep.py, with both fin sets resized by the constrained search in
-# scripts/robustness.py (canard 0.70 -> 0.85 cal, aft 1.05 -> 1.55 cal).
-#
-# Sizing the two fin sets independently was the original mistake. They pull in opposite
-# directions: canard area buys control authority but costs static margin, aft area buys
-# margin but costs authority. Searched jointly under a probabilistic margin constraint, the
-# answer is to grow *both* -- which beats the original airframe on crossrange and on safety
-# at the same time, rather than trading one against the other.
-BASELINE = DesignParams(
-    outer_diameter=0.0794,  # 3.0 in fiberglass, 79.4 mm OD
-    wall_thickness=0.0023,
-    motor=MOTOR,
-    aft_semispan_cal=1.55,
-    canard_semispan_cal=0.85,
-)
+# The frozen airframe and motor both live in design/configure.py. Import, never copy.
+BASELINE = baseline()
+MOTOR = BASELINE.motor
 
 SERVO_CHOICE = "mini_ht"
 DEFLECTION_LIMIT_DEG = 8.0

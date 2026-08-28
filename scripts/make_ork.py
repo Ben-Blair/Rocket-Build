@@ -41,19 +41,12 @@ from xml.sax.saxutils import escape
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design import mass as mass_mod
-from design.configure import DesignParams, build_vehicle, evaluate
+from design.configure import DesignParams, baseline, build_vehicle, evaluate
 from design.geometry import Rocket
-from design.motors import load_eng
 
 ROOT = Path(__file__).resolve().parents[1]
 
-BASELINE = DesignParams(
-    outer_diameter=0.0794,
-    wall_thickness=0.0023,
-    motor=load_eng(ROOT / "data" / "motors" / "Cesaroni_1261J449-15A.eng"),
-    aft_semispan_cal=1.55,
-    canard_semispan_cal=0.85,
-)
+BASELINE = baseline()
 
 FIBERGLASS = 1850.0
 MOTOR_MOUNT_ID = 0.054  # 54 mm motor

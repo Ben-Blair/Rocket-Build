@@ -27,18 +27,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import argparse
 
-from design.configure import LIMITS, DesignParams, evaluate
+from design.configure import LIMITS, baseline, evaluate
 from design.motors import load_eng
 
 ROOT = Path(__file__).resolve().parents[1]
 MOTOR_DIR = ROOT / "data" / "motors"
 
-BASE = dict(
-    outer_diameter=0.0794,
-    wall_thickness=0.0023,
-    aft_semispan_cal=1.55,
-    canard_semispan_cal=0.85,
-)
 
 MACH_PREFERRED = 0.60
 ACCEL_LIMIT_G = 16.0
@@ -74,7 +68,7 @@ def main() -> None:
             skipped += 1
             continue
         try:
-            ev = evaluate(DesignParams(motor=motor, **BASE), deflection_deg=DEFLECTION_DEG)
+            ev = evaluate(baseline(motor=motor), deflection_deg=DEFLECTION_DEG)
         except (ValueError, ZeroDivisionError):
             skipped += 1
             continue
