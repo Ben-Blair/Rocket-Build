@@ -226,3 +226,5 @@ OPENROCKET ENTRY VALUES
 
   If OpenRocket disagrees by more than about 15% on CP or apogee, find out why before
   trusting either result. Disagreement is information, not an inconvenience.
+
+  wrote /Users/user/Documents/Projects/RocketSenior/out/baseline.png

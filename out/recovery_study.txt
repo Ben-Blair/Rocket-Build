@@ -1,5 +1,5 @@
 ====================================================================================================
-RECOVERY FOOTPRINT  --  the constraint that replaces the altitude waiver
+RECOVERY FOOTPRINT  --  a cost, no longer a hard boundary
 ====================================================================================================
 motor               apogee  Mach   xrng  descent   main      KE | walk @5mph   @10mph   @15mph   @20mph
 -------------------------------------------------------------------------------------------------------
@@ -14,9 +14,11 @@ apogee m, xrng = steering crossrange m, descent = time under canopy, main = main
 canopy diameter for a 5 m/s landing, KE = landing energy in ft-lbf, walk = distance from
 the pad to the landing point including ascent downrange.
 
-Read the last four columns as "how far do I walk, and is that still on the property?"
-Drift scales with descent time, which scales with apogee. Doubling apogee roughly doubles
-the walk, and a 15 mph day is not unusual.
+Read the last four columns as "how long does this flight cost me, and how likely am I to
+lose the vehicle and its data?" The recovery area is unbounded, so none of these walks put
+the rocket off the property -- but drift scales with descent time, which scales with
+apogee, and a rocket you cannot find is a flight you did not get. Doubling apogee roughly
+doubles the walk, and a 15 mph day is not unusual.
 
 ====================================================================================================
 WHAT TO DO WITH AN UNLIMITED CEILING

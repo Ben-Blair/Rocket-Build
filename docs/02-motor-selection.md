@@ -128,28 +128,33 @@ vehicle off the property. The walk column is now a launch-day time and search-ri
 not a hard limit. The decision below was re-examined against that and stands — see the
 note after the reasoning bullets:
 
-| Motor | Apogee | Mach | Peak g | Crossrange | Descent | Walk @ 15 mph |
-|---|---|---|---|---|---|---|
-| J430 White Thunder | 819 m | 0.38 | 8.6 | 102 m | 73 s | 644 m |
-| **J449 Blue Streak** | **1427 m** | **0.54** | **8.5** | **328 m** | **103 s** | **961 m** |
-| J760 White Thunder | 1476 m | 0.59 | 14.4 | 436 m | 105 s | 957 m |
-| K535 | 1662 m | 0.60 | 9.6 | 444 m | 114 s | 1064 m |
-| K445 | 1937 m | 0.64 | 9.7 | 570 m | 126 s | 1202 m |
-| K630 Blue Streak | 1983 m | 0.70 | 11.6 | 721 m | 129 s | 1212 m |
+| Motor | Apogee | Mach | Peak g | Crossrange | Descent | Main | Walk @ 15 mph |
+|---|---|---|---|---|---|---|---|
+| J430 White Thunder | 770 m | 0.37 | 8.2 | 143 m | 70 s | 56" | 614 m |
+| **J449 Blue Streak** | **1354 m** | **0.52** | **8.2** | **428 m** | **98 s** | **57"** | **918 m** |
+| J760 White Thunder | 1405 m | 0.57 | 13.9 | 569 m | 101 s | 57" | 916 m |
+| K535 | 1584 m | 0.58 | 9.2 | 565 m | 109 s | 57" | 1020 m |
+| K445 | 1851 m | 0.62 | — | 700 m | 121 s | 58" | 1152 m |
+| K630 Blue Streak | 1898 m | 0.68 | — | 893 m | 124 s | 57" | 1163 m |
+
+K445 and K630 now sit above R6's 1600 m apogee window and are **rejected outright by the
+trade study**, which is why they carry no peak-g figure — `motor_trade.py` never scores a
+motor it has already screened out. They remain in the recovery table above as reference
+points, not as candidates.
 
 **Selected: Cesaroni Pro54 J449 Blue Streak (`1261J449-15A`).** 1260 N·s, 2.85 s burn,
-T/W 7.5, 8.5 g, Mach 0.54, apogee 1427 m, static margin 2.00–2.56 cal, 11.7 s control
-window, and **1.46 g of lateral authority at 8° deflection for 328 m of crossrange** —
-roughly 3.2× the J430.
+T/W 7.3, 8.2 g, Mach 0.523, apogee 1354 m, static margin 1.96–2.44 cal, 11.3 s usable
+control window, and **1.98 g of lateral authority at 8° deflection for 428 m of
+crossrange** — roughly 3.0× the J430.
 
 Reasoning for stopping here rather than going to a K:
 
-- 328 m of crossrange is already an unmistakable, filmable, easily-measured manoeuvre. The
+- 428 m of crossrange is already an unmistakable, filmable, easily-measured manoeuvre. The
   deliverable is a working closed-loop controller, not a crossrange record. Past the point
   where the correction is clearly measurable, extra authority buys nothing.
-- Mach 0.54 keeps every assumption in the analysis valid with real margin. K630 at Mach
-  0.70 starts approaching where centre-of-pressure movement and drag rise matter.
-- 8.5 g stays well clear of accelerometer clipping.
+- Mach 0.523 keeps every assumption in the analysis valid with real margin. K630 at Mach
+  0.68 starts approaching where centre-of-pressure movement and drag rise matter.
+- 8.2 g stays well clear of accelerometer clipping.
 - ~~Roughly 0.96 km walk per flight instead of 1.2–1.5 km, across five or six flights.~~
   **Void as of Aug 2026** — with an unbounded recovery area this is a longer walk, not a
   lost vehicle. It is the only one of these five reasons that field size ever supported.
@@ -157,40 +162,64 @@ Reasoning for stopping here rather than going to a K:
   is actually short of.
 
 **Re-examined after C5a was resolved (Aug 2026).** Four of the five reasons above never
-depended on field size: crossrange is already unmistakably measurable, Mach 0.54 keeps
-every modelling assumption valid, 8.5 g stays clear of accelerometer clipping, and J-class
+depended on field size: crossrange is already unmistakably measurable, Mach 0.523 keeps
+every modelling assumption valid, 8.2 g stays clear of accelerometer clipping, and J-class
 reloads buy more flights than K-class. The J449 stands. Flying a K now costs the same
 vehicle and buys crossrange this project does not need, at a Mach number that makes the
 aero harder to defend.
 
 **Contingency:** the interference model is the least trustworthy part of the analysis. If
-GV-2 measures materially less authority than predicted, the **K445** is the upgrade path
-with no airframe change — same 54 mm mount, 1.8× the crossrange, Mach 0.65, 9.8 g. Budget
-for the possibility.
+GV-2 measures materially less authority than predicted, more impulse is the upgrade path
+that needs no airframe change — the 54 mm mount takes all of it.
 
-## Reference: the answer when a ~5000 ft ceiling applied
+Note the contingency moved. On the older, smaller-finned airframe the K445 was the obvious
+step up; on the current airframe it produces 1851 m and is screened out by R6's 1600 m
+window. The in-window upgrades are now **K513FJ** (1538 m, Mach 0.58, 9.3 g, 572 m
+crossrange) and **K535** (1584 m, Mach 0.58, 9.2 g, 565 m) — both roughly 1.3× the J449's
+crossrange while staying inside every requirement. Going past them to a K445 or K630 means
+consciously relaxing R6, which the unbounded recovery area now makes arguable, but it costs
+Mach margin and visibility. Budget for a K-class reload either way.
 
-Apogee was the single largest rejection reason (83 of 94 rejections). Opening the window
-to 1550 m admits far more motors and roughly triples achievable crossrange, because
-authority scales with dynamic pressure:
+## The full trade, current airframe
 
-Numbers in this reference table predate the aft fin change from 1.05 to 1.20 cal semispan
-(see `docs/00-requirements.md` §7); crossranges are roughly 15% optimistic and static
-margins roughly 0.5 cal low relative to the current airframe. The *ranking* is unaffected,
-since fin size is common to every candidate.
+`scripts/motor_trade.py`, 102 real L2 certification curves, apogee window 450–1600 m AGL,
+preferred max Mach 0.60. **28 fully compliant, 6 compliant with caveats, 68 rejected
+outright.** Rejection reasons: apogee ×50, T/W ×27, static margin ×26, Mach ×10, rail ×6,
+other ×6. Apogee is still the largest single rejection reason, which is R6 doing its job.
 
-| Motor | Mfr | Prop | N·s | T/W | Peak g | Mach | Apogee | Static margin | Ctrl window | Crossrange |
+Ranked by crossrange, the top of the compliant list:
+
+| Motor | Cls | N·s | Burn | T/W | Peak g | Mach | Apogee | Static margin | Ctrl | Crossrange |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1266J760-19A | Cesaroni Pro54 | White Thunder | 1264 | 12.6 | 14.5 | 0.60 | 1504 m | 1.57–2.11 | 12.8 s | 509 m |
-| J800T | AeroTech | Blue Thunder | 1248 | 10.3 | 13.6 | 0.59 | 1532 m | 1.54–2.12 | 12.6 s | 468 m |
-| **1261J449-15A** | Cesaroni Pro54 | Blue Streak | 1260 | 7.6 | 8.6 | 0.55 | 1454 m | 1.52–2.10 | 12.1 s | 383 m |
-| 1597K400-14A | Cesaroni Pro54 | Green3 | 1306 | 6.7 | 8.1 | 0.53 | 1473 m | 1.52–1.95 | 12.0 s | 381 m |
-| J401FJ | AeroTech | Black Max | 1105 | 7.1 | 7.6 | 0.49 | 1254 m | 1.72–2.21 | 11.1 s | 262 m |
+| K513FJ | K | 1473 | 2.73 s | 8.1 | 9.3 | 0.58 | 1538 m | 1.98–2.66 | 12.5 s | 572 m |
+| 1266J760-19A | J | 1264 | 1.73 s | 12.1 | 13.9 | 0.57 | 1405 m | 2.03–2.47 | 12.3 s | 569 m |
+| K535 | K | 1425 | 2.95 s | 7.7 | 9.2 | 0.58 | 1584 m | 2.02–2.58 | 12.5 s | 565 m |
+| K610-SK | K | 1530 | 2.70 s | 8.2 | 9.8 | 0.57 | 1539 m | 2.22–2.81 | 12.5 s | 556 m |
+| K530SS | K | 1401 | 2.67 s | 7.8 | 8.4 | 0.56 | 1472 m | 1.96–2.69 | 12.4 s | 546 m |
+| J800T | J | 1248 | 2.09 s | 9.9 | 13.0 | 0.57 | 1431 m | 1.96–2.44 | 12.1 s | 531 m |
+| J670-LB | J | 1267 | 1.96 s | 10.5 | 12.2 | 0.54 | 1358 m | 1.94–2.37 | 12.0 s | 513 m |
+| K475 | K | 1392 | 2.94 s | 7.2 | 8.2 | 0.54 | 1424 m | 2.05–2.56 | 12.0 s | 472 m |
+| 1281K360-13A | J | 1275 | 3.50 s | 6.0 | 5.9 | 0.52 | 1392 m | 1.54–2.10 | 11.7 s | 442 m |
+| K454-SK | K | 1364 | 3.15 s | 6.7 | 7.5 | 0.53 | 1418 m | 2.12–2.73 | 11.8 s | 430 m |
+| **1261J449-15A** | **J** | **1260** | **2.85 s** | **7.3** | **8.2** | **0.52** | **1354 m** | **1.96–2.44** | **11.6 s** | **428 m** |
 
-Pick here: **Cesaroni Pro54 J449 Blue Streak.** The J760 gives 33% more crossrange but at
-14.5 g and Mach 0.60, pressing both the accelerometer clipping limit and the edge of
-subsonic validity. The J449 gives up some crossrange to keep every modelling assumption
-comfortably valid, which is the right trade when the deliverable is a controller.
+**The J449 ranks 11th on crossrange, and that is fine** — the selection above rests on
+peak g, Mach margin, and cost per flight, not on topping this column. Of the ten motors
+that beat it, six are K-class (cost, and fewer flights for the same budget) and three of
+the four J-class ones do it at 12–14 g, which presses accelerometer clipping.
+
+**One candidate is worth a second look before you order:** `1281K360-13A` beats the J449
+on crossrange (442 m vs 428 m) *and* on peak g (5.9 vs 8.2), at the same Mach. Its cost is
+static margin — 1.54 cal at rail exit against the J449's 1.96, which eats most of the
+robustness buffer that §7 of the requirements spent two thirds of the control authority to
+buy. That is very likely the wrong trade, but it is the one alternative the numbers do not
+immediately dismiss, and it deserves an explicit sentence in your report rather than
+silence.
+
+*(This section replaces an older "the answer when a ~5000 ft ceiling applied" reference
+table. There was never a ceiling — see C5 — and that table also predated the joint fin
+sizing, so it was stale in two independent ways. Removed rather than corrected, because it
+documented a hypothetical that never applied.)*
 
 ## Before ordering
 

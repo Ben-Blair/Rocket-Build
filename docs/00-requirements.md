@@ -124,10 +124,10 @@ Values marked *(computed)* are outputs of `scripts/sweep.py` and
 | R5 | Max Mach | ≤ 0.8 | Keeps you subsonic. Transonic aero invalidates Barrowman, makes the controller design far harder, and adds no value to a controls project |
 | R6 | Apogee | ≤ 1600 m (5250 ft) AGL | **Neither a waiver limit nor a field-size limit** — both are unbounded at this site (C5, C5a). The cap is retained on the three grounds that survive: keeping max Mach under 0.8 with real margin (R5), keeping the manoeuvre visible and filmable from the pad, and holding search time and cost per flight low enough to fly five or six times *with the data intact*. An unbounded field removes the risk of landing off the property; it does not make a rocket easier to find. See `scripts/recovery_study.py` |
 | R7 | Internal diameter for actuator bay | ≥ 69 mm → **75 mm airframe minimum** (see §4) | Drives airframe diameter |
-| R8 | Commanded lateral acceleration authority early in coast | ≥ 0.5 g | Enough for a measurable, visible correction. Baseline achieves 0.9 g at 8° |
+| R8 | Commanded lateral acceleration authority early in coast | ≥ 0.5 g | Enough for a measurable, visible correction. Baseline achieves 1.98 g at 8°, for 428 m of crossrange |
 | R9 | Roll authority | Net Cl_delta must retain correct sign at all conditions, with ≥ 50% of canard-only authority surviving interference | See §5 |
 | R10 | Control loop rate | ≥ 100 Hz | Baseline pitch mode is 2.4 Hz, so 100 Hz gives ~40x margin |
-| R11 | Recovery | Dual deploy: 18 in drogue at apogee, 55 in main at 200 m (650 ft). 5.0 m/s landing, 49 ft·lbf | Sized by `design/recovery.py`. Landing energy is inside the ~75 ft·lbf guidance; confirm the current figure with your prefect |
+| R11 | Recovery | Dual deploy: 18 in drogue at apogee, **57 in** main at 200 m (650 ft). 5.0 m/s landing, 51 ft·lbf, 98 s descent | Sized by `design/recovery.py`, drogue fixed at 18 in and main solved for the landing rate. Landing energy is inside the ~75 ft·lbf guidance; confirm the current figure with your prefect |
 | R12 | Canards centered + locked on any fault, loss of nav, or after burnout+N s | Mandatory | Safety, and required to get range approval |
 
 ---
@@ -209,9 +209,10 @@ reports the deflection/geometry region where the net roll moment changes sign.
 | D2 | Airframe diameter | 54 / 75 / 98 mm | **75 mm**, set by actuator packaging (§4) | RESOLVED |
 | D3 | Canard count | 3 / 4 | **4**, interdigitated at 45° with 4 aft fins (§5) | RESOLVED |
 | D4 | Canard actuation | direct-drive / bellcrank | **direct drive**, mini-class servo; a linkage puts backlash inside the control loop | RESOLVED, pending real servo dimensions |
-| D5 | Aft fin count and size | 3 / 4, semispan 0.95–1.55 cal | **4 panels, semispan 1.20 cal.** Set by the margin robustness study (§7), not by nominal stability. Larger fins raise static margin but cost authority and push toward roll reversal (§5) | RESOLVED |
+| D5 | Aft fin count and size | 3 / 4, semispan 0.95–1.85 cal | **4 panels, semispan 1.55 cal.** Set jointly with the canards (D11) by the margin robustness study (§7), not by nominal stability. Larger fins raise static margin but cost authority and push toward roll reversal (§5) | RESOLVED |
+| D11 | Canard size | semispan 0.70–1.00 cal | **0.85 cal semispan**, 0.70 cal root, 0.70 taper. Sized jointly with the aft fins (D5) under the probabilistic margin constraint — see §7. Sizing the two sets independently was the original mistake | RESOLVED |
 | D10 | Nose ballast provision | none / fixed / adjustable | **Adjustable** threaded rod + washers in the nose shoulder. Lets you set margin after weighing the real vehicle (§7) | RESOLVED |
-| D6 | Motor | 102 available 54 mm J/K motors | **Cesaroni Pro54 J449 Blue Streak** (`1261J449-15A`). Selected once the ceiling was removed: ~3.2× the crossrange of the J430 while staying at Mach 0.55 and 8.6 g. See `02-motor-selection.md` | RESOLVED |
+| D6 | Motor | 102 available 54 mm J/K motors | **Cesaroni Pro54 J449 Blue Streak** (`1261J449-15A`). ~3.0× the crossrange of the J430 while staying at Mach 0.523 and 8.2 g. Ranks 11th on crossrange alone; chosen on peak g, Mach margin and cost per flight. See `02-motor-selection.md` | RESOLVED |
 | D7 | Flight computer | COTS + custom controller board / full custom | TBD | TBD |
 | D8 | State estimation | IMU-only / IMU+baro / IMU+baro+GNSS | IMU+baro+GNSS for L3 | TBD |
 | D9 | Airframe material | cardboard / Blue Tube / fiberglass | fiberglass, at minimum for the canard module | TBD |
@@ -241,22 +242,51 @@ On the selected Cesaroni J449 Blue Streak:
 ## 7. Static margin robustness
 
 `scripts/robustness.py` runs a Monte Carlo over mass, component position, motor mass and
-CP prediction uncertainty. This is the analysis that set the aft fin size.
+CP prediction uncertainty. This is the analysis that set **both** fin sizes.
 
-The original 1.05 cal aft semispan gave a perfectly respectable *nominal* 1.49 cal margin
-— and a **10% probability of the built vehicle coming out below 1.0 caliber**, which is not
-acceptable across five or six flights. Growing the semispan to 1.20 cal:
+Two results came out of it, and the second one superseded the first.
+
+**First pass — grow the aft fins alone.** The original 1.05 cal aft semispan gave a
+*nominal* margin of 0.63 cal and an **83.6% probability of the built vehicle coming out
+below 1.0 caliber**, which is not survivable across five or six flights. Growing the aft
+semispan alone walks that back, but pays for it in control authority:
 
 | Aft semispan | Nominal SM | P(SM<1.4) | P(SM<1.0) | Relative authority |
 |---|---|---|---|---|
-| 1.05 cal | 1.49 | 40% | 10.0% | 100% |
-| **1.20 cal** | **1.96** | **7.3%** | **0.7%** | **~78%** |
-| 1.25 cal | 2.10 | 3.4% | 0.2% | 73% |
-| 1.40 cal | 2.45 | 0.3% | 0.0% | 63% |
+| 1.05 cal | 0.63 | 97.9% | 83.6% | 100% |
+| 1.15 cal | 0.96 | 87.4% | 54.8% | 66% |
+| 1.25 cal | 1.26 | 65.2% | 25.5% | 51% |
+| 1.40 cal | 1.63 | 27.7% | 5.0% | 40% |
+| 1.55 cal | 1.94 | 8.0% | 0.7% | 34% |
 
-A ~14× reduction in the risk that matters, for roughly a quarter of the lateral authority.
-Since authority was 1.69 g against a 0.5 g requirement, that authority was affordable and
-the risk was not.
+Buying acceptable risk this way costs two thirds of the lateral authority.
+
+**Second pass — size both fin sets together, and this is the one that set the airframe.**
+Sizing them independently was the original mistake. They pull in opposite directions:
+canard area buys authority but costs margin, aft area buys margin but costs authority.
+Searched *jointly* under the probabilistic margin constraint plus the flutter and servo
+torque limits, the answer is to grow **both**, which beats the original airframe on
+crossrange and on safety at the same time instead of trading one against the other:
+
+| Canard semispan | Aft semispan | Nominal SM | P(SM<1.0) | Lateral g | Crossrange | Flutter | Torque | Verdict |
+|---|---|---|---|---|---|---|---|---|
+| 0.70 cal | 1.40 cal | 1.95 | 0.7% | 1.57 g | 345 m | 2.25 | 3.8× | ok |
+| 0.70 cal | 1.55 cal | 2.24 | 0.1% | 1.42 g | 309 m | 1.99 | 4.0× | ok |
+| 0.85 cal | 1.40 cal | 1.62 | 5.4% | 2.22 g | 485 m | 2.27 | 2.7× | risk 5.4% |
+| **0.85 cal** | **1.55 cal** | **1.93** | **0.8%** | **1.98 g** | **428 m** | **2.00** | **2.9×** | **selected** |
+| 0.85 cal | 1.70 cal | 2.19 | 0.1% | 1.82 g | 386 m | 1.80 | 3.1× | ok |
+| 1.00 cal | 1.55 cal | 1.64 | 4.9% | 2.63 g | 563 m | 2.02 | 2.3× | risk 4.9% |
+| 1.00 cal | 1.70 cal | 1.91 | 1.0% | 2.38 g | 502 m | 1.81 | 2.4× | risk 1.0% |
+
+**Decisions D11 and D5: canard semispan 0.85 cal, aft semispan 1.55 cal.** It is the
+highest-crossrange point that satisfies every constraint outright — P(SM<1.0) at 0.8%
+against a 1% limit, flutter margin 2.00 against 1.5, servo torque 2.9× against 2.0. The
+points that beat it on crossrange (1.00/1.55 at 563 m, 1.00/1.70 at 502 m) all breach or
+sit on the margin risk limit, and margin risk is the thing that loses vehicles.
+
+Note this is a *different and better* answer than the first pass. The aft-fins-only route
+reached acceptable risk at 34% of the original authority; the joint route reaches
+comparable risk at 428 m of crossrange, well above where the first pass could go.
 
 **The dominant uncertainty is not any mass line — it is the CP prediction itself**
 (±0.35 cal, 1σ, assumed). No amount of ballast or fin area fixes that; only an independent
@@ -271,7 +301,19 @@ check does. Two consequences:
 **Also required: a nose ballast provision.** A threaded rod and washer stack in the nose
 shoulder converts static margin from a prediction you are betting on into a parameter you
 measure and tune after weighing the built vehicle. Cheapest risk reduction on the airframe.
-Sizing: 100 g of nose ballast moves the margin about +0.12 cal.
+
+At a ballast station 191 mm from the nose tip, it buys margin and spends authority at a
+usable rate:
+
+| Ballast | Median SM | 5th pct | P(SM<1.4) | Relative authority |
+|---|---|---|---|---|
+| 0 g | 1.94 | 1.31 | 8.1% | 100% |
+| 100 g | 2.07 | 1.45 | 3.9% | 94% |
+| 200 g | 2.19 | 1.57 | 1.8% | 88% |
+| 300 g | 2.32 | 1.70 | 0.7% | 84% |
+
+100 g moves the median margin +0.13 cal and halves the probability of landing under the
+1.4 cal safety floor, for 6% of the control authority. Provision for at least 300 g.
 
 Every number above is an output of `scripts/baseline.py` and will move as the mass budget
 is replaced with weighed components.

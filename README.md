@@ -101,15 +101,20 @@ therefore makes measuring it a flight test objective rather than an assumption.
 
 ## Baseline result
 
-75 mm (3 in) fiberglass airframe, 1361 mm long, 4 canards interdigitated 45° from 4 aft
-fins, on a Cesaroni Pro54 J449 Blue Streak. Roughly 6.0 kg wet, apogee 1427 m (4681 ft),
-max Mach 0.54, static margin 2.00 cal at rail exit rising to 2.56 in coast, 1.46 g of
-lateral authority at 8° of canard deflection, giving about 328 m of crossrange over an
-11.7 second control window. Recovery is an 18 in drogue and 56 in main, landing at 5 m/s
-after a ~0.96 km walk in a 15 mph wind.
+75 mm (3 in) fiberglass airframe, 79.4 mm OD, 1361 mm long, 4 canards interdigitated 45°
+from 4 aft fins, on a Cesaroni Pro54 J449 Blue Streak. 6.19 kg wet / 5.57 kg dry, apogee
+1354 m (4444 ft), max Mach 0.523, static margin 1.96 cal at rail exit rising to 2.44 in
+coast, 1.98 g of lateral authority at 8° of canard deflection, giving 428 m of crossrange
+over an 11.3 second usable control window. Recovery is an 18 in drogue and 57 in main
+deployed at 200 m, landing at 5.0 m/s and 51 ft·lbf after a ~0.92 km walk in a 15 mph wind.
 
-The aft fin size was set by a Monte Carlo on margin robustness rather than by nominal
-stability: see `docs/00-requirements.md` §7.
+Both fin sets were sized *together* by a Monte Carlo on margin robustness rather than
+independently by nominal stability — canard semispan 0.85 cal, aft semispan 1.55 cal. They
+pull in opposite directions, and searching them jointly under a probabilistic margin
+constraint beats trading one against the other. See `docs/00-requirements.md` §7.
+
+Every number above is an output of `scripts/baseline.py`. Regenerate them rather than
+editing them by hand; they will move as the mass budget is replaced with weighed parts.
 
 Run `scripts/baseline.py` for the current numbers; the ones above will drift as the mass
 budget is replaced with measurements.

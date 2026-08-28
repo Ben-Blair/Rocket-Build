@@ -1,9 +1,12 @@
-"""With no altitude ceiling, how far will you walk -- and can you afford to?
+"""With no altitude ceiling and no field boundary, how far will you walk -- and can you
+afford to?
 
 Run:  python scripts/recovery_study.py
 
-Compares the candidate motors on the constraint that replaces the altitude waiver:
-recovery footprint.
+Compares the candidate motors on recovery footprint. This began as the constraint that
+replaced the altitude waiver; the club has since confirmed (Aug 2026) that the recovery
+area is effectively unbounded, so the walk is now a cost in launch-day time and search
+risk rather than a hard limit. It still bounds apogee, just for softer reasons -- see R6.
 """
 
 from __future__ import annotations
@@ -44,7 +47,7 @@ def main() -> None:
     LIMITS["apogee_max_m"] = 1e9  # no ceiling; that is the point of this study
 
     print("=" * 100)
-    print("RECOVERY FOOTPRINT  --  the constraint that replaces the altitude waiver")
+    print("RECOVERY FOOTPRINT  --  a cost, no longer a hard boundary")
     print("=" * 100)
 
     rows = []
@@ -89,9 +92,11 @@ def main() -> None:
 canopy diameter for a 5 m/s landing, KE = landing energy in ft-lbf, walk = distance from
 the pad to the landing point including ascent downrange.
 
-Read the last four columns as "how far do I walk, and is that still on the property?"
-Drift scales with descent time, which scales with apogee. Doubling apogee roughly doubles
-the walk, and a 15 mph day is not unusual.""")
+Read the last four columns as "how long does this flight cost me, and how likely am I to
+lose the vehicle and its data?" The recovery area is unbounded, so none of these walks put
+the rocket off the property -- but drift scales with descent time, which scales with
+apogee, and a rocket you cannot find is a flight you did not get. Doubling apogee roughly
+doubles the walk, and a 15 mph day is not unusual.""")
 
     print("\n" + "=" * 100)
     print("WHAT TO DO WITH AN UNLIMITED CEILING")
