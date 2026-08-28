@@ -41,15 +41,18 @@ Two deliberate choices about what is transferred and what is recomputed:
 | Quantity | This tool | OpenRocket | Delta |
 |---|---|---|---|
 | Total length | 1361.1 mm | 1365.5 mm | +0.3% |
-| Dry mass | 5.57 kg | 5.64 kg | +1.2% |
-| Loaded mass | 6.19 kg | 6.26 kg | +1.1% |
-| CG dry | 801.7 mm | 806.9 mm | +0.6% |
-| CG loaded | 841.9 mm | 846.2 mm | +0.5% |
+| Dry mass | 5.37 kg | 5.43 kg | +1.2% |
+| Loaded mass | 5.99 kg | 6.06 kg | +1.1% |
+| CG dry | 812.0 mm | 816.3 mm | +0.5% |
+| CG loaded | 852.4 mm | 855.9 mm | +0.4% |
 | **CNa, no body lift** | **26.57 /rad** | **26.48 /rad** | **−0.3%** |
 | CNa, with body lift | 28.05 /rad | 26.48 /rad | −5.6% |
 | CP, no body lift | 1009.2 mm | 1022.7 mm | +1.3% (+0.17 cal) |
 | CP, with body lift | 995.8 mm | 1022.7 mm | +2.7% (+0.34 cal) |
-| Static margin, loaded | 1.94 cal | 2.22 cal | +0.29 cal |
+| Static margin, loaded | 1.81 cal | 2.10 cal | +0.30 cal |
+
+Masses and CG reflect the real KST X08 Plus servos (9 g each) rather than the earlier 55 g
+budget placeholder; the aerodynamic rows are unchanged by that, as they should be.
 
 OpenRocket resolved the motor exactly: `J449 | 1261J449-15A | 321.0 mm | 54.0 mm |
 2.76 s | 1260 N·s | 1.122 kg launch | 0.498 kg empty`, matching the `.eng` file. No load

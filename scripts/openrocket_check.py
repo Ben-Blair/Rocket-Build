@@ -29,6 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from design import aero
 from design.configure import build_vehicle, evaluate
 from design.mass import build_mass
+from design.packaging import SERVOS
 
 import importlib.util
 
@@ -126,7 +127,10 @@ def main() -> None:
     data = run_ork_check(jar, ork, args.mach)
 
     rocket = build_vehicle(params)
-    masses = build_mass(rocket, params.motor)
+    masses = build_mass(
+        rocket, params.motor,
+        servo_mass_each=SERVOS[params.servo].mass, n_servos=params.n_canards,
+    )
     ev = evaluate(params, deflection_deg=8.0)
     stab = aero.stability(rocket, masses.wet_cg, args.mach)
     stab_nb = aero.stability(rocket, masses.wet_cg, args.mach, include_body_lift=False)

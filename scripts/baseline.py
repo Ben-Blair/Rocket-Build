@@ -21,7 +21,8 @@ ROOT = Path(__file__).resolve().parents[1]
 BASELINE = baseline()
 MOTOR = BASELINE.motor
 
-SERVO_CHOICE = "mini_ht"
+# Servo is part of the frozen design now -- see design/configure.py.
+SERVO_CHOICE = BASELINE.servo
 DEFLECTION_LIMIT_DEG = 8.0
 # Roll control needs far less deflection than pitch/yaw, because roll inertia is tiny.
 ROLL_DEFLECTION_DEG = 2.0

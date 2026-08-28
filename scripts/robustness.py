@@ -35,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from design import aero
 from design.configure import DesignParams, baseline, build_vehicle
 from design.mass import build_mass
+from design.packaging import SERVOS, torque_margin
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -72,7 +73,9 @@ def sample(n: int, seed: int = 0, ballast_kg: float = 0.0, ballast_x: float = 0.
     params = params or BASELINE
     rng = np.random.default_rng(seed)
     rocket = build_vehicle(params)
-    masses = build_mass(rocket, params.motor)
+    masses = build_mass(rocket, params.motor,
+                        servo_mass_each=SERVOS[params.servo].mass,
+                        n_servos=params.n_canards)
     d = rocket.diameter
 
     items = [it for it in masses.items if it.name != "propellant"]
@@ -117,7 +120,9 @@ def report(sm: np.ndarray, label: str) -> None:
 def tornado(n: int) -> None:
     """One-at-a-time sensitivity: which uncertainty actually drives the margin?"""
     rocket = build_vehicle(BASELINE)
-    masses = build_mass(rocket, BASELINE.motor)
+    masses = build_mass(rocket, BASELINE.motor,
+                    servo_mass_each=SERVOS[BASELINE.servo].mass,
+                    n_servos=BASELINE.n_canards)
     d = rocket.diameter
     items = list(masses.items)
     nominal_cg = masses.wet_cg
@@ -175,7 +180,9 @@ def frontier(n: int) -> None:
     for aft in (1.05, 1.15, 1.25, 1.40, 1.55):
         params = replace(BASELINE, aft_semispan_cal=aft)
         rocket = build_vehicle(params)
-        masses = build_mass(rocket, params.motor)
+        masses = build_mass(rocket, params.motor,
+                        servo_mass_each=SERVOS[params.servo].mass,
+                        n_servos=params.n_canards)
         d = rocket.diameter
         cg = masses.wet_cg
         stab = aero.stability(rocket, cg, mach=0.07)
@@ -213,9 +220,8 @@ def optimise(n: int, risk_budget: float = 0.01) -> None:
 
     from design import control, flutter
     from design.configure import evaluate
-    from design.packaging import SERVOS, torque_margin
 
-    servo = SERVOS["mini_ht"]
+    servo = SERVOS[BASELINE.servo]
 
     print(f"  constraints: P(SM < 1.0 cal) <= {risk_budget:.0%}, flutter margin >= 1.5,")
     print("               servo torque margin >= 2.0, plus every limit in configure.LIMITS\n")

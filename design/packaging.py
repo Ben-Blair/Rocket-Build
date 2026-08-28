@@ -27,9 +27,16 @@ class Servo:
     note: str = "APPROX - verify against datasheet"
 
 
-# Size/torque *classes*, not specific products. Deliberately generic: quoting a part
-# number here would imply a precision these numbers do not have. Once you shortlist real
-# parts, replace these entries with datasheet values and rerun.
+# Two kinds of entry live here.
+#
+# The lowercase generic keys are size/torque *classes*, not products. They are deliberately
+# vague: quoting a part number against them would imply a precision they do not have. Use
+# them for exploring the design space.
+#
+# The keys prefixed with a manufacturer are REAL PARTS with datasheet values, for freezing
+# the design against hardware you can actually buy. Both were selected against the 75 mm
+# airframe: they must clear 0.30 N*m stall (2.0x margin on the 0.0604 N*m hinge moment
+# after a 0.4 derate) while staying under ~24.6 mm long. See docs/00-requirements.md #4.
 SERVOS: dict[str, Servo] = {
     "submicro": Servo("sub-micro class (~5 g)", 0.0200, 0.0086, 0.0200, 0.0050, 0.05, 0.11),
     "micro": Servo("micro class (~12 g)", 0.0236, 0.0116, 0.0240, 0.0120, 0.20, 0.14),
@@ -37,6 +44,26 @@ SERVOS: dict[str, Servo] = {
     "mini_ht": Servo("mini high-torque HV class (~20 g)", 0.0230, 0.0100, 0.0260, 0.0200, 0.55, 0.07),
     "standard": Servo("standard class (~55 g)", 0.0406, 0.0198, 0.0376, 0.0555, 1.00, 0.18),
     "standard_ht": Servo("standard high-torque HV class (~60 g)", 0.0403, 0.0202, 0.0366, 0.0600, 1.50, 0.08),
+
+    # --- real parts, datasheet values -----------------------------------------------
+    # Torque figures are the manufacturers' WORKING torque at the stated voltage, not
+    # stall. torque_margin() applies a 0.4 stall derate on top, so the margins these
+    # produce are conservative, probably doubly so. Verify against a real part.
+    #
+    # LENGTH IS THE BODY, NOT THE ENVELOPE. KST quote a 29.5 mm maximum dimension
+    # including the mounting lugs against a 23.5 mm case. If the lugs end up in the
+    # radial path they eat 6 mm the 75 mm airframe does not have. Check the dimensioned
+    # drawing and the shaft position before ordering four of anything.
+    "kst_x08_plus": Servo(
+        "KST X08 Plus V6.0 (9 g, 8 mm, 5.3 kgf.cm @ 8.4 V)",
+        0.0235, 0.0080, 0.0168, 0.0090, 0.520, 0.09,
+        note="datasheet; body 23.5x8x16.8 +/-0.2, envelope 29.5x8x25 incl lugs -- verify lug clearance",
+    ),
+    "mks_hv6100": Servo(
+        "MKS HV6100 (10 g, 10 mm, 3.4 kg.cm @ 8.2 V)",
+        0.0225, 0.0100, 0.0235, 0.0100, 0.333, 0.10,
+        note="datasheet; HV only -- at 6.0 V torque falls to 2.6 kg.cm, which fails the 2.0x margin",
+    ),
 }
 
 

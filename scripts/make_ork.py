@@ -41,6 +41,7 @@ from xml.sax.saxutils import escape
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design import mass as mass_mod
+from design.packaging import SERVOS
 from design.configure import DesignParams, baseline, build_vehicle, evaluate
 from design.geometry import Rocket
 
@@ -178,7 +179,10 @@ def parachute(x: Xml, name: str, diameter: float, cd: float, mass: float, offset
 
 def build_xml(params: DesignParams) -> tuple[str, dict[str, float]]:
     rocket = build_vehicle(params)
-    masses = mass_mod.build_mass(rocket, params.motor)
+    masses = mass_mod.build_mass(
+        rocket, params.motor,
+        servo_mass_each=SERVOS[params.servo].mass, n_servos=params.n_canards,
+    )
     motor = params.motor
     d = params.outer_diameter
     radius = d / 2.0

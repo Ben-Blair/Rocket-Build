@@ -18,6 +18,7 @@ from pathlib import Path
 from . import aero, control, mass as mass_mod, trajectory
 from .geometry import BodyTube, FinSet, NoseCone, Rocket
 from .motors import GENERIC, Motor, load_eng
+from .packaging import SERVOS
 
 
 @dataclass
@@ -41,6 +42,9 @@ class DesignParams:
     n_canards: int = 4
     n_aft_fins: int = 4
     fin_thickness: float = 0.0032
+    # Key into packaging.SERVOS. Drives BOTH the actuator packaging check and the
+    # servo line of the mass budget, so the two cannot disagree.
+    servo: str = "kst_x08_plus"
     canard_thickness: float = 0.0030
     material_density: float = 1850.0
 
@@ -187,7 +191,9 @@ def evaluate(
     rail_angle_deg: float = 5.0,
 ) -> Evaluation:
     rocket = build_vehicle(p)
-    masses = mass_mod.build_mass(rocket, p.motor)
+    masses = mass_mod.build_mass(
+        rocket, p.motor, servo_mass_each=SERVOS[p.servo].mass, n_servos=p.n_canards
+    )
     flight = trajectory.simulate(
         rocket, p.motor, masses, rail_length=rail_length, rail_angle_deg=rail_angle_deg
     )

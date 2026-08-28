@@ -120,19 +120,23 @@ therefore makes measuring it a flight test objective rather than an assumption.
 ## Baseline result
 
 75 mm (3 in) fiberglass airframe, 79.4 mm OD, 1361 mm long, 4 canards interdigitated 45°
-from 4 aft fins, on a Cesaroni Pro54 J449 Blue Streak. 6.19 kg wet / 5.57 kg dry, apogee
-1354 m (4444 ft), max Mach 0.523, static margin 1.96 cal at rail exit rising to 2.44 in
-coast, 1.98 g of lateral authority at 8° of canard deflection, giving 428 m of crossrange
-over an 11.3 second usable control window. Recovery is an 18 in drogue and 57 in main
-deployed at 200 m, landing at 5.0 m/s and 51 ft·lbf after a ~0.92 km walk in a 15 mph wind.
+from 4 aft fins, on a Cesaroni Pro54 J449 Blue Streak, actuated by four KST X08 Plus V6.0
+servos on direct drive. 5.99 kg wet / 5.37 kg dry, apogee 1409 m (4623 ft), max Mach 0.542,
+static margin 1.83 cal at rail exit rising to 2.32 in coast, 2.36 g of lateral authority at
+8° of canard deflection, giving 513 m of crossrange over an 11.5 second usable control
+window. Recovery is an 18 in drogue and 56 in main deployed at 200 m, landing at 5.0 m/s
+and 49 ft·lbf after a ~0.95 km walk in a 15 mph wind.
 
 Both fin sets were sized *together* by a Monte Carlo on margin robustness rather than
 independently by nominal stability — canard semispan 0.85 cal, aft semispan 1.55 cal. They
 pull in opposite directions, and searching them jointly under a probabilistic margin
 constraint beats trading one against the other. See `docs/00-requirements.md` §7.
 
+**The design requires 75–100 g of nose ballast to meet R1.** Real 9 g servos in place of
+the 55 g budget placeholder removed ~180 g from ahead of the CG, which cost 0.13 cal of
+static margin and pushed P(SM < 1.0) to 1.8% against a 1% limit. 75 g of nose ballast
+restores it to 0.81%, 100 g to 0.58%. This is exactly what the ballast provision in §7
+exists for; it is now load-bearing rather than a precaution.
+
 Every number above is an output of `scripts/baseline.py`. Regenerate them rather than
 editing them by hand; they will move as the mass budget is replaced with weighed parts.
-
-Run `scripts/baseline.py` for the current numbers; the ones above will drift as the mass
-budget is replaced with measurements.
