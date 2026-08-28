@@ -84,7 +84,7 @@ class AuthorityResult:
     stalled: bool
     static_margin_cal: float
     pitch_natural_freq_hz: float
-    hinge_moment_per_panel: float
+    hinge_moment_per_panel: float  # signed: + restoring, - divergent (see packaging.hinge_moment)
 
 
 def pitch_authority(

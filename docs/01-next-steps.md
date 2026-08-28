@@ -78,8 +78,12 @@ choice — four of its five stated reasons never depended on field size. Then fr
 
 - diameter, wall, and bay lengths;
 - canard and aft fin planforms, with canards interdigitated at 45 degrees;
-- actuator selection and hinge line position (put the hinge slightly aft of the panel
-  centre of pressure so the panel is weakly self-centring, not divergent);
+- actuator selection and hinge line position. Put the hinge **forward** of the panel
+  centre of pressure so the panel is weakly self-centring rather than divergent. Forward,
+  not aft: with the hinge aft of the CP the normal force acts ahead of the hinge line and
+  drives the panel to greater deflection, which is an overbalanced surface. The default is
+  now 0.20c against a 0.25c CP. Keep real separation — panel CP moves with Mach and angle
+  of attack, and a hinge too close to it can cross into divergent in flight;
 - static margin at rail exit, target 1.5–2.5 calibers nominal **and** P(SM < 1.0) under 1%
   once you rerun `scripts/robustness.py` with real weighed masses;
 - a nose ballast provision — threaded rod and washer stack in the nose shoulder. Do not

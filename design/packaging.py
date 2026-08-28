@@ -134,19 +134,35 @@ def hinge_moment(
     mean_chord: float,
     cn_alpha_panel: float,
     deflection_rad: float,
-    hinge_frac: float = 0.30,
+    hinge_frac: float = 0.20,
     cp_frac: float = 0.25,
 ) -> float:
-    """Aerodynamic moment about the canard hinge line, N*m per panel.
+    """Aerodynamic moment about the canard hinge line, N*m per panel. SIGNED.
 
     `hinge_frac` and `cp_frac` are fractions of the mean chord aft of the panel leading
-    edge. Putting the hinge line at or just aft of the panel centre of pressure makes the
-    hinge moment small, which is the single easiest way to make the servo requirement
-    tractable. A hinge slightly aft of the CP is preferred: it makes the panel weakly
-    self-centring rather than divergent.
+    edge.
+
+    Sign convention, and it matters:
+
+        positive -> hinge FORWARD of the panel CP. The normal force acts aft of the hinge
+                    and drives the panel back toward neutral. Restoring, self-centring,
+                    what you want.
+        negative -> hinge AFT of the panel CP. The normal force acts forward of the hinge
+                    and drives the panel to greater deflection. Divergent, "overbalanced".
+                    The servo now fights a destabilising moment, and hinge/mass balance in
+                    this region is what drives classical control surface flutter.
+
+    Moving the hinge toward the CP shrinks the moment and is the easiest way to make the
+    servo requirement tractable -- but the panel CP moves with Mach and angle of attack,
+    so a hinge placed too close to it can cross over into divergent in flight. Keep real
+    separation, for the same reason you keep static margin.
+
+    An earlier version of this function placed the hinge at 0.30c, aft of the 0.25c CP,
+    while its docstring claimed that was self-centring. It was divergent, and the abs()
+    on the return value hid it.
     """
     normal_force = dynamic_pressure * panel_area * cn_alpha_panel * deflection_rad
-    return abs(normal_force * (cp_frac - hinge_frac) * mean_chord)
+    return normal_force * (cp_frac - hinge_frac) * mean_chord
 
 
 def torque_margin(required: float, servo: Servo, gear_ratio: float = 1.0, derate: float = 0.4) -> float:
@@ -157,4 +173,5 @@ def torque_margin(required: float, servo: Servo, gear_ratio: float = 1.0, derate
     starting assumption; measure your actual part.
     """
     available = servo.stall_torque * derate * gear_ratio
-    return available / max(required, 1e-9)
+    # required is a signed hinge moment; the servo must overcome its magnitude either way.
+    return available / max(abs(required), 1e-9)

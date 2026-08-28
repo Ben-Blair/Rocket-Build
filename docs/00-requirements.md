@@ -160,9 +160,25 @@ Rationale: smallest airframe that houses four direct-drive canard actuators, tak
 lands the apogee inside the target window. The packaging margin is only about +3 mm, so
 the servo choice must be confirmed against real datasheet dimensions before ordering.
 
-Torque is *not* the binding constraint: peak aerodynamic hinge moment at max dynamic
-pressure is about 0.027 N·m per panel, which a mini high-torque servo clears with roughly
-8x margin even after a 0.4 derate on stall torque. Packaging is what constrains you.
+**Both torque and packaging bind, and they bind on different servo classes.** Peak
+aerodynamic hinge moment is **0.0604 N·m per panel** at max dynamic pressure and 8°
+deflection (`scripts/baseline.py`). After a 0.4 derate on stall torque, that leaves exactly
+one class of servo that clears the 2.0× torque requirement *and* fits the 75 mm tube:
+
+| Servo class | Length | Stall | Packaging margin | Torque margin | Verdict |
+|---|---|---|---|---|---|
+| sub-micro | 20.0 mm | 0.05 N·m | +9.2 mm | 0.3× | fits easily, nowhere near the torque |
+| micro | 23.6 mm | 0.20 N·m | +1.6 mm | 1.3× | fails both |
+| mini | 22.8 mm | 0.25 N·m | +3.1 mm | 1.7× | fails torque |
+| **mini high-torque HV** | **23.0 mm** | **0.55 N·m** | **+3.1 mm** | **3.6×** | **selected** |
+
+Note that "micro" is *longer* than "mini high-torque" (23.6 vs 23.0 mm) despite the name —
+class names track mass, not the dimension that consumes tube radius. Going to a physically
+smaller-sounding servo makes the packaging worse, not better.
+
+An earlier version of this section quoted 0.027 N·m and an 8× margin. That was computed on
+the old 0.45 cal canards; the joint fin sizing in §7 grew them to 0.85 cal, which roughly
+doubled panel area and with it the hinge moment.
 
 ---
 

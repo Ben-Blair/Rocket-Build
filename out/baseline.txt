@@ -151,6 +151,7 @@ ACTUATOR CHECK
   servo               mini high-torque HV class (~20 g)
   packaging           FITS   direct/pinwheel  need ID  68.7 mm, have  71.8 mm (  +3.1 mm)  ok
   peak hinge moment   0.0604 N m per panel at q = 18.8 kPa
+  hinge balance       restoring (hinge fwd of panel CP)
   usable servo torque 0.2200 N m (stall x 0.4 derate, gear 1.0:1)
   torque margin       3.6x  OK
   servo speed         0.07 s/60deg --> 857 deg/s slew rate

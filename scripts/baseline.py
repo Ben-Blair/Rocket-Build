@@ -97,7 +97,7 @@ def main() -> None:
     for delta in (2.0, 4.0, 6.0, 8.0, 10.0, 12.0):
         a = control.pitch_authority(r, pt, pt.mass, delta)
         print(f"  {delta:5.0f}d {a.alpha_trim_deg:7.2f}d {a.lateral_accel_g:9.2f}g "
-              f"{a.canard_local_alpha_deg:8.2f}d {a.hinge_moment_per_panel:9.4f} "
+              f"{a.canard_local_alpha_deg:8.2f}d {abs(a.hinge_moment_per_panel):9.4f} "
               f"{a.pitch_natural_freq_hz:8.2f}  {'STALL' if a.stalled else 'ok'}")
     print(f"\n  Cm_delta {control.pitch_authority(r, pt, pt.mass, 8.0).cm_delta:.2f} /rad")
     print(f"  one-sided manoeuvre crossrange at {DEFLECTION_LIMIT_DEG:.0f} deg: "
@@ -162,11 +162,14 @@ def main() -> None:
     print(f"  packaging           {bay}")
     worst = max(
         (control.pitch_authority(r, p, p.mass, DEFLECTION_LIMIT_DEG) for p in f.points if p.q > 100),
-        key=lambda a: a.hinge_moment_per_panel,
+        key=lambda a: abs(a.hinge_moment_per_panel),
     )
     margin = torque_margin(worst.hinge_moment_per_panel, servo, GEAR_RATIO)
-    print(f"  peak hinge moment   {worst.hinge_moment_per_panel:.4f} N m per panel "
+    hm = worst.hinge_moment_per_panel
+    balance = "restoring (hinge fwd of panel CP)" if hm > 0 else "DIVERGENT (hinge aft of panel CP)"
+    print(f"  peak hinge moment   {abs(hm):.4f} N m per panel "
           f"at q = {worst.dynamic_pressure / 1000:.1f} kPa")
+    print(f"  hinge balance       {balance}")
     print(f"  usable servo torque {servo.stall_torque * 0.4 * GEAR_RATIO:.4f} N m "
           f"(stall x 0.4 derate, gear {GEAR_RATIO:.1f}:1)")
     print(f"  torque margin       {margin:.1f}x  {'OK' if margin > 2.0 else 'MARGINAL'}")

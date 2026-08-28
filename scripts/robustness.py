@@ -238,7 +238,7 @@ def optimise(n: int, risk_budget: float = 0.01) -> None:
                 flutter.evaluate(r.canards, fast.speed, fast.z).margin,
             )
             hinges = [
-                control.pitch_authority(r, p, p.mass, 10.0).hinge_moment_per_panel
+                abs(control.pitch_authority(r, p, p.mass, 10.0).hinge_moment_per_panel)
                 for p in ev.flight.points if p.q > 100
             ]
             torq = torque_margin(max(hinges, default=0.0), servo)

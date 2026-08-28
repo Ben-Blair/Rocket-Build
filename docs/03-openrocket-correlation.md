@@ -16,6 +16,11 @@ was being built.
 
 ## Method
 
+`out/RocketSenior.ork` is regenerated on every run of `scripts/openrocket_check.py`, so it
+is always current — and so hand edits made in the OpenRocket GUI and saved back to that
+path are overwritten. Treat it as build output: open it to simulate and inspect, but make
+changes in `design/configure.py` or `scripts/make_ork.py`.
+
 `scripts/make_ork.py` writes an `.ork` (a zip containing one XML document) directly from
 the same `DesignParams` the Python tool uses, so the two models cannot drift apart.
 `tools/OrkCheck.java` then loads that file with OpenRocket 24.12's own engine headlessly
