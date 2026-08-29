@@ -95,7 +95,8 @@ As components arrive, weigh them and replace the estimates in `design/mass.py` w
 numbers, then rerun the robustness script. Every guess you retire shrinks the distribution.
 
 Deliverable: a frozen `DesignParams` in `design/configure.py`, a dimensioned drawing, and
-a bill of materials with real part numbers and prices.
+a bill of materials with real part numbers and prices. **BOM drafted** —
+`docs/04-bill-of-materials.md`. The dimensioned drawing is the last piece.
 
 **Done so far:** the frozen baseline now lives in one place — `design/configure.py` defines
 `BASELINE_OD`, `BASELINE_WALL`, `BASELINE_MOTOR_FILE` and a `baseline()` factory, and the

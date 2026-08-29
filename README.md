@@ -80,6 +80,8 @@ docs/
   00-requirements.md    requirements, constraints, scoping, regulatory actions
   01-next-steps.md      ordered plan with concrete deliverables
   02-motor-selection.md L2 motor trade study and decision
+  03-openrocket-correlation.md  automated cross-check against OpenRocket's engine
+  04-bill-of-materials.md       frozen parts list, masses and costs
 ```
 
 ## How this fits with OpenRocket and RocketPy
