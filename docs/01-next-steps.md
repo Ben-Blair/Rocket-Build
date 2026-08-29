@@ -134,7 +134,9 @@ numbers, then rerun the robustness script. Every guess you retire shrinks the di
 
 Deliverable: a frozen `DesignParams` in `design/configure.py`, a dimensioned drawing, and
 a bill of materials with real part numbers and prices. **BOM drafted** —
-`docs/04-bill-of-materials.md`. The dimensioned drawing is the last piece.
+`docs/04-bill-of-materials.md`. The dimensioned drawing is the last piece; build the canard
+module first, following `docs/05-canard-module-build.md` and the DXF profiles from
+`scripts/make_cad_profiles.py`.
 
 **Done so far:** the frozen baseline now lives in one place — `design/configure.py` defines
 `BASELINE_OD`, `BASELINE_WALL`, `BASELINE_MOTOR_FILE` and a `baseline()` factory, and the
