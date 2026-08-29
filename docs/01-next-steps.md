@@ -1,5 +1,43 @@
 # Ordered plan
 
+## State of play — August 2026
+
+Read this first if you are picking the project back up.
+
+- **Steps 0, 1, 2 are closed.** Sizing tool built, range access and certification path
+  resolved, OpenRocket cross-check done and agreeing (CNa to 0.3%, CP to 0.17 cal).
+- **Step 3 is nearly closed.** The airframe is frozen in `design/configure.py` — that file
+  is the single source of truth for the vehicle and every script imports from it. The BOM
+  is drafted (`04-bill-of-materials.md`). **The one remaining deliverable is a dimensioned
+  drawing**, which is CAD work in Onshape.
+- **Step 4 is next**: avionics. Decisions D7 (flight computer) and D8 (state estimation)
+  are open and drive the largest, least specified line in the budget.
+
+Current vehicle: 79.4 mm OD fiberglass, 1361 mm, canards 0.85 cal / aft fins 1.55 cal
+interdigitated 45°, Cesaroni J449 Blue Streak, 4× KST X08 Plus servos flat-mounted with
+the hinge at 0.20c, 100 g nose ballast. 6.10 kg wet, apogee 1379 m, Mach 0.531, static
+margin 1.97–2.46 cal, P(SM<1.0) 0.6%, 450 m crossrange. `scripts/baseline.py` regenerates
+all of it; `evaluate()` reports feasible with no violations.
+
+Four corrections are worth knowing about, because each one changed the design and each is
+the kind of thing that silently recurs:
+
+1. **Actuator packaging never set the airframe diameter** (§4). The original model assumed
+   the servo body points inward; the output shaft is on a large face, so the servo lies
+   flat and packaging is not binding at all.
+2. **The canard hinge sign was inverted** — hinge aft of the panel CP is divergent, not
+   self-centring. Now at 0.20c, forward of the 0.25c CP, and `hinge_moment()` returns a
+   signed value so it cannot hide again.
+3. **Nose ballast is required, not optional** (§7.1). Real 9 g servos removed ~180 g from
+   ahead of the CG and took P(SM<1.0) to 1.8% against a 1% limit.
+4. **The baseline used to live in six places and drifted from the docs.** It now lives
+   only in `design/configure.py`. Do not copy those numbers into a script.
+
+Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
+access), the cert milestone dates in §2.1, and D1/D7/D8/D9.
+
+---
+
 The ordering here is deliberate. Each step exists to remove a specific risk, and the
 risks are ordered by how badly they hurt if you discover them late. Airframe geometry is
 step 3, not step 1, because two things upstream of it can invalidate everything.

@@ -1,5 +1,7 @@
 # Bill of materials
 
+Shareable version: https://claude.ai/code/artifact/9ab713c4-d227-4edb-b377-f45deb504bc2
+
 Vehicle as frozen in `design/configure.py`. Masses are the model's, not weighed — every
 line is a prediction until the part is on a scale, and `scripts/robustness.py` should be
 rerun as each one is retired.
