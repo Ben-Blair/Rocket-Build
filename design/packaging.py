@@ -1,12 +1,24 @@
 """Actuator bay packaging: what internal diameter do the canard servos actually need?
 
-This is the model behind requirement R7. For direct-drive canards the servo is mounted
-radially with its output shaft coincident with the canard shaft at the tube wall, so the
-servo's *length* consumes tube radius. That is the constraint that rules out small tubes.
+CONFIRMED ARRANGEMENT (Aug 2026): the servo lies FLAT against the inner wall with its
+output shaft radial, passing through the wall into the canard root. The output shaft on
+these parts sits on a large face, not an end face -- verified against the hardware. So the
+servo's THICKNESS consumes tube radius (8 mm for the KST X08 Plus) and its length only has
+to fit around the circumference. Use check_flat_mount(); it is the one that describes the
+real vehicle.
+
+check_direct_drive() models the alternative -- body pointing inward, output shaft on an end
+face, so LENGTH consumes radius. It is kept because it is the conservative bound and
+because an earlier version of this project believed it, but no hobby servo is built that
+way. It is not the arrangement being built.
+
+That correction matters beyond packaging: the old assumption is what made actuator
+packaging look like the constraint that sets airframe diameter. It is not. See
+docs/00-requirements.md section 4.
 
 Servo dimensions and torques below are representative of widely used parts but are
-APPROXIMATE -- replace with the datasheet values for the exact part you buy before
-freezing the design.
+APPROXIMATE unless the entry names a manufacturer -- replace with datasheet values for the
+exact part you buy before freezing the design.
 """
 
 from __future__ import annotations

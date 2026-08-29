@@ -11,7 +11,7 @@ step 3, not step 1, because two things upstream of it can invalidate everything.
 `design/` and `scripts/` now answer the questions that were blocking you in OpenRocket.
 Baseline: 75 mm fiberglass, 4 interdigitated canards, J-class 54 mm motor.
 
-## Step 1 — MOSTLY DONE: close the two project-killing risks
+## Step 1 — DONE: close the two project-killing risks
 
 Neither of these is engineering, and both can end the project if found late.
 
@@ -25,11 +25,11 @@ Level 2 without Level 1 first. Each is a separate flight on a separate launch da
 launch days are monthly and weather-dependent. Work backwards from your flight window and
 book the earliest possible L1 attempt.
 
-Status (Aug 2026): prefect contacted and answered; earliest L1 attempt booked; recovery
-area confirmed effectively unbounded, which retires C5a as the governing constraint (see
-`00-requirements.md` §2, R6). **Still open in §1.2:** the written NAR + TRA safety code
-summary, and the advisor / export control office contact. Those are separate rows and
-neither is closed.
+Status (Aug 2026): **CLOSED.** Prefect contacted and answered; earliest L1 attempt booked;
+recovery area confirmed effectively unbounded, which retires C5a as the governing
+constraint (see `00-requirements.md` §2, R6); NAR + TRA code summary written and the
+advisor / export control contact made. Keep every written response on file — the artifacts
+are what a reviewer asks for, not the fact that it happened.
 
 Deliverable: a one-page memo with the prefect's written response and dated cert
 milestones. This is also the first thing your advisor will ask for.

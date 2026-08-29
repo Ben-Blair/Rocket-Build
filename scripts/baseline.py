@@ -161,11 +161,12 @@ def main() -> None:
     bay = check_direct_drive(r.tubes[1].inner_diameter, servo, BASELINE.n_canards)
     flat = check_flat_mount(r.tubes[1].inner_diameter, servo, BASELINE.n_canards)
     print(f"  servo               {servo.name}")
-    print(f"  packaging, inward   {bay}")
-    print(f"  packaging, flat     {flat}")
-    print("  -> 'inward' assumes the output shaft is on the servo's END face; 'flat' assumes")
-    print("     it is on a large face, which is how hobby servos are actually built. Confirm")
-    print("     against the part before trusting the tighter of the two.")
+    print(f"  packaging (as built) {flat}")
+    print(f"  packaging (old bound) {bay}")
+    print("  -> The servo lies flat against the wall, shaft radial through it: its 8 mm")
+    print("     thickness eats radius, not its 23.5 mm length. Confirmed against the part.")
+    print("     The second line is the superseded 'body pointing inward' bound, kept only")
+    print("     because it is conservative. Packaging is no longer a binding constraint.")
     worst = max(
         (control.pitch_authority(r, p, p.mass, DEFLECTION_LIMIT_DEG) for p in f.points if p.q > 100),
         key=lambda a: abs(a.hinge_moment_per_panel),

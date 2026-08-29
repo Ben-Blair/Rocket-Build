@@ -68,9 +68,9 @@ research launch).
 
 | Action | Owner | Due | Status |
 |---|---|---|---|
-| Read current NAR + TRA codes, write summary | You | Week 1 | TBD |
+| Read current NAR + TRA codes, write summary | You | Week 1 | **DONE (Aug 2026)** — file the summary in `docs/` |
 | Email club prefect describing the project, get written response | You | Week 1 | **DONE (Aug 2026).** File the written response in `docs/` — it is the evidence, not the email you sent |
-| Advisor + export control office contact | You | Week 2 | TBD |
+| Advisor + export control office contact | You | Week 2 | **DONE (Aug 2026)** — keep the written response on file; it is the first thing a reviewer asks for |
 
 ---
 
@@ -123,7 +123,7 @@ Values marked *(computed)* are outputs of `scripts/sweep.py` and
 | R4 | Thrust-to-weight at ignition | ≥ 5:1 | Standard HPR practice |
 | R5 | Max Mach | ≤ 0.8 | Keeps you subsonic. Transonic aero invalidates Barrowman, makes the controller design far harder, and adds no value to a controls project |
 | R6 | Apogee | ≤ 1600 m (5250 ft) AGL | **Neither a waiver limit nor a field-size limit** — both are unbounded at this site (C5, C5a). The cap is retained on the three grounds that survive: keeping max Mach under 0.8 with real margin (R5), keeping the manoeuvre visible and filmable from the pad, and holding search time and cost per flight low enough to fly five or six times *with the data intact*. An unbounded field removes the risk of landing off the property; it does not make a rocket easier to find. See `scripts/recovery_study.py` |
-| R7 | Internal diameter for actuator bay | ≥ 69 mm → **75 mm airframe minimum** (see §4) | Drives airframe diameter |
+| R7 | Internal diameter for actuator bay | Not binding — 4 servos need 106 mm of arc against 188 mm available, 45 mm central void (see §4) | **Superseded.** Diameter is set by the 54 mm motor mount and recovery packing volume, not by the actuators |
 | R8 | Commanded lateral acceleration authority early in coast | ≥ 0.5 g | Enough for a measurable, visible correction. Baseline achieves 2.08 g at 8°, for 450 m of crossrange |
 | R9 | Roll authority | Net Cl_delta must retain correct sign at all conditions, with ≥ 50% of canard-only authority surviving interference | See §5 |
 | R10 | Control loop rate | ≥ 100 Hz | Baseline pitch mode is 2.4 Hz, so 100 Hz gives ~40x margin |
@@ -132,78 +132,97 @@ Values marked *(computed)* are outputs of `scripts/sweep.py` and
 
 ---
 
-## 4. Actuator bay — why this sets the tube diameter
+## 4. Actuator bay — and why it does *not* set the tube diameter
 
-You were right that the body has to be bigger to fit servos and the computer, but the
-binding constraint is more specific than "bigger." For **direct-drive canards**, the
-servo sits radially, output shaft coincident with the canard shaft at the tube wall,
-body pointing inward. So the servo's *length* eats the tube radius:
+**This section previously argued the opposite, and was wrong.** The correction matters, so
+it is documented rather than quietly edited away.
 
-    required_ID ≈ 2 x (servo_length + shaft_hub + clearance)
+### 4.1 The error
 
-That single relation is what rules out small tubes, and it is modelled in
-`design/packaging.py`. Run `python scripts/packaging_report.py` for the table.
+The original argument: for direct-drive canards the servo sits radially with its body
+pointing inward, so the servo's *length* consumes tube radius —
 
-Result, for 4 canards on direct drive with an 8 mm shaft/coupler allowance:
+    required_ID ≈ 2 × (servo_length + shaft_hub + clearance)
 
-| Airframe | ID | Sub-micro | Micro | Mini | Standard | Verdict |
-|---|---|---|---|---|---|---|
-| 54 mm | 53 mm | no | no | no | no | **Dead.** Not even a sub-micro servo fits radially. |
-| 66 mm | 62 mm | no (−4 mm) | no | no | no | Marginal at best; do not design around it. |
-| 75 mm | 75 mm | yes | yes (+2 mm) | yes (+3 mm) | no | **Minimum viable.** Chosen baseline. |
-| 98 mm | 97 mm | yes | yes | yes (+25 mm) | no (−11 mm) | Comfortable, but heavier and needs a bigger motor for the same altitude. |
-| 129 mm | 126 mm | yes | yes | yes | yes | Overkill for this mission. |
+— which ruled out 54 mm and 66 mm airframes, made 75 mm "minimum viable," and left a
+packaging margin of only +2.3 mm that drove servo selection for weeks.
 
-**Decision (D2): 75 mm (3 in) fiberglass airframe, mini-class servos on direct drive.**
-Rationale: smallest airframe that houses four direct-drive canard actuators, takes a
-54 mm motor mount with an enormous motor selection, and is light enough that a J motor
-lands the apogee inside the target window. The packaging margin is only about +3 mm, so
-the servo choice must be confirmed against real datasheet dimensions before ordering.
+That geometry requires the output shaft to sit on the servo's **end** face. **No hobby
+servo is built that way.** The output shaft is on a large face, verified against the part
+(Aug 2026).
 
-**Both torque and packaging bind, and they bind on different servo classes.** Peak
-aerodynamic hinge moment is **0.0626 N·m per panel** at max dynamic pressure and 8°
-deflection (`scripts/baseline.py`), with the hinge at 0.20c, forward of the 0.25c panel CP
-so the panel is restoring rather than divergent. After a 0.4 derate on stall torque:
+### 4.2 The real arrangement
 
-| Servo | Length | Stall | Packaging margin | Torque margin | Verdict |
+The servo lies **flat against the inner wall**, output shaft radial, passing through the
+wall into the canard root. Its *thickness* consumes radius — 8.0 mm for the KST X08 Plus,
+not 23.5 mm — and its length only has to fit around the circumference:
+
+| Airframe | Inward (old, wrong) | Flat (as built) |
+|---|---|---|
+| 54 mm | no fit | fits, 21 mm central void |
+| 66 mm | no fit | fits, 32 mm central void |
+| **75 mm** | +2.3 mm, knife edge | **fits, 45 mm central void** |
+
+Four servos need 106 mm of arc against 188 mm available. **Actuator packaging is not a
+binding constraint and never was.** `design/packaging.py` models both; `check_flat_mount()`
+is the one describing the vehicle.
+
+This also retires two risks carried for weeks: the mounting-lug clearance question (the
+lugs extend the *length* axis, which no longer competes for radius) and the shaft bushing
+budget, which now has 45 mm of void to sit in rather than 1.55 mm.
+
+### 4.3 What actually sets the diameter
+
+With actuators out of the way, three things do:
+
+| Constraint | 66 mm | 75 mm |
+|---|---|---|
+| 54 mm motor mount (57.0 mm OD) | 5.0 mm annulus, 2.5 mm radial | **17.8 mm, 8.9 mm radial** |
+| Recovery bay volume for an 18 in drogue + 56 in main | 1.08 L | **1.57 L** |
+| Everything downstream: fin sizing (§7), motor trade, margin robustness, OpenRocket correlation | would all need redoing | **already done** |
+
+**D2 stands at 75 mm, on new grounds.** 66 mm is now theoretically possible where it
+previously was not, but a 2.5 mm radial annulus around the motor leaves almost nothing for
+centering rings and retention, the recovery packing gets genuinely tight, and the vehicle
+does not need to shrink — it meets every requirement with margin. The right response to
+"the constraint you thought was binding isn't" is to bank the freedom, not to spend it.
+
+### 4.4 Torque
+
+Torque is unaffected by any of this, and remains the constraint that actually selects the
+servo. Peak aerodynamic hinge moment is **0.0626 N·m per panel** at max dynamic pressure
+and 8° deflection (`scripts/baseline.py`), with the hinge at 0.20c, forward of the 0.25c
+panel CP so the panel is restoring rather than divergent. After a 0.4 derate on stall
+torque, against a 2.0× requirement:
+
+| Servo | Length | Thickness | Stall | Torque margin | Verdict |
 |---|---|---|---|---|---|
-| sub-micro class | 20.0 mm | 0.05 N·m | +9.2 mm | 0.32× | fits easily, nowhere near the torque |
-| micro class | 23.6 mm | 0.20 N·m | +1.6 mm | 1.28× | fails both |
-| mini class | 22.8 mm | 0.25 N·m | +3.1 mm | 1.60× | fails torque |
-| mini high-torque class | 23.0 mm | 0.55 N·m | +3.1 mm | 3.51× | ok, but generic |
-| **KST X08 Plus V6.0** | **23.5 mm** | **0.52 N·m** | **+2.3 mm** | **3.32×** | **selected (D4)** |
-| MKS HV6100 | 22.5 mm | 0.333 N·m | +4.1 mm | 2.13× | fallback, little margin |
+| sub-micro class | 20.0 mm | 8.6 mm | 0.05 N·m | 0.32× | nowhere near |
+| micro class | 23.6 mm | 11.6 mm | 0.20 N·m | 1.28× | fails |
+| mini class | 22.8 mm | 12.5 mm | 0.25 N·m | 1.60× | fails |
+| Hitec HS-5065MG | 23.4 mm | 11.4 mm | 0.219 N·m | 1.40× | fails — the common rocketry pick |
+| **KST X08 Plus V6.0** | **23.5 mm** | **8.0 mm** | **0.52 N·m** | **3.32×** | **selected (D4)** |
+| MKS HV6100 | 22.5 mm | 10.0 mm | 0.333 N·m | 2.13× | fallback |
 
-Note "micro" is *longer* than "mini high-torque" (23.6 vs 23.0 mm) despite the name — class
-names track mass, not the dimension that consumes tube radius. A physically
-smaller-sounding servo makes the packaging worse, not better.
+Note the Hitec HS-5065MG, the usual choice in hobby rocketry active-control work, misses at
+1.40×. Most rocketry servo use is airbrakes and parachute releases — one-shot or lightly
+loaded. A canard held against 19 kPa for the whole coast is a harder duty, so the community
+answer does not transfer. Capping deflection to about 5.6° at peak q would bring it to
+2.0×, which is a legitimate route if availability ever matters.
 
-The MKS HV6100 lands on exactly 2.00× and has no margin left; it is the shorter part, so it
-buys +2.1 mm of bushing room against the KST's +1.2 mm, but it must run at 8.2 V and any
-growth in hinge moment puts it under the requirement. Prefer the KST unless the bushing
-turns out not to fit.
+### 4.5 Mounting
 
-**The mounting lugs must not sit in the radial path.** KST publish a 23.5 mm case and a
-29.5 mm envelope including lugs, and confirm the 8.0 mm thickness is unchanged by them —
-so the lugs extend along the *radial* axis, which is the one axis with no room:
+Direct drive, servo bonded or clamped flat into the printed bay, output shaft radial
+through a bearing in the tube wall. **Commercial servo frames for this family already do
+this** — the Hyperflight SRB-KST-X08 frame and the IDS/LDS kits carry an outboard ball
+bearing on the output shaft, which is exactly the load path the canard needs: the bearing
+takes the panel bending moment, the servo spline takes only torque.
 
-| Effective radial length | Required ID | Margin | |
-|---|---|---|---|
-| 23.5 mm, body only (lugs trimmed, body bonded into the printed cradle) | 69.5 mm | +2.3 mm | fits |
-| 26.5 mm, one 3 mm lug in the path | 75.4 mm | −3.6 mm | does not fit |
-| 29.5 mm, full envelope | 81.4 mm | −9.6 mm | does not fit |
-
-**Even one lug kills it.** The mounting scheme must therefore clamp or bond the servo body
-in the printed bay rather than use the stock tabs — which is normal practice for this class
-of servo in thin wings, and is the arrangement a custom bay was going to use anyway. The
-numbers in the table above assume it. Confirm against the dimensioned drawing, and treat
-"trim the lugs" as a design commitment rather than a field fix.
-
-An earlier version of this section quoted 0.027 N·m and an 8× margin. That was computed on
-the old 0.45 cal canards; the joint fin sizing in §7 grew them to 0.85 cal, which roughly
-doubled panel area and with it the hinge moment.
-
----
+A bellcrank or pushrod (`check_bellcrank`) also fits, with +33.8 mm to spare, and is the
+only way to fit a standard-size servo. It is **not** selected: linkage backlash becomes
+deadband in the control loop, and worse, it corrupts GV-2's measurement of `Cm_delta` —
+command 8°, the panel reaches 7.2°, and the derivative you publish is wrong. Direct drive
+removes that error source. Keep the linkage as the fallback only.
 
 ## 5. The canard / aft-fin interference problem
 
@@ -245,7 +264,7 @@ reports the deflection/geometry region where the net roll moment changes sign.
 | # | Decision | Options | Recommendation | Status |
 |---|---|---|---|---|
 | D1 | Guidance level | L1 / L2 / L3 (§1.1) | L1 min, L3 stretch | TBD |
-| D2 | Airframe diameter | 54 / 75 / 98 mm | **75 mm**, set by actuator packaging (§4) | RESOLVED |
+| D2 | Airframe diameter | 54 / 66 / 75 / 98 mm | **75 mm.** Originally justified by actuator packaging; that argument was wrong (§4.1). Now set by the 54 mm motor mount annulus, recovery packing volume, and the fact that every downstream analysis rests on it. 66 mm became possible once the packaging error was found, and is not worth reopening | RESOLVED, on revised grounds |
 | D3 | Canard count | 3 / 4 | **4**, interdigitated at 45° with 4 aft fins (§5) | RESOLVED |
 | D4 | Canard actuation | direct-drive / bellcrank | **direct drive**, **KST X08 Plus V6.0** (23.5×8×16.8 mm, 9 g, 5.3 kgf·cm @ 8.4 V); a linkage puts backlash inside the control loop. Fallback **MKS HV6100** (22.5×10×23.5 mm, 10 g) — shorter, so more bushing room, but HV-only and tighter on torque | RESOLVED, pending lug-clearance check against the dimensioned drawing |
 | D5 | Aft fin count and size | 3 / 4, semispan 0.95–1.85 cal | **4 panels, semispan 1.55 cal.** Set jointly with the canards (D11) by the margin robustness study (§7), not by nominal stability. Larger fins raise static margin but cost authority and push toward roll reversal (§5) | RESOLVED |
