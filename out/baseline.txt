@@ -104,7 +104,7 @@ ROLL AUTHORITY  --  the canard / aft-fin interference problem
     cancellation                   73.9% of canard authority lost
     SIGN correct
     Cl_p (roll damping)          -70.47 /rad
-    roll accel at 2 deg          3927 deg/s^2
+    roll accel at 2 deg          3924 deg/s^2
     steady roll rate                187 deg/s
 
   interdigitated (45 deg)
@@ -116,7 +116,7 @@ ROLL AUTHORITY  --  the canard / aft-fin interference problem
     cancellation                   16.8% of canard authority lost
     SIGN correct
     Cl_p (roll damping)          -70.47 /rad
-    roll accel at 2 deg         12541 deg/s^2
+    roll accel at 2 deg         12533 deg/s^2
     steady roll rate                598 deg/s
 
   Sensitivity: where does the net roll moment change sign?

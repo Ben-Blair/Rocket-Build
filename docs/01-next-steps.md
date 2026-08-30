@@ -15,6 +15,13 @@ Read this first if you are picking the project back up.
   inertia up 6.5%, pitch down 1.4%, pitch mode 4.21 → 4.26 Hz, roll acceleration down ~7%.
   Roll is the axis GV-3 flies, so the 6.5% is the one that matters. The rest of the airframe
   is still ±30% until you swing it.
+- **The CAD is now driven through the Onshape REST API, not the browser.** That change paid
+  for itself immediately: reading the feature tree as JSON exposed two defects that clicking
+  around had hidden for weeks — a hinge dimension measured to a circle's tangent instead of
+  its centre, and a `Hinge Plane` datum that drove no geometry at all. Between them the
+  physical hinge sat at 0.029 of MAC instead of 0.200, which is a **0.82× servo torque
+  margin against a 2.0× requirement**. Both are fixed and verified; see `docs/05`.
+  **If you touch the CAD again, use the API.** Credentials live outside the repo.
 - **Step 4 is next**: avionics. Decisions D7 (flight computer) and D8 (state estimation)
   are open and drive the largest, least specified line in the budget.
 

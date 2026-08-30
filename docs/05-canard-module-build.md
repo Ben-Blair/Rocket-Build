@@ -24,7 +24,7 @@ no such field was found in this Onshape UI (`Sketch 4` / `Extrude 5`) → `Circu
 a FEATURE pattern of `Extrude 2/3/4/5`, 4 instances at 90°, axis on the tube's own circular
 edge, **Reapply features ON**.
 
-**Two bugs were found and fixed while building this — read them before touching `Extrude 4`:**
+**Four bugs have been found and fixed in this model. Read them before touching it:**
 - `Extrude 4` was cutting **nothing**. It ran blind 2.3 mm from a 37.4 mm offset, which is
   exactly R37.4→R39.7 — precisely coincident with both wall surfaces, so the boolean was
   degenerate ("would result in non-manifold body"), and in its original direction it cut
@@ -33,6 +33,15 @@ edge, **Reapply features ON**.
 - The circular pattern does **not** carry material assignments to its copies. All nine
   patterned parts had no material and contributed zero mass, so the module read 0.175 kg
   instead of 0.260. Assign material to the copies after every pattern, and check the total.
+- **`Sketch 3`'s hinge dimension measured to the circle's TANGENT, not its centre.** It read
+  `57.2 mm` while the shaft axis actually sat at 59.700 — off by exactly the 2.5 mm shaft
+  radius. The dimension now references `tt9bc77TUdvp.center` and reads the true station.
+- **The `Hinge Plane` drove nothing.** `Sketch 3` and `Sketch 4` are built on plane `JEC`,
+  not on it, so the datum was decorative — editing its offset moved the plane and no
+  geometry. Combined with the bug above, the physical hinge sat at **0.029 of MAC instead
+  of 0.200**, which is a 4.4× hinge moment and a **0.82× servo torque margin against a 2.0×
+  requirement**. Both sketches are now dimensioned to Z 68.27 directly. The Hinge Plane is
+  still not a driving reference — treat it as annotation until someone wires it in.
 
 **Orientation, since it looks wrong and is not:** Top plane is the module's FORWARD face and
 +Z runs AFT. Because Onshape draws +Z up, the module renders nose-DOWN. It is correct — the
@@ -57,13 +66,13 @@ run — the mass check has.
 
 | | |
 |---|---|
-| Mass | **0.2604 kg** |
-| Volume | 131,173.275 mm³ |
-| CoM | X 0, Y 0, **Z 72.418 mm** aft of the module forward face |
-| Inertia about CoM | Lxx = Lyy = **601.588** kg·mm², Lzz = **623.179** kg·mm² |
+| Mass | **0.2599 kg** |
+| Volume | 130,889.802 mm³ |
+| CoM | X 0, Y 0, **Z 74.138 mm** aft of the module forward face |
+| Inertia about CoM | Ixx = Iyy = **593.524** kg·mm², Izz = **626.268** kg·mm² |
 | Off-diagonals | zero — the four-fold symmetry check passing |
 
-That 0.2604 kg is against roughly 0.565 kg in the mass budget, and the gap is real, not an
+That 0.2599 kg is against roughly 0.565 kg in the mass budget, and the gap is real, not an
 error: the servo frames, outboard bearings and printed bay are not modelled yet. Re-measure
 once they exist.
 
@@ -72,8 +81,8 @@ once they exist.
 Three reasons, in order of value:
 
 1. **Mass properties — DONE, Aug 2026.** The module's tensor is now measured and wired
-   into `design/control.py` as `CANARD_MODULE_CAD`: 0.2604 kg, CoM 72.418 mm aft of the
-   module forward face, Lxx = Lyy = 601.588 and Lzz = 623.179 kg·mm² about that CoM, all
+   into `design/control.py` as `CANARD_MODULE_CAD`: 0.2599 kg, CoM 74.138 mm aft of the
+   module forward face, Ixx = Iyy = 593.524 and Izz = 626.268 kg·mm² about that CoM, all
    off-diagonals zero. It raised the vehicle **roll** inertia 6.5% and dropped pitch 1.4%,
    moving the pitch mode 4.21 → 4.26 Hz and the roll acceleration down about 7%. Roll is
    the axis GV-3 flies, so that 6.5% is the one that matters. The rest of the airframe is
@@ -121,7 +130,9 @@ once you have used them for reference.
 |---|---|
 | Root chord | 67.5 mm |
 | Tip chord | 27.0 mm |
-| Semispan | 67.5 mm (exposed, from the tube surface) |
+| Exposed semispan | 67.5 mm (aerodynamic, from the tube surface R 39.7) |
+| Panel root face | **R 40.2** — 0.5 mm proud of the tube, for rotation clearance |
+| Panel height, as cut | **66.99 mm** (R 40.2 → R 107.19) |
 | Sweep, LE | 47.9 mm (35.4°, matching the aft fins) |
 | Thickness | 3.0 mm |
 | Root LE position | 37.7 mm aft of the module's forward end |

@@ -82,8 +82,10 @@ class MeasuredComponent:
 
 # Measured in Onshape from the canard module Part Studio, Aug 2026, after the 35.4 deg
 # sweep / 0.40 taper reshape. 13 parts: tube section, 4 canard panels, 4 shafts, 4 servo
-# envelopes. Onshape reports Lxx = Lyy = 601.588 and Lzz = 623.179 kg mm^2 about the
+# envelopes. Onshape reports Ixx = Iyy = 593.524 and Izz = 626.268 kg mm^2 about the
 # module CoM, with every off-diagonal term zero -- the four-fold symmetry check passing.
+# Read over the REST API, not off a screenshot, which is also how the hinge-station defect
+# behind the previous numbers was found. See docs/05.
 #
 # WHAT THIS DOES NOT INCLUDE, and it matters: the servo frames, outboard bearings and the
 # printed bay are not modelled yet, so the CAD module is 0.260 kg against roughly 0.565 kg
@@ -93,11 +95,11 @@ class MeasuredComponent:
 # term is large. Re-measure once the printed bay exists.
 CANARD_MODULE_CAD = MeasuredComponent(
     name="canard module (CAD, 13 parts)",
-    mass=0.2604,
-    station_from_module_face=0.072418,
-    i_transverse=601.588e-6,
-    i_roll=623.179e-6,
-    source="Onshape canard-control module, Part Studio 1, Aug 2026",
+    mass=0.2599,
+    station_from_module_face=0.074138,
+    i_transverse=593.524e-6,
+    i_roll=626.268e-6,
+    source="Onshape canard-control module, Part Studio 1, Aug 2026 (REST API)",
 )
 
 MEASURED_COMPONENTS: tuple[MeasuredComponent, ...] = (CANARD_MODULE_CAD,)
