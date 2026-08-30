@@ -58,17 +58,89 @@ class Inertia:
     pitch: float  # I_yy = I_zz, kg m^2
 
 
-def estimate_inertia(rocket: Rocket, mass: float, cg: float) -> Inertia:
-    """Crude inertia estimate: thin-walled shell in roll, slender rod in pitch.
+@dataclass(frozen=True)
+class MeasuredComponent:
+    """A component whose inertia is known from CAD or from a swing test.
 
-    Replace with a measured value (bifilar pendulum for roll, simple pendulum swing for
-    pitch) before you tune any gains -- these are easily 30% off.
+    `station_from_module_face` keeps this drift-proof: the absolute station is derived
+    from the current geometry rather than frozen here, so moving the nav bay does not
+    silently invalidate the number.
+
+    `i_transverse` is about the component's OWN centre of mass. `i_roll` is about the
+    vehicle roll axis, which is valid only because this component is centred on that axis
+    -- its measured CoM is X = Y = 0 to the precision Onshape reports. A component off the
+    axis would need its own parallel-axis term in roll too.
+    """
+
+    name: str
+    mass: float  # kg
+    station_from_module_face: float  # m, aft of the canard module's forward face
+    i_transverse: float  # kg m^2, about its own CoM
+    i_roll: float  # kg m^2, about the vehicle roll axis
+    source: str
+
+
+# Measured in Onshape from the canard module Part Studio, Aug 2026, after the 35.4 deg
+# sweep / 0.40 taper reshape. 13 parts: tube section, 4 canard panels, 4 shafts, 4 servo
+# envelopes. Onshape reports Lxx = Lyy = 601.588 and Lzz = 623.179 kg mm^2 about the
+# module CoM, with every off-diagonal term zero -- the four-fold symmetry check passing.
+#
+# WHAT THIS DOES NOT INCLUDE, and it matters: the servo frames, outboard bearings and the
+# printed bay are not modelled yet, so the CAD module is 0.260 kg against roughly 0.565 kg
+# in the mass budget. The missing ~0.3 kg stays in the crude bulk term below, which smears
+# it over the whole airframe instead of concentrating it here. That UNDERSTATES the pitch
+# inertia, because the real hardware sits 324 mm forward of the CG where the parallel-axis
+# term is large. Re-measure once the printed bay exists.
+CANARD_MODULE_CAD = MeasuredComponent(
+    name="canard module (CAD, 13 parts)",
+    mass=0.2604,
+    station_from_module_face=0.072418,
+    i_transverse=601.588e-6,
+    i_roll=623.179e-6,
+    source="Onshape canard-control module, Part Studio 1, Aug 2026",
+)
+
+MEASURED_COMPONENTS: tuple[MeasuredComponent, ...] = (CANARD_MODULE_CAD,)
+
+
+def estimate_inertia(
+    rocket: Rocket,
+    mass: float,
+    cg: float,
+    measured: tuple[MeasuredComponent, ...] = MEASURED_COMPONENTS,
+) -> Inertia:
+    """Vehicle inertia: crude bulk estimate, with measured components superposed.
+
+    Everything without a measurement is still a thin-walled shell in roll and a slender rod
+    in pitch, and those are easily 30% off. Components in `measured` are removed from that
+    bulk and added back with their real tensor plus a parallel-axis term, which is exact
+    superposition rather than a fudge.
+
+    The canard module is worth doing this for. Its own transverse inertia is only about 2%
+    of the vehicle pitch inertia -- the parallel-axis term dominates there -- but in ROLL it
+    is roughly 11% of the total, because roll inertia scales with radius and four canard
+    panels sit at the largest radius on the vehicle. Roll is the axis GV-3 flies, so that
+    11% is the difference between a guessed and a known bandwidth.
+
+    Still replace the remainder with a real measurement (bifilar pendulum for roll, swing
+    test for pitch) before tuning gains.
     """
     r = rocket.diameter / 2.0
-    i_roll = 0.60 * mass * r**2
-    # Slender body about its own CG, corrected for CG not being at mid-length.
     l = rocket.length
-    i_pitch = mass * l**2 / 12.0 + mass * (cg - l / 2.0) ** 2 * 0.25
+    face = rocket.nose.length + rocket.tubes[0].length  # canard module forward face
+
+    m_measured = sum(c.mass for c in measured)
+    m_bulk = max(mass - m_measured, 0.0)
+
+    i_roll = 0.60 * m_bulk * r**2
+    # Slender body about its own CG, corrected for CG not being at mid-length.
+    i_pitch = m_bulk * l**2 / 12.0 + m_bulk * (cg - l / 2.0) ** 2 * 0.25
+
+    for c in measured:
+        station = face + c.station_from_module_face
+        i_roll += c.i_roll
+        i_pitch += c.i_transverse + c.mass * (station - cg) ** 2
+
     return Inertia(i_roll, i_pitch)
 
 

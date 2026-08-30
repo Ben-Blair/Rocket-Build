@@ -112,7 +112,7 @@ Read this before you quote any number from this tool in a report.
 | Drag buildup | ±20% at best | Component buildup with empirical form factors. Cross-check against OpenRocket, then against measured flight data. |
 | Mass budget | Estimate | Every subsystem line is a guess until you weigh the part. Weigh things. |
 | Trajectory | Good given the above | 3-DOF, no wind, perfect weathercocking. |
-| Inertias | ±30% | Crude analytical estimate. Measure before tuning gains. |
+| Inertias | ±30% bulk, canard module measured | Crude analytical estimate for the airframe, with the canard module's CAD tensor superposed (`control.MEASURED_COMPONENTS`). Measure the rest before tuning gains. |
 | Canard control derivatives | Approximate | Linear, quasi-steady, no wake effect on the canards themselves. |
 | **Canard/aft-fin interference** | **Weakest part** | Empirical factors with no validation. Trends are believable, absolute values are not. Must be measured in flight. |
 | Motor data | Real | 102 available 54 mm J/K certification curves from ThrustCurve.org in `data/motors/`. The `GENERIC` motors in `motors.py` are invented placeholders, kept only so the tool runs before a download. |

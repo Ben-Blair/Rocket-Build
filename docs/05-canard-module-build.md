@@ -10,24 +10,34 @@ Read this first if you are picking the CAD back up. Progress lives in the Onshap
 (`canard-control module`, Part Studio 1), not in this file — this is just a pointer to where
 the feature tree stands so a fresh session doesn't have to re-derive it.
 
-> **STALE AS OF THE 35.4° SWEEP / 0.40 TAPER.** The panel planform changed twice, so the
-> MAC moved and the hinge axis moved with it — 57.2 → 68.3 mm from the module forward face,
-> and the root LE moved 43.67 → 37.71 mm. Everything in the Onshape tree from `Sketch 2`
-> onward (panel, shaft, wall cut, servo block, pattern) was built to the old planform and
-> has to be redone against the regenerated `out/cad/canard_planform.dxf`. The tube
-> (`Extrude 1`) is unaffected. What follows describes the tree as it stood BEFORE that
-> change.
+**CURRENT as of Aug 2026**, rebuilt for the 35.4° sweep / 0.40 taper. 15 features, 13 parts.
 
-**Done**, in feature-tree order: tube (`Extrude 1`, G10/FR4 1850 kg/m³) → hinge datum plane
-→ one canard panel, correctly oriented and dimensioned, root LE at 43.67 mm, panel CP
-forward-hinge relationship verified (`Sketch 2` / `Extrude 2`) → shaft, ⌀5 mm on the hinge
-axis (`Sketch 3` / `Extrude 3`) → wall pass-through cut, reusing the shaft's own sketch so
+**Done**, in feature-tree order: tube (`Extrude 1`, G10/FR4 1850 kg/m³) → `Hinge Plane`, an
+offset from Top, now **68.27 mm** → one canard panel, root LE at **37.71 mm**, root 67.49 /
+tip 27.0 / sweep 47.90 (`Sketch 2` / `Extrude 2`) → shaft, ⌀5 mm on the hinge axis
+(`Sketch 3` / `Extrude 3`) → wall pass-through cut, reusing the shaft's own sketch so
 position matches exactly — this is a **clearance/pass-through hole, not a structural
 pocket**; the bearing that carries panel bending lives in the servo frame, not this hole
 (`Extrude 4`) → servo envelope block, 23.5×8.0×16.8 mm, mass-tuned to 9 g via a custom
-material density (2849 kg/m³) rather than a direct mass override, since no such field was
-found in this Onshape UI (`Sketch 4` / `Extrude 5`, part renamed "Servo (envelope, KST X08
-Plus)"). Parts (4): tube, panel, shaft, servo block.
+material "Servo mass override (9 g)" at 2849 kg/m³ rather than a direct mass override, since
+no such field was found in this Onshape UI (`Sketch 4` / `Extrude 5`) → `Circular pattern 1`,
+a FEATURE pattern of `Extrude 2/3/4/5`, 4 instances at 90°, axis on the tube's own circular
+edge, **Reapply features ON**.
+
+**Two bugs were found and fixed while building this — read them before touching `Extrude 4`:**
+- `Extrude 4` was cutting **nothing**. It ran blind 2.3 mm from a 37.4 mm offset, which is
+  exactly R37.4→R39.7 — precisely coincident with both wall surfaces, so the boolean was
+  degenerate ("would result in non-manifold body"), and in its original direction it cut
+  *inward into the bore*, through air. It is now **Opposite direction, offset 36 mm, depth
+  5 mm**, so it overshoots both faces cleanly. Never let a cut land exactly on a face.
+- The circular pattern does **not** carry material assignments to its copies. All nine
+  patterned parts had no material and contributed zero mass, so the module read 0.175 kg
+  instead of 0.260. Assign material to the copies after every pattern, and check the total.
+
+**Orientation, since it looks wrong and is not:** Top plane is the module's FORWARD face and
++Z runs AFT. Because Onshape draws +Z up, the module renders nose-DOWN. It is correct — the
+panel CoM measures Z = 83.307 mm against an analytical 83.310, where a flipped model would
+read 59.61 — but it is worth knowing before you mate this into an assembly.
 
 **Two known loose ends on what's built:**
 - The servo block's radial (Y) centering is off by ~0.09 mm — not fully constrained, just
@@ -36,18 +46,40 @@ Plus)"). Parts (4): tube, panel, shaft, servo block.
 - The block assumes the KST output shaft is centered on its 23.5 mm body. Unconfirmed — check
   the real datasheet before this assumption feeds into anything downstream.
 
-**Not started**: printed bay (step 6 below) — blocked on picking real bracket hardware, since
-a placeholder shell wouldn't tell you anything the mass/interference checks need. Circular
-pattern ×4 (step 7) is well-defined and doesn't depend on the bay; it's the natural next
-step. Forward wiring pass-through and aft gas seal (mentioned under "what to check," not
-originally in the modelling order) are still open. The mass and interference checks at the
-end of this document haven't been run.
+**Not started**: printed bay (step 6 below) — blocked on picking real bracket hardware,
+since a placeholder shell wouldn't tell you anything the mass/interference checks need.
+Forward wiring pass-through and aft gas seal (mentioned under "what to check," not
+originally in the modelling order) are still open. The **interference sweep** (rotate one
+panel through ±8° and check the horn, shaft, bay and neighbouring servo clear) has NOT been
+run — the mass check has.
+
+**Module mass properties, measured Aug 2026** (all 13 parts, materials assigned):
+
+| | |
+|---|---|
+| Mass | **0.2604 kg** |
+| Volume | 131,173.275 mm³ |
+| CoM | X 0, Y 0, **Z 72.418 mm** aft of the module forward face |
+| Inertia about CoM | Lxx = Lyy = **601.588** kg·mm², Lzz = **623.179** kg·mm² |
+| Off-diagonals | zero — the four-fold symmetry check passing |
+
+That 0.2604 kg is against roughly 0.565 kg in the mass budget, and the gap is real, not an
+error: the servo frames, outboard bearings and printed bay are not modelled yet. Re-measure
+once they exist.
 
 ## Why model this before the rest of the rocket
 
 Three reasons, in order of value:
 
-1. **Mass properties.** `README.md` flags the inertias as **±30%, "crude analytical
+1. **Mass properties — DONE, Aug 2026.** The module's tensor is now measured and wired
+   into `design/control.py` as `CANARD_MODULE_CAD`: 0.2604 kg, CoM 72.418 mm aft of the
+   module forward face, Lxx = Lyy = 601.588 and Lzz = 623.179 kg·mm² about that CoM, all
+   off-diagonals zero. It raised the vehicle **roll** inertia 6.5% and dropped pitch 1.4%,
+   moving the pitch mode 4.21 → 4.26 Hz and the roll acceleration down about 7%. Roll is
+   the axis GV-3 flies, so that 6.5% is the one that matters. The rest of the airframe is
+   still the crude estimate below.
+
+   `README.md` flags the inertias as **±30%, "crude analytical
    estimate, measure before tuning gains."** Inertia sets your control bandwidth directly —
    pitch mode is 4.3 Hz and drives the ≥85 Hz loop rate requirement. Onshape computes CG
    and moments of inertia from real geometry with real densities. That is a genuine

@@ -10,6 +10,11 @@ Read this first if you are picking the project back up.
   is the single source of truth for the vehicle and every script imports from it. The BOM
   is drafted (`04-bill-of-materials.md`). **The one remaining deliverable is a dimensioned
   drawing**, which is CAD work in Onshape.
+- **The canard module inertia is measured**, not estimated. `design/control.py` now
+  superposes the CAD tensor (`CANARD_MODULE_CAD`) on the crude bulk estimate: vehicle roll
+  inertia up 6.5%, pitch down 1.4%, pitch mode 4.21 → 4.26 Hz, roll acceleration down ~7%.
+  Roll is the axis GV-3 flies, so the 6.5% is the one that matters. The rest of the airframe
+  is still ±30% until you swing it.
 - **Step 4 is next**: avionics. Decisions D7 (flight computer) and D8 (state estimation)
   are open and drive the largest, least specified line in the budget.
 
@@ -64,7 +69,10 @@ that silently recurs:
    that looks like one object. `canard_sweep_cal = None` now derives the angle from the aft
    fins so the two cannot drift apart. **The hinge sign does not change with sweep** —
    hinge and panel CP are both referenced to the MAC — but the hinge STATION moves a long
-   way, which is why the CAD has to be redone.
+   way — 57.2 → 68.3 mm from the module forward face — which is why the CAD had to be
+   rebuilt. That rebuild is **done** (`docs/05`), and it turned up two Onshape bugs worth
+   knowing: a wall cut that landed exactly on both faces and so cut nothing, and a circular
+   pattern that silently dropped the material assignment on all nine copies.
 8. **Taper was 0.70 because nothing had tried anything else.** Sharpening it to 0.40 (root
    grown to 0.85 cal to hold panel area at 3188 mm²) recovers most of what the sweep cost —
    1.82 → 1.96 g, 394 → 424 m — because CNa rises as the tip unloads. Root and taper are
