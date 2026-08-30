@@ -12,9 +12,11 @@ Read this first if you are picking the project back up.
   drawing**, which is CAD work in Onshape.
 - **The canard module inertia is measured**, not estimated. `design/control.py` now
   superposes the CAD tensor (`CANARD_MODULE_CAD`) on the crude bulk estimate: vehicle roll
-  inertia up 6.5%, pitch down 1.4%, pitch mode 4.21 → 4.26 Hz, roll acceleration down ~7%.
-  Roll is the axis GV-3 flies, so the 6.5% is the one that matters. The rest of the airframe
-  is still ±30% until you swing it.
+  inertia up 6.4%, pitch down 1.5%, pitch mode 4.30 → 4.34 Hz, roll acceleration down ~6%.
+  Roll is the axis GV-3 flies, so the 6.4% is the one that matters. The tensor is now read
+  off `Assembly 1` rather than Part Studio 1, because the servos are real parts in their own
+  studio and only share a frame once assembled. The rest of the airframe is still ±30% until
+  you swing it.
 - **The CAD is now driven through the Onshape REST API, not the browser.** That change paid
   for itself immediately: reading the feature tree as JSON exposed two defects that clicking
   around had hidden for weeks — a hinge dimension measured to a circle's tangent instead of
@@ -22,6 +24,21 @@ Read this first if you are picking the project back up.
   physical hinge sat at 0.029 of MAC instead of 0.200, which is a **0.82× servo torque
   margin against a 2.0× requirement**. Both are fixed and verified; see `docs/05`.
   **If you touch the CAD again, use the API.** Credentials live outside the repo.
+- **The servos in the CAD are now the real part, and the CAD articulates.** The
+  23.5 × 8 × 16.8 envelope block is superseded by KST X08 Plus geometry built from the
+  datasheet, in its own Part Studio, and `Assembly 1` holds the module and four servos in
+  position. `python scripts/canard_sweep.py` drives the canards through ±8° for real and
+  reports clearances — the interference check `docs/05` had carried as NOT RUN since the
+  module was built. Two things the block had hidden came out of it; they are corrections 9
+  and 10 below. The four revolute hinge mates are the one piece not finished: the mate
+  connectors and the rigid groups are in, the mates are not.
+- **The hinge is a mechanism now, and closing it found a third thing.** Both fits
+  correction 10 left open are closed — see correction 11 and `docs/05` "The hinge stack".
+  `design/hinge.py` models the shaft, bearing and coupling as a load path rather than as a
+  set of dimensions; `scripts/hinge_report.py` prints it; `scripts/make_hinge_stack.py`
+  applies it to Onshape and is safe to re-run. `scripts/baseline.py` now carries a
+  hinge-stack verdict, and the check is run against the **as-built** layout too, where it
+  fails on five counts. A check that has never failed is not evidence of anything.
 - **Step 4 is next**: avionics. Decisions D7 (flight computer) and D8 (state estimation)
   are open and drive the largest, least specified line in the budget.
 
@@ -41,8 +58,8 @@ cost of flutter margin (1.78 against 1.97) and servo torque (2.3× against 2.8×
 is retained on margin, and because the Onshape module is built to it — but that is a choice,
 and §7 now says so instead of hiding it.
 
-Seven corrections are worth knowing about. The first four changed the design; the last two
-are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
+Eleven corrections are worth knowing about. The first four changed the design; two of the
+rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
 1. **Actuator packaging never set the airframe diameter** (§4). The original model assumed
@@ -95,6 +112,73 @@ that silently recurs:
    is invalidated. The price is flutter: the longer root chord drops the canard margin from
    5.42× to 4.46× at fixed 3.0 mm thickness. Still ~3× the requirement, but this is now the
    number to watch if the panel ever gets thinner.
+
+9. **A bounding box has no output shaft, and that is not a small thing.** The servo was
+   modelled as a mass-tuned block for long enough that two of its properties were never
+   checked, because a block does not have them. The KST drawing says the output shaft is
+   **6.14 mm from one case end, not centred at 11.75** — `docs/05` had flagged the centred
+   assumption as "unconfirmed", and it was wrong — and that the shaft runs along the
+   **16.8 mm axis**, so a radial output shaft spends 16.8 mm of tube radius and stacks only
+   8 mm around the circumference. Every document said the reverse, which describes a servo
+   whose shaft leaves its narrow edge. Both orientations fit and the packaging conclusion
+   does not move, but the **central void goes from 45 mm to 17 mm** once the cable boss is
+   counted, and that void is where the wiring and any pass-through structure live. (It is
+   ⌀12.17 now: correction 11 moved the servos 4 mm inboard, and `check_flat_mount()` was
+   given the servo's real seat so it measures the void instead of budgeting for it.) The
+   pattern here is the same one as correction 1 and correction 6: **the actuator keeps
+   being modelled as a shape rather than as a mechanism, and every time, the thing that was
+   wrong was the bit the shape could not represent.**
+10. **The interference sweep needed a mechanism, not a calculation — and then barely needed
+   the sweep.** Once the canards could actually turn, the answer fell out of the
+   arrangement: the hinge axis is radial and the shaft is coaxial with it, so the shaft
+   sweeps nothing; rotation about a radial hinge preserves each panel point's distance from
+   the rocket axis, so a panel that starts outboard of the tube stays outboard at every
+   deflection; and the servos are entirely inboard of the wall while the panels are
+   entirely outboard, so the two never share a radius. Nothing fouls. **What the sweep did
+   turn up were two FITS that a static model cannot express**: the wall pass-through is
+   ⌀5.000 against a ⌀5.000 shaft, because it reuses the shaft's own sketch — right for
+   position, wrong for fit, and invisible to any interference check because zero clearance
+   is not an interference — and the servo spline reaches only **0.185 mm** past the panel
+   root face, so direct drive from the spline is not geometrically available and the
+   spline-to-shaft coupling is an unmodelled design decision. **Both are closed by
+   correction 11, and the sentence above about the servos and panels never sharing a radius
+   is where the third defect hid: the SHAFT shares a radius with both.**
+11. **The two open fits were one problem counted twice, and there was a third underneath.**
+   Closing correction 10 started by asking what the shaft was actually made of. It was a
+   **solid** ⌀5 rod from R 29.400 to R 40.200 — the API returns 212.058 mm³ against 212.058
+   for a solid cylinder, so nothing had ever been cut away for the servo — while the
+   servo's output face sat at R 37.185 with its case running inboard from there. **The
+   shaft and the servo occupied the same space: 3.015 mm inside the output spline, 7.785 mm
+   inside the case.** A hard clash, at zero deflection, in a model whose interference check
+   had been signed off. The sweep did not see it because the sweep asked whether *rotation*
+   caused a collision, and its answer to the question it asked was correct. The R 29.400
+   was a leftover — the inboard face of the obsolete servo *block* — which is the lesson:
+   **superseding a part does not supersede the dimensions that were taken from it.**
+
+   The three defects share one cause. Between the servo's output face and the panel root
+   there were **3.015 mm of radius and the airframe wall took 2.300 of them**. So there was
+   no room for a bearing and therefore no bearing, no room for a coupling and therefore no
+   coupling, no room for clearance and therefore none of that either. A LAYOUT problem in
+   three tolerance costumes, and no fit callout fixes it.
+
+   What made it visible was **the panel normal force, which nothing had ever computed**.
+   The hinge moment is 0.0599 N·m — small, which is exactly why a 9 g servo is enough,
+   because the hinge sits 2.4 mm from the panel CP. The same panel makes **25.4 N** at a
+   bearing 29 mm away, so **0.734 N·m** of bending. *Reading only the hinge moment is how a
+   hinge ends up with no bearing in it.* And peak pressure under an overhung load goes as
+   1/L², so the 2.3 mm of wall available was not a slightly worse bearing than a 6 mm one —
+   it was 175 MPa against an 80 MPa allowable.
+
+   Fixed by moving the **servo** 4.000 mm inboard rather than the panel: the panel is
+   frozen aerodynamics, the central void is a budget line. The shaft is now a ⌀6 sleeve
+   from R 33.485 that stops at the servo's output face; the wall bore is a ⌀7.975 seat
+   carrying **its own dimension**, so it cannot track the shaft again; a ⌀6/⌀8 × 6.0 plain
+   bearing takes the bending at 3.4× margin and the spline socket engages 91% of the
+   spline. Cost: central void — every band lost the same 8 mm, ⌀20.17 → ⌀12.17 over the
+   8.2 mm where the cable bosses sit and ⌀40.77 → ⌀32.77 alongside the cases — plus 1.2 g
+   and 1.3% of module roll inertia. **No control conclusion moved.** The **sleeve-to-panel joint** is
+   now the open design decision, in the slot the coupling used to occupy: a ⌀6 shaft cannot
+   simply enter a 3.0 mm panel, and that joint carries the full 0.734 N·m.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.

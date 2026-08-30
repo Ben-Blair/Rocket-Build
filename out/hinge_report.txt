@@ -1,0 +1,119 @@
+
+============================================================================================
+CANARD HINGE STACK
+============================================================================================
+  worst case              q = 19.42 kPa, panel local alpha 9.19 deg (8 deg commanded + 1.19 deg trim)
+  panel                   root 67.49 / tip 27.00 / semispan 67.49 mm, 3188.4 mm^2
+  spanwise centroid       28.924 mm outboard of the theoretical root
+
+============================================================================================
+AS BUILT  --  the Onshape model before this analysis
+============================================================================================
+  Servo output face R 37.185. A SOLID dia 5.000 shaft from R 29.400 to R 40.200.
+  The wall pass-through cut from the shaft's own sketch, so dia 5.000 on dia 5.000.
+  No bearing anywhere, and no coupling between the spline and the shaft.
+
+  radial stations, as built (mm from the rocket axis)
+    servo cable boss, inner end        R   10.085
+    shaft sleeve, inboard end          R   29.400
+    servo output face                  R   37.185
+    bearing, inboard end               R   37.400
+    tube ID                            R   37.400
+    tube OD / bearing outboard end     R   39.700
+    panel root face                    R   40.200
+    spline tip                         R   40.385
+
+  shaft sleeve      dia 5.000 x 10.800 long
+  wall bore         dia 5.000   seat fit +0.000 mm, running clearance +0.000 mm
+  bearing           2.300 long  -- NONE; the wall is doing this job by default
+  spline engagement 3.200 mm (100% of the spline)
+  spline past panel root +0.185 mm
+  central void      dia 20.17, boss-to-boss margin +6.09 mm
+
+  panel normal force        25.374 N at R 68.624 mm
+  hinge moment              0.0599 N m  (the servo's number)
+  bending at the tube OD    0.7339 N m  (the bearing's number)
+  bearing peak pressure      175.3 MPa   margin 0.46x against 80 MPa (need 2.0x)
+  sleeve bending stress       59.8 MPa   6061-T6 4.6x, 303 stainless 4.0x, 4140 steel 11.0x
+  spline socket pressure      27.1 MPa at the servo's 0.520 N m stall torque
+
+  VERDICT: NOT BUILDABLE -- 5 violation(s)
+    FAIL  shaft sleeve starts at R 29.400 mm, inboard of the servo output face at R 37.185 -- the shaft is inside the servo
+    FAIL  running clearance between the dia 5.000 journal and the airframe wall itself is 0.000 mm, against a 0.020 mm minimum -- zero clearance is not an interference, so no interference check will ever report this
+    FAIL  the shaft turns directly in the airframe wall; there is no bearing in the load path, so the panel bending moment is carried by a 2.3 mm long fibreglass hole and by the servo's own output shaft
+    FAIL  sleeve wall over the spline socket is 0.300 mm; below 0.5 mm there is nothing left to cut teeth into
+    FAIL  bearing pressure 175.3 MPa against a 80 MPa allowable is only 0.46x, short of 2.0x
+
+============================================================================================
+SELECTED  --  servo 4.000 mm inboard, dia 6 sleeve, bearing seat in the wall
+============================================================================================
+Three changes, and they are one decision, not three:
+
+  - The servo moves 4.000 mm inboard. Nothing else creates room. Between the servo's
+    output face and the panel root there were 3.015 mm, the airframe wall took 2.300
+    of them, and a plain bearing that can carry this load needs about 4.5 mm of
+    length -- the peak pressure under an overhung load goes as 1/L^2, so a 2.3 mm
+    bushing is not a worse answer than a 6 mm one, it is 7x worse. Moving the PANEL
+    outboard would also work and would change frozen aerodynamics. Moving the servo
+    spends central void, which is a budget line, not a frozen one.
+
+  - The shaft becomes a dia 6 sleeve rather than a dia 5 rod. Not for strength; dia 5
+    is strong enough. It is so that a dia 4 spline socket leaves 0.8 mm of wall to cut
+    teeth into instead of 0.3 mm.
+
+  - The wall bore stops being a copy of the shaft's sketch and becomes a bearing seat,
+    dimensioned off the bearing OD with a press fit. The shaft then turns in the
+    bearing, with a real running clearance, instead of in the airframe.
+
+4.000 mm is the largest move the four servo cable bosses allow with a millimetre to
+spare before they meet on the rocket axis. It costs 8.0 mm of central void everywhere:
+the constricted band where the cable bosses sit goes dia 20.17 -> dia 12.17 over 8.2 mm
+of length, and the wider band alongside the servo cases goes dia 40.77 -> dia 32.77
+over 29.5 mm. Both are 8 mm smaller, because the whole servo moved, and the wiring has
+to fit the smaller of them.
+
+  radial stations, selected (mm from the rocket axis)
+    servo cable boss, inner end        R    6.085
+    servo output face                  R   33.185
+    shaft sleeve, inboard end          R   33.485
+    bearing, inboard end               R   33.700
+    spline tip                         R   36.385
+    tube ID                            R   37.400
+    tube OD / bearing outboard end     R   39.700
+    panel root face                    R   40.200
+
+  shaft sleeve      dia 6.000 x 6.715 long
+  wall bore         dia 7.975   seat fit -0.025 mm, running clearance +0.030 mm
+  bearing           6.000 long, 2.300 of it inside the wall
+  spline engagement 2.900 mm (91% of the spline)
+  spline past panel root -3.815 mm
+  central void      dia 12.17, boss-to-boss margin +2.09 mm
+
+  panel normal force        25.374 N at R 68.624 mm
+  hinge moment              0.0599 N m  (the servo's number)
+  bending at the tube OD    0.7339 N m  (the bearing's number)
+  bearing peak pressure       23.2 MPa   margin 3.45x against 80 MPa (need 2.0x)
+  sleeve bending stress       34.6 MPa   6061-T6 8.0x, 303 stainless 6.9x, 4140 steel 18.9x
+  spline socket pressure      29.9 MPa at the servo's 0.520 N m stall torque
+
+  VERDICT: buildable, every margin met.
+    note  sleeve wall over the spline socket 0.800 mm
+    note  the wall bore is dia 7.97 mm in a 2.3 mm wall -- check the tube, not just the hinge
+    note  3.700 mm of the bearing sits inboard of the tube ID and needs a housing collar; that is a requirement on the printed bay
+
+============================================================================================
+WHAT THIS COSTS, AND WHAT IT DOES NOT
+============================================================================================
+  central void            dia 20.17 -> dia 12.17, over the 8.2 mm band where the cable bosses
+                          sit, and dia 40.77 -> dia 32.77 over the 29.5 mm band
+                          alongside the cases. The whole servo moved, so both
+                          bands lost the same 8 mm; the wiring fits the smaller.
+  frozen aerodynamics     UNCHANGED. The panel root stays at R 40.200 and the
+                          planform is untouched, which is the whole reason the
+                          servo moved instead of the panel.
+  servo torque margin     UNCHANGED at 1:1 direct drive; the coupling is a spline
+                          socket, not a gear.
+  still open              the sleeve-to-panel joint. The sleeve ends flush at the
+                          panel root and the panel is 3.0 mm thick, so a
+                          dia 6 shaft cannot simply enter it. That joint has
+                          to carry 0.734 N m into a 3.0 mm panel.

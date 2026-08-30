@@ -6,14 +6,17 @@ Run:  python scripts/baseline.py
 
 from __future__ import annotations
 
+import math
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from design import aero, control, flutter, trajectory
+from design import aero, control, flutter, hinge, trajectory
 from design.configure import baseline, build_vehicle, evaluate
-from design.packaging import SERVOS, check_direct_drive, check_flat_mount, torque_margin
+from design.packaging import (
+    SERVO_GEOMETRY, SERVOS, check_direct_drive, check_flat_mount, torque_margin,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -159,14 +162,37 @@ def main() -> None:
     rule("ACTUATOR CHECK")
     servo = SERVOS[SERVO_CHOICE]
     bay = check_direct_drive(r.tubes[1].inner_diameter, servo, BASELINE.n_canards)
-    flat = check_flat_mount(r.tubes[1].inner_diameter, servo, BASELINE.n_canards)
+    geom = SERVO_GEOMETRY.get(SERVO_CHOICE)
+    seat = hinge.selected(r.diameter / 2.0, r.tubes[1].wall_thickness,
+                          geom).servo_output_face if geom else None
+    flat = check_flat_mount(r.tubes[1].inner_diameter, servo, BASELINE.n_canards,
+                            geometry=geom, seat_radius=seat)
+    case_only = check_flat_mount(r.tubes[1].inner_diameter, servo, BASELINE.n_canards,
+                                 geometry=geom, include_cable_boss=False)
     print(f"  servo               {servo.name}")
     print(f"  packaging (as built) {flat}")
+    print(f"  packaging (case only) {case_only}")
     print(f"  packaging (old bound) {bay}")
-    print("  -> The servo lies flat against the wall, shaft radial through it: its 8 mm")
-    print("     thickness eats radius, not its 23.5 mm length. Confirmed against the part.")
-    print("     The second line is the superseded 'body pointing inward' bound, kept only")
-    print("     because it is conservative. Packaging is no longer a binding constraint.")
+    print("  -> The servo lies flat against the wall, shaft radial through it. The shaft")
+    print("     runs along the 16.8 mm case axis, so THAT is what eats radius; the 8 mm")
+    print("     thickness is what stacks around the circumference. Read off the KST")
+    print("     dimensioned drawing, not assumed.")
+    print("     Packaging still is not binding -- but the central void is 12 mm, measured")
+    print("     off where the servo actually seats (R 33.185, 4 mm inboard of the wall to")
+    print("     make room for the hinge bearing), over the 8.2 mm band where the cable")
+    print("     bosses sit. The case-only line is the same band without the boss. The")
+    print("     wiring lives in that void.")
+    print("     The last line is the superseded 'body pointing inward' bound, kept only")
+    print("     because it is conservative.")
+    if geom is not None:
+        print(f"  shaft, off case centre {geom.shaft_offset_from_centre * 1000:+.2f} mm "
+              f"({geom.shaft_from_end * 1000:.2f} mm from the near end, not "
+              f"{geom.case_length * 500:.2f})")
+        print(f"  spline above flange {geom.shaft_proud_of_flange * 1000:.2f} mm, "
+              f"against {r.tubes[1].wall_thickness * 1000:.1f} mm of wall to cross")
+        print(f"  servo travel        +/-{math.degrees(geom.travel_half_angle):.0f} deg, "
+              f"so +/-{DEFLECTION_LIMIT_DEG:.0f} deg of canard uses "
+              f"{DEFLECTION_LIMIT_DEG / math.degrees(geom.travel_half_angle) * 100:.0f}% of it")
     worst = max(
         (control.pitch_authority(r, p, p.mass, DEFLECTION_LIMIT_DEG) for p in f.points if p.q > 100),
         key=lambda a: abs(a.hinge_moment_per_panel),
@@ -180,6 +206,27 @@ def main() -> None:
     print(f"  usable servo torque {servo.stall_torque * 0.4 * GEAR_RATIO:.4f} N m "
           f"(stall x 0.4 derate, gear {GEAR_RATIO:.1f}:1)")
     print(f"  torque margin       {margin:.1f}x  {'OK' if margin > 2.0 else 'MARGINAL'}")
+
+    # The hinge is a MECHANISM, and the torque margin above is only its easiest question.
+    # The same panel that makes 0.06 N m about the hinge makes 25 N at the bearing, and
+    # the bearing is 29 mm away. See design/hinge.py and scripts/hinge_report.py.
+    stack = hinge.selected(r.diameter / 2.0, r.tubes[1].wall_thickness, geom)
+    hl = hinge.hinge_loads(stack, hm, r.canards.mean_chord,
+                           r.diameter / 2.0 + hinge.spanwise_centroid(
+                               r.canards.root_chord, r.canards.tip_chord,
+                               r.canards.semispan),
+                           servo.stall_torque, geom.spline_teeth)
+    chk = hinge.check_hinge_stack(stack, hl)
+    print(f"  panel normal force  {hl.normal_force:.1f} N, so {hl.moment_at_wall:.3f} N m "
+          f"of bending where the shaft leaves the tube")
+    print(f"  hinge bearing       dia {stack.journal_dia * 1000:.0f} journal in a "
+          f"{stack.bearing_length * 1000:.1f} mm plain bearing, "
+          f"{hl.bearing_pressure / 1e6:.0f} MPa peak, margin {hl.bearing_margin:.1f}x")
+    print(f"  hinge fits          running clearance "
+          f"{stack.running_clearance * 1000:.3f} mm, spline engagement "
+          f"{stack.spline_engagement * 1000:.3f} mm "
+          f"({stack.spline_engagement_fraction * 100:.0f}%)")
+    print(f"  hinge stack         {'OK' if chk.ok else 'VIOLATIONS: ' + '; '.join(chk.violations)}")
     print(f"  servo speed         {servo.speed_60deg:.2f} s/60deg "
           f"--> {60.0 / servo.speed_60deg:.0f} deg/s slew rate")
     print(f"  pitch mode          {worst.pitch_natural_freq_hz:.1f} Hz; loop rate should be "

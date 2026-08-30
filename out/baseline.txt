@@ -104,7 +104,7 @@ ROLL AUTHORITY  --  the canard / aft-fin interference problem
     cancellation                   73.9% of canard authority lost
     SIGN correct
     Cl_p (roll damping)          -70.47 /rad
-    roll accel at 2 deg          3924 deg/s^2
+    roll accel at 2 deg          3939 deg/s^2
     steady roll rate                187 deg/s
 
   interdigitated (45 deg)
@@ -116,7 +116,7 @@ ROLL AUTHORITY  --  the canard / aft-fin interference problem
     cancellation                   16.8% of canard authority lost
     SIGN correct
     Cl_p (roll damping)          -70.47 /rad
-    roll accel at 2 deg         12533 deg/s^2
+    roll accel at 2 deg         12580 deg/s^2
     steady roll rate                598 deg/s
 
   Sensitivity: where does the net roll moment change sign?
@@ -150,16 +150,31 @@ ROLL AUTHORITY  --  the canard / aft-fin interference problem
 ACTUATOR CHECK
 ============================================================================================
   servo               KST X08 Plus V6.0 (9 g, 8 mm, 5.3 kgf.cm @ 8.4 V)
-  packaging (as built) FITS   flat/tangential  need ID  79.2 mm, have 187.9 mm (+108.7 mm)  ok, 45 mm central void
+  packaging (as built) FITS   flat/tangential  need ID  44.0 mm, have 144.4 mm (+100.4 mm)  ok, 12 mm central void
+  packaging (case only) FITS   flat/tangential  need ID  44.0 mm, have 176.7 mm (+132.7 mm)  ok, 38 mm central void
   packaging (old bound) FITS   direct/pinwheel  need ID  69.5 mm, have  71.8 mm (  +2.3 mm)  ok
-  -> The servo lies flat against the wall, shaft radial through it: its 8 mm
-     thickness eats radius, not its 23.5 mm length. Confirmed against the part.
-     The second line is the superseded 'body pointing inward' bound, kept only
-     because it is conservative. Packaging is no longer a binding constraint.
+  -> The servo lies flat against the wall, shaft radial through it. The shaft
+     runs along the 16.8 mm case axis, so THAT is what eats radius; the 8 mm
+     thickness is what stacks around the circumference. Read off the KST
+     dimensioned drawing, not assumed.
+     Packaging still is not binding -- but the central void is 12 mm, measured
+     off where the servo actually seats (R 33.185, 4 mm inboard of the wall to
+     make room for the hinge bearing), over the 8.2 mm band where the cable
+     bosses sit. The case-only line is the same band without the boss. The
+     wiring lives in that void.
+     The last line is the superseded 'body pointing inward' bound, kept only
+     because it is conservative.
+  shaft, off case centre +5.61 mm (6.14 mm from the near end, not 11.75)
+  spline above flange 8.45 mm, against 2.3 mm of wall to cross
+  servo travel        +/-60 deg, so +/-8 deg of canard uses 13% of it
   peak hinge moment   0.0599 N m per panel at q = 19.4 kPa
   hinge balance       restoring (hinge fwd of panel CP)
   usable servo torque 0.2080 N m (stall x 0.4 derate, gear 1.0:1)
   torque margin       3.5x  OK
+  panel normal force  25.4 N, so 0.734 N m of bending where the shaft leaves the tube
+  hinge bearing       dia 6 journal in a 6.0 mm plain bearing, 23 MPa peak, margin 3.4x
+  hinge fits          running clearance 0.030 mm, spline engagement 2.900 mm (91%)
+  hinge stack         OK
   servo speed         0.09 s/60deg --> 667 deg/s slew rate
   pitch mode          4.3 Hz; loop rate should be >= 87 Hz
 

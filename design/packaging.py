@@ -79,6 +79,115 @@ SERVOS: dict[str, Servo] = {
 }
 
 
+# ---------------------------------------------------------------------------------
+# CAD-grade mechanical geometry.
+#
+# `Servo` above carries the three case dimensions and nothing about where the output
+# shaft is or which way it points. That is enough for a mass budget and it is NOT enough
+# to build a model you can articulate, which is how the two errors recorded below
+# survived: a bounding box has no shaft, so nothing about it can be checked.
+#
+# Everything here is read off the manufacturer's dimensioned drawing.
+@dataclass(frozen=True)
+class ServoGeometry:
+    """Datasheet mechanical detail for a real servo. All lengths in metres.
+
+    THE SHAFT RUNS ALONG THE CASE *HEIGHT*. On the X08 Plus the drawing's plan view is
+    23.5 x 8 with the spline face-on, and its side view is 23.5 x 16.8 with the spline
+    standing proud of the top edge. So the output axis is the 16.8 mm dimension, and the
+    face the shaft emerges from is the 23.5 x 8 one. Any mount that needs a RADIAL output
+    shaft therefore spends `case_height` of tube radius, not `case_width`.
+
+    Axis naming, so it cannot drift: +shaft is the direction the spline points; `along` is
+    the case's 23.5 mm axis; `across` is its 8 mm axis. Distances measured `_from_top` are
+    measured from the case face the shaft emerges from, positive going INTO the case.
+    """
+
+    # Case, as the datasheet's three-number "case dimensions" line quotes it.
+    case_length: float          # 23.5 mm axis -- "along"
+    case_width: float           # 8 mm axis -- "across"
+    case_height: float          # 16.8 mm axis -- THE SHAFT AXIS
+
+    # Mounting lugs.
+    envelope_length: float      # tip-to-tip across the lugs
+    lug_hole_pitch_along: float
+    lug_hole_pitch_across: float
+    lug_hole_dia: float
+    lug_hole_count: int
+    lug_hole_2_dia: float       # the second, larger hole pattern
+    lug_hole_2_count: int
+    flange_from_top: float      # top face down to the lug plane
+    flange_thickness: float
+
+    # Output.
+    shaft_from_end: float       # along the 23.5 mm axis, from the NEAR case end
+    shaft_proud_of_top: float   # spline height above the top face
+    spline_dia: float
+    spline_teeth: int
+    horn_screw: str
+
+    # Everything below the top face, including the cable boss. This is the real radial
+    # keep-out when the shaft points outward, not `case_height`.
+    depth_from_top: float
+
+    travel_half_angle: float    # rad, one side of centre
+
+    source: str = "manufacturer dimensioned drawing"
+
+    @property
+    def shaft_from_far_end(self) -> float:
+        return self.case_length - self.shaft_from_end
+
+    @property
+    def shaft_offset_from_centre(self) -> float:
+        """How far the output axis sits from the case's own mid-length.
+
+        Zero would mean a bounding box centred on the hinge is the right placeholder.
+        It is not zero on any servo the author has checked.
+        """
+        return self.case_length / 2.0 - self.shaft_from_end
+
+    @property
+    def shaft_proud_of_flange(self) -> float:
+        """Spline reach above the MOUNTING plane -- the number that decides whether the
+        shaft crosses the wall and lands in the canard root."""
+        return self.flange_from_top + self.shaft_proud_of_top
+
+    @property
+    def depth_below_flange(self) -> float:
+        """Radial depth consumed inboard of the mounting plane."""
+        return self.depth_from_top - self.flange_from_top
+
+
+SERVO_GEOMETRY: dict[str, ServoGeometry] = {
+    # KST X08 Plus V6.0, datasheet KST_0012 rev 2025-04.
+    #
+    # TWO THINGS ON THIS DRAWING CONTRADICTED WHAT THIS PROJECT HAD ASSUMED. Both had
+    # been flagged as unverified in docs/05 and both turned out to be wrong:
+    #
+    #  - The output shaft is 6.14 mm from one case end, not centred at 11.75 mm. The
+    #    drawing dimensions it three times over from three datums (6.14 from the case
+    #    end, 7.64 from the lug-hole line, 9.14 from the envelope end), and those datums
+    #    are 1.5 mm apart exactly as the 23.50 / 26.50 / 29.50 stack requires, so the
+    #    reading is self-checking.
+    #  - The shaft runs along the 16.8 mm axis, so a radial output shaft costs 16.8 mm of
+    #    radius and stacks only 8 mm around the circumference -- the reverse of what
+    #    check_flat_mount() assumed.
+    "kst_x08_plus": ServoGeometry(
+        case_length=0.0235, case_width=0.0080, case_height=0.0168,
+        envelope_length=0.0295,
+        lug_hole_pitch_along=0.0265, lug_hole_pitch_across=0.0050,
+        lug_hole_dia=0.0015, lug_hole_count=4,
+        lug_hole_2_dia=0.0020, lug_hole_2_count=2,
+        flange_from_top=0.00525, flange_thickness=0.0010,
+        shaft_from_end=0.00614, shaft_proud_of_top=0.0032,
+        spline_dia=0.0040, spline_teeth=15, horn_screw="M2",
+        depth_from_top=0.0271,
+        travel_half_angle=math.radians(60.0),
+    ),
+}
+
+
 @dataclass
 class BayLayout:
     """Result of a packaging check for one (tube, servo, arrangement) combination."""
@@ -173,6 +282,9 @@ def check_flat_mount(
     n_canards: int = 4,
     frame_thickness: float = 0.004,
     clearance: float = 0.003,
+    geometry: "ServoGeometry | None" = None,
+    include_cable_boss: bool = True,
+    seat_radius: float | None = None,
 ) -> BayLayout:
     """Servo lying flat against the inner wall, output shaft radial through it.
 
@@ -181,16 +293,24 @@ def check_flat_mount(
     actually matches the hardware. The servo's THICKNESS eats tube radius, which is the
     weak constraint this arrangement exists to exploit.
 
-    ORIENTATION OF THE OTHER TWO DIMENSIONS, because it has been wrong here before. The
-    body lies with its LONG axis (23.5 mm on the KST X08 Plus) fore-and-aft along the
-    rocket axis, and its HEIGHT stacked around the circumference. That is how the DXF
-    profiles and docs/05-canard-module-build.md place it, and it is the better choice:
-    there is far more axial room in a 143 mm bay than there is arc at the mounting radius.
-    This function used to stack `length` circumferentially, which describes a servo turned
-    90 degrees from the one being built. Both orientations fit, so no conclusion changed
-    -- but it overstated the arc requirement by a third, and that figure had already
-    propagated into three documents before anyone checked it. check_bellcrank() has always
-    had this right; the two now agree on which dimension goes where.
+    ORIENTATION, because it has been wrong here twice. Pass `geometry` and the function
+    reads the orientation off the datasheet instead of guessing it.
+
+    The output shaft runs along the case HEIGHT (16.8 mm on the KST X08 Plus; see
+    ServoGeometry). A radial output shaft therefore points along that axis, so it is the
+    HEIGHT that eats tube radius and the WIDTH (8 mm) that stacks around the
+    circumference. The `Servo`-only path below assumed the opposite -- width radial,
+    height circumferential -- which describes a servo whose shaft comes out of its narrow
+    edge. No hobby servo is built that way, and it is the same class of error as the
+    "servo body points inward" premise this module was written to kill.
+
+    An earlier fix swapped `length` for `height` in the circumferential stack. That was a
+    correct fix to a different bug and it is still in force; it just did not question
+    which axis the shaft was on, because a `Servo` has no shaft to question.
+
+    The conclusion does not move -- both orientations fit, and by a wide margin either
+    way. What moves is the CENTRAL VOID, which is the number the avionics stack and the
+    wiring have to live in, and it is the tighter of the two readings that is real.
 
     The axial dimension is deliberately not checked here. Four servos laid fore-and-aft
     are bounded by the canard module length (142.9 mm against a 23.5 mm body), not by
@@ -205,11 +325,39 @@ def check_flat_mount(
     outboard ball bearing on the output shaft, which is exactly the load path this
     arrangement needs: the bearing takes the canard bending moment, not the servo spline.
     """
-    radial_band = servo.width + frame_thickness + clearance
+    if geometry is not None:
+        # Radial depth is everything inboard of the mounting plane. The cable boss is
+        # part of that keep-out even though it is not part of the case, so it is included
+        # by default; set include_cable_boss=False to see the case alone.
+        depth = geometry.depth_below_flange if include_cable_boss else (
+            geometry.case_height - geometry.flange_from_top
+        )
+        stacked = geometry.case_width
+    else:
+        depth = servo.width
+        stacked = servo.height
+
+    radial_band = depth + frame_thickness + clearance
     r_mid = inner_diameter / 2.0 - radial_band / 2.0
     arc_available = 2.0 * math.pi * max(r_mid, 1e-6)
-    arc_needed = n_canards * (servo.height + clearance)
-    central_void = inner_diameter - 2.0 * radial_band
+    arc_needed = n_canards * (stacked + clearance)
+
+    # Two ways to answer "how much room is left down the middle", and they are different
+    # questions, which is why they used to give different answers in the same report.
+    #
+    #   Without `seat_radius`: a BUDGET. Assume the servo is pushed as far outboard as it
+    #   can go and add allowances for a frame and clearance it does not yet have. Right
+    #   for sizing a tube before anything is drawn.
+    #
+    #   With `seat_radius`: a MEASUREMENT. The servo output face is actually at this
+    #   radius in the CAD, so the boss reaches seat_radius - depth_from_top and the void
+    #   is twice that. Right once there is a model to read. The two stopped agreeing when
+    #   the servo moved 4 mm inboard to make room for the hinge bearing -- see
+    #   design/hinge.py -- and the measurement is the one to believe.
+    if seat_radius is not None and geometry is not None:
+        central_void = 2.0 * (seat_radius - geometry.depth_from_top)
+    else:
+        central_void = inner_diameter - 2.0 * radial_band
 
     fits = arc_needed <= arc_available and central_void > 0.0
     if central_void <= 0.0:

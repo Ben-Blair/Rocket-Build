@@ -8,3 +8,4 @@ out/*.csv
 *.ork.bak
 out/javacls/
 *.class
+out/cad/*.png

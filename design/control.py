@@ -93,14 +93,33 @@ class MeasuredComponent:
 # it over the whole airframe instead of concentrating it here. That UNDERSTATES the pitch
 # inertia, because the real hardware sits 324 mm forward of the CG where the parallel-axis
 # term is large. Re-measure once the printed bay exists.
+# Measured off the ASSEMBLY, not the Part Studio, because the servos are no longer part
+# of it: the 23.5 x 8 x 16.8 envelope block has been replaced by real KST X08 Plus
+# geometry in its own Part Studio, and the two only share a frame once assembled.
+#
+# The change from the envelope figures is small but it is all in one direction, and the
+# direction is informative. The real servo's mass is not centred on its own body -- the
+# output shaft sits 6.14 mm from one case end, not 11.75 -- and it hangs 16.8 mm inboard
+# of the wall on the shaft axis rather than 8 mm. So the servo mass moved inboard and aft:
+# CoM 74.138 -> 75.090 mm, transverse 593.524 -> 585.266, roll 626.268 -> 612.442
+# kg*mm^2. Roll is down 2.2%, which nudges roll acceleration the other way from the 6.5%
+# the CAD tensor bought in the first place.
 CANARD_MODULE_CAD = MeasuredComponent(
-    name="canard module (CAD, 13 parts)",
-    mass=0.2599,
-    station_from_module_face=0.074138,
-    i_transverse=593.524e-6,
-    i_roll=626.268e-6,
-    source="Onshape canard-control module, Part Studio 1, Aug 2026 (REST API)",
+    name="canard module (CAD assembly, real servos, hinge stack)",
+    mass=0.258650,
+    station_from_module_face=0.075122,
+    i_transverse=581.280e-6,
+    i_roll=604.584e-6,
+    source="Onshape canard-control module, Assembly 1, Aug 2026 (REST API), after the "
+           "hinge stack of design/hinge.py",
 )
+# Superseded by the line above, kept because the delta is the whole argument for the
+# hinge rebuild and it is small: closing the two open fits cost 1.2 g and took roll
+# inertia down 1.3%. The shaft went from a dia 5 x 10.8 rod that ran 7.785 mm into the
+# servo to a dia 6 x 6.715 sleeve that stops at its output face, the wall bore opened
+# from dia 5.000 to dia 7.975 to seat a bearing, and the four servos moved 4 mm inboard.
+# Nothing here moved a control conclusion; that is the point of measuring it.
+#   mass 0.259864 kg, station 0.075090 m, Itrans 585.266e-6, Iroll 612.442e-6
 
 MEASURED_COMPONENTS: tuple[MeasuredComponent, ...] = (CANARD_MODULE_CAD,)
 
