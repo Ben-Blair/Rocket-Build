@@ -17,10 +17,12 @@ Current vehicle: 79.4 mm OD fiberglass, 1361 mm, canards 0.85 cal / aft fins 1.5
 interdigitated 45°, Cesaroni J449 Blue Streak, 4× KST X08 Plus servos flat-mounted with
 the hinge at 0.20c, 100 g nose ballast. 6.10 kg wet, apogee 1379 m, Mach 0.531, static
 margin 1.97–2.46 cal, P(SM<1.0) 0.6%, 450 m crossrange. `scripts/baseline.py` regenerates
-all of it; `evaluate()` reports feasible with no violations.
+all of it; `evaluate()` reports feasible with no violations, and that now includes a check
+that the recovery hardware physically fits in the bay.
 
-Four corrections are worth knowing about, because each one changed the design and each is
-the kind of thing that silently recurs:
+Six corrections are worth knowing about. The first four changed the design; the last two
+are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
+that silently recurs:
 
 1. **Actuator packaging never set the airframe diameter** (§4). The original model assumed
    the servo body points inward; the output shaft is on a large face, so the servo lies
@@ -32,6 +34,22 @@ the kind of thing that silently recurs:
    ahead of the CG and took P(SM<1.0) to 1.8% against a 1% limit.
 4. **The baseline used to live in six places and drifted from the docs.** It now lives
    only in `design/configure.py`. Do not copy those numbers into a script.
+5. **The recovery bay is 4.5 cal because it was checked, not because it was typed.** It
+   *was* just typed — nothing verified it until `recovery.check_packing()` existed. The
+   first run of that check said the bay was 11 mm short and the airframe was briefly
+   lengthened to 5.1 cal on the strength of it. **That was wrong, and the way it was wrong
+   is worth remembering**: packed volume was estimated as budgeted mass ÷ assumed bulk
+   density, and the budget carries a 280 g main against a real Iris Ultra 60" Compact at
+   193 g. Two guesses multiplied together manufactured a shortfall that is not in the
+   hardware. With the vendor's published pack volumes the chutes need 4.33 cal and fit
+   with 13 mm to spare. The airframe was right all along; only the confidence was missing.
+   **Do not change frozen geometry on the strength of an estimate when a published number
+   is ten minutes away.**
+6. **`check_flat_mount()` modelled the servo turned 90°.** It stacked the 23.5 mm body
+   length around the circumference where the build puts 16.8 mm, overstating the arc
+   requirement by a third — 106 mm against a true 79 mm. Both orientations fit, so no
+   conclusion moved, but the wrong figure had already propagated into three documents
+   before anything caught it. `check_bellcrank()` always had it right; they now agree.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.

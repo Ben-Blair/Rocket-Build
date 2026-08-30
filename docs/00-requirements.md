@@ -123,7 +123,7 @@ Values marked *(computed)* are outputs of `scripts/sweep.py` and
 | R4 | Thrust-to-weight at ignition | ≥ 5:1 | Standard HPR practice |
 | R5 | Max Mach | ≤ 0.8 | Keeps you subsonic. Transonic aero invalidates Barrowman, makes the controller design far harder, and adds no value to a controls project |
 | R6 | Apogee | ≤ 1600 m (5250 ft) AGL | **Neither a waiver limit nor a field-size limit** — both are unbounded at this site (C5, C5a). The cap is retained on the three grounds that survive: keeping max Mach under 0.8 with real margin (R5), keeping the manoeuvre visible and filmable from the pad, and holding search time and cost per flight low enough to fly five or six times *with the data intact*. An unbounded field removes the risk of landing off the property; it does not make a rocket easier to find. See `scripts/recovery_study.py` |
-| R7 | Internal diameter for actuator bay | Not binding — 4 servos need 106 mm of arc against 188 mm available, 45 mm central void (see §4) | **Superseded.** Diameter is set by the 54 mm motor mount and recovery packing volume, not by the actuators |
+| R7 | Internal diameter for actuator bay | Not binding — 4 servos need 79 mm of arc against 188 mm available, 45 mm central void (see §4) | **Superseded.** Diameter is set by the 54 mm motor mount and recovery packing volume, not by the actuators |
 | R8 | Commanded lateral acceleration authority early in coast | ≥ 0.5 g | Enough for a measurable, visible correction. Baseline achieves 2.08 g at 8°, for 450 m of crossrange |
 | R9 | Roll authority | Net Cl_delta must retain correct sign at all conditions, with ≥ 50% of canard-only authority surviving interference | See §5 |
 | R10 | Control loop rate | ≥ 100 Hz | Baseline pitch mode is 2.4 Hz, so 100 Hz gives ~40x margin |
@@ -155,7 +155,8 @@ servo is built that way.** The output shaft is on a large face, verified against
 
 The servo lies **flat against the inner wall**, output shaft radial, passing through the
 wall into the canard root. Its *thickness* consumes radius — 8.0 mm for the KST X08 Plus,
-not 23.5 mm — and its length only has to fit around the circumference:
+not 23.5 mm. Its *length* runs fore-and-aft along the rocket axis, and only its
+*height* has to fit around the circumference:
 
 | Airframe | Inward (old, wrong) | Flat (as built) |
 |---|---|---|
@@ -163,7 +164,7 @@ not 23.5 mm — and its length only has to fit around the circumference:
 | 66 mm | no fit | fits, 32 mm central void |
 | **75 mm** | +2.3 mm, knife edge | **fits, 45 mm central void** |
 
-Four servos need 106 mm of arc against 188 mm available. **Actuator packaging is not a
+Four servos need 79 mm of arc against 188 mm available. **Actuator packaging is not a
 binding constraint and never was.** `design/packaging.py` models both; `check_flat_mount()`
 is the one describing the vehicle.
 
@@ -178,7 +179,7 @@ With actuators out of the way, three things do:
 | Constraint | 66 mm | 75 mm |
 |---|---|---|
 | 54 mm motor mount (57.0 mm OD) | 5.0 mm annulus, 2.5 mm radial | **17.8 mm, 8.9 mm radial** |
-| Recovery bay volume for an 18 in drogue + 56 in main | 1.08 L | **1.57 L** |
+| Recovery bay volume for an 18 in drogue + 56 in main | 1.08 L | **1.57 L** against 1.24 L of packed hardware |
 | Everything downstream: fin sizing (§7), motor trade, margin robustness, OpenRocket correlation | would all need redoing | **already done** |
 
 **D2 stands at 75 mm, on new grounds.** 66 mm is now theoretically possible where it
@@ -294,7 +295,7 @@ On the selected Cesaroni J449 Blue Streak:
 | Actuator | KST X08 Plus V6.0, 3.3× torque margin, +2.3 mm packaging margin |
 | Hinge | 0.0626 N·m per panel, hinge at 0.20c — forward of the 0.25c panel CP, so restoring |
 | Fin flutter | aft fins 1.97× margin, canards 5.42× (see §8) |
-| Recovery | 100 s descent, ~0.93 km walk at 15 mph wind, 56 in main |
+| Recovery | 100 s descent, ~0.93 km walk at 15 mph wind, 56 in main. Bay 4.5 cal, verified against vendor pack volumes with +13 mm (§4.3) |
 | Nose ballast | **100 g at 191 mm from the nose tip**, 75 g minimum for R1, provision 300 g (§7.1) |
 | Margin robustness | P(SM < 1.0) = 0.6% as designed, 1.8% bare; P(SM < 1.4) = 7.9% / 14.6% |
 | OpenRocket correlation | CNa agrees to 0.3%, CP to 0.17 cal (see `03-openrocket-correlation.md`) |

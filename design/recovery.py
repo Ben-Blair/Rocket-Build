@@ -123,3 +123,322 @@ def simulate_descent(
         landing_energy=energy,
         drift_by_wind=drift,
     )
+
+
+# ======================================================================================
+# PACKING VOLUME
+# ======================================================================================
+#
+# Sizing a canopy tells you its diameter. It does not tell you whether it fits in the
+# tube, and on a 79.4 mm airframe that is the binding question: a 60 in main is a lot of
+# nylon to push down a 74.8 mm hole.
+#
+# `recovery_bay_cal = 4.5` in configure.py was an assumed constant, not a result. These
+# functions make the bay length fall out of the canopy choice.
+#
+# THE HONEST LIMITS OF THIS MODEL. Packed volume is estimated from fabric mass and a bulk
+# density, because that is the only input available before you own the parts. Hand-packed
+# ripstop lands somewhere around 350-500 kg/m^3 -- roughly 30-45% of solid nylon, which is
+# what you get rolling a canopy by hand. That is a factor-of-1.4 spread and it propagates
+# straight into the required length, so a result inside that band is not an answer, it is
+# a prompt to go measure.
+#
+# Measure it like this: pack the real canopy, slide it into a tube of known ID, and read
+# off the length it occupies. Then set `measured_volume` and this stops being a guess.
+# Vendor pack volumes (Fruity Chutes and Rocketman both publish them) are the next best
+# thing and are worth using the moment you pick a part number.
+
+PACKED_BULK_DENSITY = 400.0  # kg/m^3, hand-packed ripstop canopy. Range 350-500.
+WEBBING_BULK_DENSITY = 550.0  # kg/m^3, z-folded tubular nylon packs tighter than canopy.
+PROTECTOR_BULK_DENSITY = 500.0  # kg/m^3, Nomex blanket.
+STEEL_DENSITY = 7850.0  # kg/m^3, quick links and hardware. Heavy, negligible volume.
+
+# You cannot fill a tube to its geometric volume. The canopy will not conform to the ends,
+# you need slack to slide the stack in and out without abrading it, and a bay packed to
+# 100% is a bay that will not close on the launch rail with cold hands. 0.85 is a working
+# figure; if yours packs tighter than this you are compressing the canopy, which is how
+# you get a chute that does not open.
+FILL_LIMIT = 0.85
+
+# Each internal bulkhead separating two compartments costs length: the plate itself, its
+# epoxy fillet, and the eyebolt/U-bolt boss standing proud of it.
+BULKHEAD_THICKNESS = 0.012  # m
+
+# Quick links, swivel, and hardware spliced into the harness. Steel, so it contributes
+# essentially nothing to volume but is inside the `shock_cord_and_links` mass line and
+# would otherwise be counted as if it were fabric.
+HARNESS_HARDWARE_KG = 0.050
+
+# VENDOR PACK VOLUMES -- these replace the density estimate for the two canopies, which is
+# the single biggest source of uncertainty in this whole calculation. Published figures,
+# not measurements of your own hardware, and both are quoted by the vendor as assuming a
+# TIGHT pack, so treat them as the optimistic end until you have packed the real thing.
+#
+#   main   Fruity Chutes Iris Ultra 60" Compact -- 6.8 oz, "3.9" D x 3.2" L : 38.2 cu""
+#          https://shop.fruitychutes.com/products/iris-ultra-60-compact-parachute-19lbs-20fps-12lbs-15fps
+#   drogue Fruity Chutes 18" Elliptical         -- 1.7 oz, "1.9" D x 3.5" L : 9.67 cu""
+#          https://shop.fruitychutes.com/products/18-elliptical-parachute-1-2-lb-20fps
+#
+# 60" is the nearest real size to the 56" the sizing solves for -- Fruity Chutes make 48"
+# and 60", not 56" -- and it lands slower, so it is the safe side of the rounding.
+#
+# NOTE the masses. The budget in design/mass.py carries 280 g for the main and 70 g for the
+# drogue; these parts are 193 g and 48 g. That 109 g is real and it sits in the recovery
+# bay, but the bay centroid is within ~35 mm of the CG so it moves the CG under a
+# millimetre. Worth fixing when you weigh parts, not worth a design change now.
+CU_INCH = 1.6387064e-5  # m^3
+MAIN_PACK_VOLUME = 38.2 * CU_INCH
+DROGUE_PACK_VOLUME = 9.67 * CU_INCH
+
+
+@dataclass(frozen=True)
+class SoftGood:
+    """One item that has to physically go inside the tube.
+
+    `measured_volume` overrides the density estimate. Set it as soon as you have either a
+    vendor pack volume or a real packed measurement -- that is the whole point of the
+    field, and every item that gets one shrinks the uncertainty on the bay length.
+    """
+
+    name: str
+    mass: float  # kg
+    bulk_density: float = PACKED_BULK_DENSITY
+    measured_volume: float | None = None  # m^3
+
+    @property
+    def volume(self) -> float:
+        if self.measured_volume is not None:
+            return self.measured_volume
+        return self.mass / self.bulk_density
+
+    @property
+    def estimated(self) -> bool:
+        return self.measured_volume is None
+
+
+@dataclass
+class Compartment:
+    """One independently-pressurised volume in the recovery bay.
+
+    Dual deploy needs two of these, separated by a sealed bulkhead. They are not
+    interchangeable and their contents cannot share space: the drogue compartment vents at
+    apogee and the main compartment vents at 200 m, so a single volume holding both would
+    dump the main at apogee -- which is the failure this whole architecture exists to
+    prevent.
+    """
+
+    name: str
+    contents: list[SoftGood]
+
+    @property
+    def volume(self) -> float:
+        return sum(item.volume for item in self.contents)
+
+    @property
+    def any_estimated(self) -> bool:
+        return any(item.estimated for item in self.contents)
+
+
+@dataclass
+class PackingResult:
+    fits: bool
+    required_length: float  # m, including bulkheads
+    available_length: float  # m
+    margin: float  # m
+    fill_fraction: float  # of the geometric volume actually consumed
+    inner_diameter: float
+    compartments: list[tuple[str, float, float]]  # name, volume m^3, length m
+    all_measured: bool
+    estimated_items: list[str]
+    reason: str
+
+    def __str__(self) -> str:
+        verdict = "FITS" if self.fits else "NO FIT"
+        return (
+            f"{verdict:6s} recovery bay     "
+            f"need {self.required_length * 1000:5.1f} mm, "
+            f"have {self.available_length * 1000:5.1f} mm "
+            f"({self.margin * 1000:+6.1f} mm)  {self.reason}"
+        )
+
+    def report(self, caliber: float | None = None) -> str:
+        lines = [
+            f"  inner diameter        {self.inner_diameter * 1000:7.1f} mm",
+            f"  contents:",
+        ]
+        for name, vol, length in self.compartments:
+            lines.append(
+                f"    {name:20s} {vol * 1e6:6.0f} cm3 -> {length * 1000:5.1f} mm of tube"
+            )
+        lines += [
+            f"  required length       {self.required_length * 1000:7.1f} mm"
+            + (f" ({self.required_length / caliber:.2f} cal)" if caliber else ""),
+            f"  available length      {self.available_length * 1000:7.1f} mm"
+            + (f" ({self.available_length / caliber:.2f} cal)" if caliber else ""),
+            f"  margin                {self.margin * 1000:+7.1f} mm",
+            f"  fill fraction         {self.fill_fraction * 100:7.0f} % of geometric volume"
+            f"  (limit {FILL_LIMIT * 100:.0f} %)",
+        ]
+        if self.estimated_items:
+            lines.append(
+                "  NOTE: canopies use vendor pack volumes; still estimated from bulk "
+                "density: " + ", ".join(self.estimated_items)
+            )
+        return "\n".join(lines)
+
+
+def default_soft_goods(
+    recovery_budget: dict[str, float] | None = None,
+) -> list[Compartment]:
+    """The two compartments, built from the recovery mass budget in `design.mass`.
+
+    Reading the masses from the budget rather than restating them here is deliberate: the
+    packing check and the mass check then cannot disagree about what is in the rocket. If
+    you add a deployment bag to the budget, it shows up in the volume automatically.
+
+    `ejection_hardware_charges` is excluded -- charge wells, e-matches and terminal blocks
+    mount on the bulkhead face and do not consume packing volume. Everything else does.
+
+    The harness is split 60/40 between the main and drogue compartments, which is the usual
+    proportion when the main harness is the longer of the two.
+    """
+    from .mass import DEFAULT_RECOVERY_BUDGET
+
+    budget = recovery_budget if recovery_budget is not None else DEFAULT_RECOVERY_BUDGET
+
+    webbing = max(budget["shock_cord_and_links"] - HARNESS_HARDWARE_KG, 0.0)
+    protector_each = budget["nomex_protectors"] / 2.0
+
+    return [
+        Compartment(
+            "main",
+            [
+                SoftGood("main canopy", budget["main_chute"],
+                         measured_volume=MAIN_PACK_VOLUME),
+                SoftGood("main harness", webbing * 0.60, WEBBING_BULK_DENSITY),
+                SoftGood("main protector", protector_each, PROTECTOR_BULK_DENSITY),
+                SoftGood("links/swivel", HARNESS_HARDWARE_KG * 0.60, STEEL_DENSITY),
+            ],
+        ),
+        Compartment(
+            "drogue",
+            [
+                SoftGood("drogue canopy", budget["drogue_chute"],
+                         measured_volume=DROGUE_PACK_VOLUME),
+                SoftGood("drogue harness", webbing * 0.40, WEBBING_BULK_DENSITY),
+                SoftGood("drogue protector", protector_each, PROTECTOR_BULK_DENSITY),
+                SoftGood("links/swivel", HARNESS_HARDWARE_KG * 0.40, STEEL_DENSITY),
+            ],
+        ),
+    ]
+
+
+def check_packing(
+    inner_diameter: float,
+    bay_length: float,
+    compartments: list[Compartment] | None = None,
+    fill_limit: float = FILL_LIMIT,
+    bulkhead_thickness: float = BULKHEAD_THICKNESS,
+) -> PackingResult:
+    """Does the recovery hardware fit in the bay you have?
+
+    Length is consumed by the packed soft goods (at `fill_limit` of the geometric tube
+    volume) plus one bulkhead per internal division between compartments.
+    """
+    comps = compartments if compartments is not None else default_soft_goods()
+    area = math.pi * inner_diameter**2 / 4.0
+
+    detail: list[tuple[str, float, float]] = []
+    packed_length = 0.0
+    for comp in comps:
+        length = comp.volume / (area * fill_limit)
+        packed_length += length
+        detail.append((comp.name, comp.volume, length))
+
+    n_internal_bulkheads = max(len(comps) - 1, 0)
+    required = packed_length + n_internal_bulkheads * bulkhead_thickness
+
+    total_volume = sum(c.volume for c in comps)
+    fill_fraction = total_volume / (area * bay_length) if bay_length > 0 else float("inf")
+
+    fits = required <= bay_length
+    if fits:
+        reason = f"{len(comps)} compartments, {fill_fraction * 100:.0f}% full"
+    else:
+        reason = f"short by {(required - bay_length) * 1000:.0f} mm"
+
+    return PackingResult(
+        fits=fits,
+        required_length=required,
+        available_length=bay_length,
+        margin=bay_length - required,
+        fill_fraction=fill_fraction,
+        inner_diameter=inner_diameter,
+        compartments=detail,
+        all_measured=not any(c.any_estimated for c in comps),
+        estimated_items=[i.name for c in comps for i in c.contents if i.estimated],
+        reason=reason,
+    )
+
+
+def required_bay_length(
+    inner_diameter: float,
+    compartments: list[Compartment] | None = None,
+    fill_limit: float = FILL_LIMIT,
+    bulkhead_thickness: float = BULKHEAD_THICKNESS,
+) -> float:
+    """Bay length, in metres, that the recovery hardware actually needs.
+
+    Divide by the airframe outer diameter to get the number to put in
+    `DesignParams.recovery_bay_cal`. Set it deliberately -- do not have the geometry
+    rebuild itself from this, or the frozen airframe stops being frozen.
+    """
+    return check_packing(
+        inner_diameter, 0.0, compartments, fill_limit, bulkhead_thickness
+    ).required_length
+
+
+def bulk_density_sensitivity(
+    inner_diameter: float,
+    outer_diameter: float,
+    densities: tuple[float, ...] = (350.0, 400.0, 450.0, 500.0),
+) -> list[tuple[float, float, float]]:
+    """Required bay length across the plausible packing-density range.
+
+    Returns (density, length_m, length_cal). This is the calculation the vendor pack
+    volumes REPLACE, kept because it shows what the answer looks like without them: a band
+    wide enough to put 4.5 cal on either side of the verdict. It is the argument for
+    sourcing a real number rather than the argument for any particular bay length.
+    """
+    from .mass import DEFAULT_RECOVERY_BUDGET
+
+    out = []
+    for rho in densities:
+        webbing = max(
+            DEFAULT_RECOVERY_BUDGET["shock_cord_and_links"] - HARNESS_HARDWARE_KG, 0.0
+        )
+        protector_each = DEFAULT_RECOVERY_BUDGET["nomex_protectors"] / 2.0
+        # Scale the canopy density; webbing and Nomex pack by their own mechanisms.
+        comps = [
+            Compartment(
+                "main",
+                [
+                    SoftGood("main canopy", DEFAULT_RECOVERY_BUDGET["main_chute"], rho),
+                    SoftGood("main harness", webbing * 0.60, WEBBING_BULK_DENSITY),
+                    SoftGood("main protector", protector_each, PROTECTOR_BULK_DENSITY),
+                    SoftGood("links/swivel", HARNESS_HARDWARE_KG * 0.60, STEEL_DENSITY),
+                ],
+            ),
+            Compartment(
+                "drogue",
+                [
+                    SoftGood("drogue canopy", DEFAULT_RECOVERY_BUDGET["drogue_chute"], rho),
+                    SoftGood("drogue harness", webbing * 0.40, WEBBING_BULK_DENSITY),
+                    SoftGood("drogue protector", protector_each, PROTECTOR_BULK_DENSITY),
+                    SoftGood("links/swivel", HARNESS_HARDWARE_KG * 0.40, STEEL_DENSITY),
+                ],
+            ),
+        ]
+        length = required_bay_length(inner_diameter, comps)
+        out.append((rho, length, length / outer_diameter))
+    return out

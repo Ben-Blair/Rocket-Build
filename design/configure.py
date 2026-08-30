@@ -15,7 +15,7 @@ from dataclasses import dataclass, replace
 from functools import lru_cache
 from pathlib import Path
 
-from . import aero, control, mass as mass_mod, trajectory
+from . import aero, control, mass as mass_mod, recovery, trajectory
 from .geometry import BodyTube, FinSet, NoseCone, Rocket
 from .motors import GENERIC, Motor, load_eng
 from .packaging import SERVOS
@@ -30,6 +30,14 @@ class DesignParams:
     nose_shape: str = "ogive"
     nav_bay_cal: float = 1.6  # bay lengths in calibers
     canard_module_cal: float = 1.8
+    # 4.5 cal, and it is now CHECKED rather than assumed. It was a number someone typed,
+    # and recovery.check_packing() exists because nothing had ever verified it. The first
+    # run said it was 11 mm short -- but that verdict came from estimating packed volume as
+    # budgeted mass / an assumed bulk density, and the budget carries a 280 g main against
+    # a real Fruity Chutes Iris Ultra 60" Compact at 193 g. With the vendor's published
+    # pack volumes standing in for the estimate, the hardware needs 4.33 cal and this bay
+    # fits it with 13 mm to spare. The airframe was right; only the confidence in it was
+    # missing. See design/recovery.py for the sourced numbers.
     recovery_bay_cal: float = 4.5
     booster_margin_cal: float = 1.2  # booster length beyond the motor
     canard_semispan_cal: float = 0.85
@@ -166,6 +174,7 @@ class Evaluation:
     crossrange: float
     control_seconds: float
     sm_without_canards: float
+    packing: recovery.PackingResult
     violations: list[str]
 
     @property
@@ -220,6 +229,19 @@ def evaluate(
     if not (LIMITS["apogee_min_m"] <= flight.apogee <= LIMITS["apogee_max_m"]):
         violations.append(f"apogee {flight.apogee:.0f} m outside window")
 
+    # Will the recovery hardware physically go in the tube? `recovery_bay_cal` was an
+    # assumed constant for a long time and nothing checked it. A canopy that does not fit
+    # is not a soft failure: it is a rocket that cannot be assembled on the pad, found on
+    # launch day.
+    rec_tube = next(t for t in rocket.tubes if t.name == "recovery bay")
+    packing = recovery.check_packing(rec_tube.inner_diameter, rec_tube.length)
+    if not packing.fits:
+        violations.append(
+            f"recovery bay {rec_tube.length * 1000:.0f} mm, needs "
+            f"{packing.required_length * 1000:.0f} mm for the chutes "
+            f"({packing.required_length / p.outer_diameter:.2f} cal)"
+        )
+
     # Control assessment at the highest-q point after burnout, where authority is best.
     coast = [pt for pt in flight.points if pt.t >= flight.burnout_time]
     pitch = roll_a = roll_i = None
@@ -257,5 +279,6 @@ def evaluate(
         crossrange=crossrange,
         control_seconds=seconds,
         sm_without_canards=sm_bare,
+        packing=packing,
         violations=violations,
     )

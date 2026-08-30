@@ -150,7 +150,7 @@ ROLL AUTHORITY  --  the canard / aft-fin interference problem
 ACTUATOR CHECK
 ============================================================================================
   servo               KST X08 Plus V6.0 (9 g, 8 mm, 5.3 kgf.cm @ 8.4 V)
-  packaging (as built) FITS   flat/tangential  need ID 106.0 mm, have 187.9 mm ( +81.9 mm)  ok, 45 mm central void
+  packaging (as built) FITS   flat/tangential  need ID  79.2 mm, have 187.9 mm (+108.7 mm)  ok, 45 mm central void
   packaging (old bound) FITS   direct/pinwheel  need ID  69.5 mm, have  71.8 mm (  +2.3 mm)  ok
   -> The servo lies flat against the wall, shaft radial through it: its 8 mm
      thickness eats radius, not its 23.5 mm length. Confirmed against the part.

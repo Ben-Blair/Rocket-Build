@@ -4,6 +4,37 @@ Regenerate the profiles with `python scripts/make_cad_profiles.py`. They are wri
 `design/configure.py`, so the CAD cannot drift from the analysis. If a dimension here
 disagrees with something you remember, regenerate; do not retype.
 
+## State of play — August 2026
+
+Read this first if you are picking the CAD back up. Progress lives in the Onshape document
+(`canard-control module`, Part Studio 1), not in this file — this is just a pointer to where
+the feature tree stands so a fresh session doesn't have to re-derive it.
+
+**Done**, in feature-tree order: tube (`Extrude 1`, G10/FR4 1850 kg/m³) → hinge datum plane
+→ one canard panel, correctly oriented and dimensioned, root LE at 43.67 mm, panel CP
+forward-hinge relationship verified (`Sketch 2` / `Extrude 2`) → shaft, ⌀5 mm on the hinge
+axis (`Sketch 3` / `Extrude 3`) → wall pass-through cut, reusing the shaft's own sketch so
+position matches exactly — this is a **clearance/pass-through hole, not a structural
+pocket**; the bearing that carries panel bending lives in the servo frame, not this hole
+(`Extrude 4`) → servo envelope block, 23.5×8.0×16.8 mm, mass-tuned to 9 g via a custom
+material density (2849 kg/m³) rather than a direct mass override, since no such field was
+found in this Onshape UI (`Sketch 4` / `Extrude 5`, part renamed "Servo (envelope, KST X08
+Plus)"). Parts (4): tube, panel, shaft, servo block.
+
+**Two known loose ends on what's built:**
+- The servo block's radial (Y) centering is off by ~0.09 mm — not fully constrained, just
+  dragged close. Fine for a mass/envelope placeholder; tighten with a real constraint before
+  this matters for anything precision-sensitive.
+- The block assumes the KST output shaft is centered on its 23.5 mm body. Unconfirmed — check
+  the real datasheet before this assumption feeds into anything downstream.
+
+**Not started**: printed bay (step 6 below) — blocked on picking real bracket hardware, since
+a placeholder shell wouldn't tell you anything the mass/interference checks need. Circular
+pattern ×4 (step 7) is well-defined and doesn't depend on the bay; it's the natural next
+step. Forward wiring pass-through and aft gas seal (mentioned under "what to check," not
+originally in the modelling order) are still open. The mass and interference checks at the
+end of this document haven't been run.
+
 ## Why model this before the rest of the rocket
 
 Three reasons, in order of value:
@@ -73,7 +104,7 @@ station, not a constant-percentage line.
 | Output shaft | Radial, through the wall, into the canard root |
 | Bearing | Outboard ball bearing in the wall carries the panel bending moment; the servo spline takes torque only |
 
-Four servos need 106 mm of arc against 140.7 mm available at the mounting radius. Packaging
+Four servos need 79.2 mm of arc against 140.7 mm available at the mounting radius. Packaging
 is not tight — see `00-requirements.md` §4.2.
 
 ## Modelling order

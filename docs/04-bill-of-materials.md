@@ -58,7 +58,7 @@ Requires **Level 2 certification**. Budget 5 reloads for the GV-1…GV-5 campaig
 
 Servos mount **flat against the inner wall**, output shaft radial through the wall. Hinge
 line at 0.20c, forward of the 0.25c panel CP so the panel is restoring. Torque margin 3.3×
-against a peak hinge moment of 0.0626 N·m per panel. Packaging is not binding: 106 mm of
+against a peak hinge moment of 0.0626 N·m per panel. Packaging is not binding: 79 mm of
 arc needed against 188 mm available, 45 mm central void.
 
 ## 5. Avionics
@@ -85,7 +85,7 @@ to a MEMS gyro is a known way to corrupt attitude data.
 | Item | Spec | Qty | Mass | Price | |
 |---|---|---|---|---|---|
 | Drogue parachute | 18 in, deployed at apogee | 1 | 0.070 kg | ~$35 | |
-| Main parachute | **56 in**, deployed at 200 m (650 ft) | 1 | 0.280 kg | ~$110 | |
+| Main parachute | **56 in** solved; buy the Fruity Chutes Iris Ultra 60" Compact (nearest real size, lands slower). 193 g, 38.2 cu in packed | 1 | 0.280 kg budgeted | ~$110 | |
 | Shock cord, quick links, swivels | Tubular nylon / Kevlar | set | 0.220 kg | ~$60 | |
 | Nomex protectors | | 2 | 0.070 kg | ~$30 | |
 | Ejection charge hardware, shear pins | | set | 0.060 kg | ~$25 | |

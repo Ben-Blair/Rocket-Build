@@ -3,9 +3,9 @@
 CONFIRMED ARRANGEMENT (Aug 2026): the servo lies FLAT against the inner wall with its
 output shaft radial, passing through the wall into the canard root. The output shaft on
 these parts sits on a large face, not an end face -- verified against the hardware. So the
-servo's THICKNESS consumes tube radius (8 mm for the KST X08 Plus) and its length only has
-to fit around the circumference. Use check_flat_mount(); it is the one that describes the
-real vehicle.
+servo's THICKNESS consumes tube radius (8 mm for the KST X08 Plus), its LENGTH runs
+fore-and-aft along the rocket axis, and only its HEIGHT has to fit around the
+circumference. Use check_flat_mount(); it is the one that describes the real vehicle.
 
 check_direct_drive() models the alternative -- body pointing inward, output shaft on an end
 face, so LENGTH consumes radius. It is kept because it is the conservative bound and
@@ -31,7 +31,7 @@ from dataclasses import dataclass
 class Servo:
     name: str
     length: float  # m, along the output-shaft-perpendicular long axis
-    width: float  # m, thickness (the dimension you stack circumferentially)
+    width: float  # m, thickness (the dimension that eats tube radius when mounted flat)
     height: float  # m, including output shaft boss
     mass: float  # kg
     stall_torque: float  # N*m at nominal voltage
@@ -178,8 +178,23 @@ def check_flat_mount(
 
     This is the OTHER way to arrange a direct drive, and for a servo whose output shaft
     protrudes from a large face (which is every hobby servo) it is the arrangement that
-    actually matches the hardware. The servo's THICKNESS eats tube radius; its length has
-    to fit around the circumference instead, which is a far weaker constraint.
+    actually matches the hardware. The servo's THICKNESS eats tube radius, which is the
+    weak constraint this arrangement exists to exploit.
+
+    ORIENTATION OF THE OTHER TWO DIMENSIONS, because it has been wrong here before. The
+    body lies with its LONG axis (23.5 mm on the KST X08 Plus) fore-and-aft along the
+    rocket axis, and its HEIGHT stacked around the circumference. That is how the DXF
+    profiles and docs/05-canard-module-build.md place it, and it is the better choice:
+    there is far more axial room in a 143 mm bay than there is arc at the mounting radius.
+    This function used to stack `length` circumferentially, which describes a servo turned
+    90 degrees from the one being built. Both orientations fit, so no conclusion changed
+    -- but it overstated the arc requirement by a third, and that figure had already
+    propagated into three documents before anyone checked it. check_bellcrank() has always
+    had this right; the two now agree on which dimension goes where.
+
+    The axial dimension is deliberately not checked here. Four servos laid fore-and-aft
+    are bounded by the canard module length (142.9 mm against a 23.5 mm body), not by
+    anything this function can see.
 
     check_direct_drive() models the opposite: body pointing inward, length eating radius.
     That only works if the output shaft is on the servo's END face. Keep both, because
@@ -193,7 +208,7 @@ def check_flat_mount(
     radial_band = servo.width + frame_thickness + clearance
     r_mid = inner_diameter / 2.0 - radial_band / 2.0
     arc_available = 2.0 * math.pi * max(r_mid, 1e-6)
-    arc_needed = n_canards * (servo.length + clearance)
+    arc_needed = n_canards * (servo.height + clearance)
     central_void = inner_diameter - 2.0 * radial_band
 
     fits = arc_needed <= arc_available and central_void > 0.0
