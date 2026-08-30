@@ -14,13 +14,13 @@ Read this first if you are picking the project back up.
   are open and drive the largest, least specified line in the budget.
 
 Current vehicle: 79.4 mm OD fiberglass, 1361 mm, canards 0.85 cal / aft fins 1.55 cal
-interdigitated 45°, Cesaroni J449 Blue Streak, 4× KST X08 Plus servos flat-mounted with
-the hinge at 0.20c, 100 g nose ballast. 6.10 kg wet, apogee 1379 m, Mach 0.531, static
-margin 1.97–2.46 cal, P(SM<1.0) 0.6%, 450 m crossrange. `scripts/baseline.py` regenerates
+interdigitated 45°, **both sets swept 35.4°**, Cesaroni J449 Blue Streak, 4× KST X08 Plus
+servos flat-mounted with the hinge at 0.20 of MAC, 100 g nose ballast. 6.10 kg wet, apogee
+1379 m, Mach 0.531, static margin 2.10–2.59 cal, P(SM<1.0) 0.2%, 394 m crossrange. `scripts/baseline.py` regenerates
 all of it; `evaluate()` reports feasible with no violations, and that now includes a check
 that the recovery hardware physically fits in the bay.
 
-Six corrections are worth knowing about. The first four changed the design; the last two
+Seven corrections are worth knowing about. The first four changed the design; the last two
 are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
@@ -30,8 +30,11 @@ that silently recurs:
 2. **The canard hinge sign was inverted** — hinge aft of the panel CP is divergent, not
    self-centring. Now at 0.20c, forward of the 0.25c CP, and `hinge_moment()` returns a
    signed value so it cannot hide again.
-3. **Nose ballast is required, not optional** (§7.1). Real 9 g servos removed ~180 g from
-   ahead of the CG and took P(SM<1.0) to 1.8% against a 1% limit.
+3. **Nose ballast was required, and now is not — but keep it** (§7.1). Real 9 g servos
+   removed ~180 g from ahead of the CG and took P(SM<1.0) to 1.8% on the unswept vehicle.
+   Sweeping the canards (correction 7) made them less destabilising, and the bare vehicle
+   now sits at 0.7%, inside the limit. Carry the 100 g anyway: 0.7% is thin, and ballast is
+   the only parameter you can still set after weighing the finished rocket.
 4. **The baseline used to live in six places and drifted from the docs.** It now lives
    only in `design/configure.py`. Do not copy those numbers into a script.
 5. **The recovery bay is 4.5 cal because it was checked, not because it was typed.** It
@@ -50,6 +53,16 @@ that silently recurs:
    requirement by a third — 106 mm against a true 79 mm. Both orientations fit, so no
    conclusion moved, but the wrong figure had already propagated into three documents
    before anything caught it. `check_bellcrank()` always had it right; they now agree.
+7. **The canards had no sweep parameter at all.** `sweep_length` was hardcoded to a
+   symmetric-taper trapezoid while the aft fins had a real `aft_sweep_cal` — so the canards
+   sat at 7° against the aft fins' 35.4° and the vehicle read as two different designs.
+   That default was also the maximum-authority shape (symmetric taper puts the mid-chord
+   line at zero sweep), so matching the aft fins costs 12.5% of lateral authority: 2.08 →
+   1.82 g, 450 → 394 m of crossrange. It buys static margin, torque margin, and a vehicle
+   that looks like one object. `canard_sweep_cal = None` now derives the angle from the aft
+   fins so the two cannot drift apart. **The hinge sign does not change with sweep** —
+   hinge and panel CP are both referenced to the MAC — but the hinge STATION moves a long
+   way, from 13.5 to 32.1 mm aft of the root LE, which is why the CAD has to be redone.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.

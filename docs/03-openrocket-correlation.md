@@ -43,13 +43,17 @@ Two deliberate choices about what is transferred and what is recomputed:
 | Total length | 1361.1 mm | 1365.5 mm | +0.3% |
 | Dry mass | 5.48 kg | 5.54 kg | +1.2% |
 | Loaded mass | 6.10 kg | 6.17 kg | +1.1% |
-| CG dry | 800.4 mm | 805.1 mm | +0.6% |
-| CG loaded | 841.3 mm | 845.1 mm | +0.5% |
-| **CNa, no body lift** | **26.57 /rad** | **26.48 /rad** | **−0.3%** |
-| CNa, with body lift | 28.05 /rad | 26.48 /rad | −5.6% |
-| CP, no body lift | 1009.2 mm | 1022.7 mm | +1.3% (+0.17 cal) |
-| CP, with body lift | 995.8 mm | 1022.7 mm | +2.7% (+0.34 cal) |
-| Static margin, loaded | 1.95 cal | 2.24 cal | +0.29 cal |
+| CG dry | 800.9 mm | 805.6 mm | +0.6% |
+| CG loaded | 841.8 mm | 845.5 mm | +0.4% |
+| **CNa, no body lift** | **26.19 /rad** | **26.10 /rad** | **−0.3%** |
+| CNa, with body lift | 27.67 /rad | 26.10 /rad | −5.7% |
+| CP, no body lift | 1020.4 mm | 1034.0 mm | +1.3% (+0.17 cal) |
+| CP, with body lift | 1006.2 mm | 1034.0 mm | +2.8% (+0.35 cal) |
+| Static margin, loaded | 2.07 cal | 2.37 cal | +0.30 cal |
+
+The agreement survived the canards being swept to 35.4° (Aug 2026) with no change to the
+like-for-like CP delta — which is a real result: the two Barrowman implementations track
+each other through a planform change, not just at one frozen geometry.
 
 Masses and CG reflect the real KST X08 Plus servos (9 g each) rather than the earlier 55 g
 budget placeholder, and include the 100 g of nose ballast the design now carries. The

@@ -10,6 +10,13 @@ Read this first if you are picking the CAD back up. Progress lives in the Onshap
 (`canard-control module`, Part Studio 1), not in this file — this is just a pointer to where
 the feature tree stands so a fresh session doesn't have to re-derive it.
 
+> **STALE AS OF THE 35.4° CANARD SWEEP.** The panel planform changed, so the MAC moved and
+> the hinge axis moved with it — 57.2 → 75.8 mm from the module forward face. Everything in
+> the Onshape tree from `Sketch 2` onward (panel, shaft, wall cut, servo block, pattern) is
+> built to the old planform and has to be redone against the regenerated
+> `out/cad/canard_planform.dxf`. The tube (`Extrude 1`) is unaffected. What follows describes
+> the tree as it stood BEFORE that change.
+
 **Done**, in feature-tree order: tube (`Extrude 1`, G10/FR4 1850 kg/m³) → hinge datum plane
 → one canard panel, correctly oriented and dimensioned, root LE at 43.67 mm, panel CP
 forward-hinge relationship verified (`Sketch 2` / `Extrude 2`) → shaft, ⌀5 mm on the hinge
@@ -86,8 +93,8 @@ once you have used them for reference.
 | Thickness | 3.0 mm |
 | Root LE position | 43.7 mm aft of the module's forward end |
 | Root chord spans | 43.7 → 99.2 mm within the module |
-| **Hinge axis** | **57.2 mm from the module forward end**, i.e. 13.5 mm aft of the root LE |
-| Panel CP (reference) | 15.9 mm aft of the root LE |
+| **Hinge axis** | **75.8 mm from the module forward end**, i.e. 32.1 mm aft of the root LE |
+| Panel CP (reference) | 34.5 mm aft of the root LE |
 
 The hinge sits **forward** of the panel CP. That is what makes the panel weakly
 self-centring rather than divergent, and getting it the wrong way round is a real failure
@@ -111,7 +118,7 @@ is not tight — see `00-requirements.md` §4.2.
 
 1. **Tube.** Sketch two concentric circles, ⌀79.4 and ⌀74.8, extrude 142.9 mm. Material:
    G10/FR4 fiberglass, 1850 kg/m³ — set this, or mass properties are meaningless.
-2. **Datum planes.** One plane at 57.2 mm from the forward face for the hinge axes, and
+2. **Datum planes.** One plane at 75.8 mm from the forward face for the hinge axes, and
    four planes at 0°/90°/180°/270° for the panels. Build the first panel and pattern it;
    do not model four panels by hand.
 3. **Canard panel.** Import `canard_planform.dxf` onto a plane offset to the tube surface,

@@ -126,8 +126,8 @@ therefore makes measuring it a flight test objective rather than an assumption.
 75 mm (3 in) fiberglass airframe, 79.4 mm OD, 1361 mm long, 4 canards interdigitated 45°
 from 4 aft fins, on a Cesaroni Pro54 J449 Blue Streak, actuated by four KST X08 Plus V6.0
 servos on direct drive, with 100 g of nose ballast. 6.10 kg wet / 5.48 kg dry, apogee
-1379 m (4525 ft), max Mach 0.531, static margin 1.97 cal at rail exit rising to 2.46 in
-coast, 2.08 g of lateral authority at 8° of canard deflection, giving 450 m of crossrange
+1379 m (4525 ft), max Mach 0.531, static margin 2.10 cal at rail exit rising to 2.59 in
+coast, 1.82 g of lateral authority at 8° of canard deflection, giving 394 m of crossrange
 over an 11.4 second usable control window. Recovery is an 18 in drogue and 56 in main
 deployed at 200 m, landing at 5.0 m/s after a ~0.93 km walk in a 15 mph wind.
 

@@ -130,8 +130,8 @@ note after the reasoning bullets:
 
 | Motor | Apogee | Mach | Peak g | Crossrange | Descent | Main | Walk @ 15 mph |
 |---|---|---|---|---|---|---|---|
-| J430 White Thunder | 790 m | 0.38 | 8.4 | 152 m | 71 s | 55" | 626 m |
-| **J449 Blue Streak** | **1379 m** | **0.53** | **8.4** | **450 m** | **100 s** | **56"** | **932 m** |
+| J430 White Thunder | 790 m | 0.38 | 8.4 | 132 m | 71 s | 55" | 626 m |
+| **J449 Blue Streak** | **1379 m** | **0.53** | **8.4** | **394 m** | **100 s** | **56"** | **932 m** |
 | J760 White Thunder | 1428 m | 0.58 | 14.1 | 597 m | 102 s | 56" | 930 m |
 | K535 | 1609 m | 0.59 | — | 592 m | 111 s | 56" | 1034 m |
 | K445 | 1877 m | 0.63 | — | 731 m | 123 s | 57" | 1167 m |
@@ -143,13 +143,13 @@ motor it has already screened out. They remain in the recovery table above as re
 points, not as candidates.
 
 **Selected: Cesaroni Pro54 J449 Blue Streak (`1261J449-15A`).** 1260 N·s, 2.85 s burn,
-T/W 7.4, 8.4 g, Mach 0.531, apogee 1379 m, static margin 1.97–2.46 cal, 11.4 s usable
-control window, and **2.08 g of lateral authority at 8° deflection for 450 m of
-crossrange** — roughly 2.7× the J430. Figures include the 100 g of nose ballast.
+T/W 7.4, 8.4 g, Mach 0.531, apogee 1379 m, static margin 2.10–2.59 cal, 11.4 s usable
+control window, and **1.82 g of lateral authority at 8° deflection for 394 m of
+crossrange** — roughly 3.0× the J430. Figures include the 100 g of nose ballast.
 
 Reasoning for stopping here rather than going to a K:
 
-- 450 m of crossrange is already an unmistakable, filmable, easily-measured manoeuvre. The
+- 394 m of crossrange is already an unmistakable, filmable, easily-measured manoeuvre. The
   deliverable is a working closed-loop controller, not a crossrange record. Past the point
   where the correction is clearly measurable, extra authority buys nothing.
 - Mach 0.531 keeps every assumption in the analysis valid with real margin. K630 at Mach
@@ -195,12 +195,12 @@ Ranked by crossrange, the top of the compliant list:
 | 1266J760-19A | J | 1264 | 1.73 s | 12.3 | 14.1 | 0.58 | 1428 m | 2.04–2.49 | 12.4 s | 597 m |
 | K610-SK | K | 1530 | 2.70 s | 8.3 | 9.9 | 0.58 | 1562 m | 2.22–2.81 | 12.6 s | 584 m |
 | K530SS | K | 1401 | 2.67 s | 8.0 | 8.6 | 0.57 | 1496 m | 1.96–2.70 | 12.5 s | 574 m |
-| J800T | J | 1248 | 2.09 s | 10.1 | 13.2 | 0.57 | 1454 m | 1.97–2.46 | 12.2 s | 557 m |
+| J800T | J | 1248 | 2.09 s | 10.1 | 13.2 | 0.57 | 1454 m | 2.09–2.58 | 12.2 s | 488 m |
 | J670-LB | J | 1267 | 1.96 s | 10.6 | 12.4 | 0.55 | 1381 m | 1.95–2.39 | 12.1 s | 539 m |
 | K475 | K | 1392 | 2.94 s | 7.3 | 8.4 | 0.55 | 1448 m | 2.05–2.57 | 12.1 s | 497 m |
 | 1281K360-13A | J | 1275 | 3.50 s | 6.1 | 6.0 | 0.52 | 1418 m | 1.55–2.12 | 11.8 s | 464 m |
 | K454-SK | K | 1364 | 3.15 s | 6.8 | 7.6 | 0.54 | 1443 m | 2.12–2.74 | 11.9 s | 453 m |
-| **1261J449-15A** | **J** | **1260** | **2.85 s** | **7.4** | **8.4** | **0.53** | **1379 m** | **1.97–2.46** | **11.7 s** | **450 m** |
+| **1261J449-15A** | **J** | **1260** | **2.85 s** | **7.4** | **8.4** | **0.53** | **1379 m** | **2.10–2.59** | **11.7 s** | **394 m** |
 
 **The J449 ranks 10th on crossrange, and that is fine** — the selection above rests on
 peak g, Mach margin, and cost per flight, not on topping this column. Of the nine motors
@@ -208,8 +208,8 @@ that beat it, five are K-class (cost, and fewer flights for the same budget) and
 the four J-class ones do it at 12.4–14.1 g, which presses accelerometer clipping.
 
 **One candidate is worth a second look before you order:** `1281K360-13A` beats the J449
-on crossrange (464 m vs 450 m) *and* on peak g (6.0 vs 8.4), at the same Mach. Its cost is
-static margin — 1.55 cal at rail exit against the J449's 1.97, which eats most of the
+on crossrange (403 m vs 394 m) *and* on peak g (6.0 vs 8.4), at the same Mach. Its cost is
+static margin — 1.67 cal at rail exit against the J449's 2.10, which eats most of the
 robustness buffer that §7 of the requirements spent two thirds of the control authority to
 buy. That is very likely the wrong trade, but it is the one alternative the numbers do not
 immediately dismiss, and it deserves an explicit sentence in your report rather than

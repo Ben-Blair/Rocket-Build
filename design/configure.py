@@ -11,6 +11,7 @@ antenna wants to sit under the (thin, non-conductive) nose shoulder region.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, replace
 from functools import lru_cache
 from pathlib import Path
@@ -43,6 +44,21 @@ class DesignParams:
     canard_semispan_cal: float = 0.85
     canard_root_cal: float = 0.70
     canard_taper: float = 0.70
+    # Canard leading-edge sweep, calibers of axial offset from root LE to tip LE.
+    # None means "match the aft fin sweep ANGLE", which is the design intent: the two sets
+    # should read as one vehicle, and hardcoding a number here would silently drift the
+    # moment `aft_sweep_cal` moved. Set a float to probe a different planform.
+    #
+    # This was 0.0 (a symmetric-taper trapezoid) until Aug 2026, not because anything chose
+    # it but because the canards never had a sweep parameter while the aft fins did. That
+    # default was the maximum-authority shape -- symmetric taper puts the mid-chord line at
+    # zero sweep, which maximises CNa per unit area in aero.fin_cn_alpha -- so sweeping
+    # costs authority. It is a deliberate trade, priced in docs/00-requirements.md section 5.
+    #
+    # Sweep does NOT change planform area, and it does NOT flip the hinge sign: both the
+    # hinge (0.20c) and the panel CP (0.25c) are referenced to the same MAC, so the net
+    # hinge moment stays restoring at any sweep. See correction 2 before assuming otherwise.
+    canard_sweep_cal: float | None = None
     aft_semispan_cal: float = 1.55
     aft_root_cal: float = 1.90
     aft_taper: float = 0.45
@@ -131,12 +147,20 @@ def build_vehicle(p: DesignParams) -> Rocket:
 
     x_canard_module = nose.length + tubes[0].length
     canard_root = p.canard_root_cal * d
+
+    # Sweep angle is what the eye reads, so match the ANGLE rather than the caliber offset --
+    # the two sets have different semispans, so equal offsets would not look equal.
+    if p.canard_sweep_cal is None:
+        aft_sweep_angle = math.atan2(p.aft_sweep_cal, p.aft_semispan_cal)
+        canard_sweep = p.canard_semispan_cal * math.tan(aft_sweep_angle) * d
+    else:
+        canard_sweep = p.canard_sweep_cal * d
     canards = FinSet(
         count=p.n_canards,
         root_chord=canard_root,
         tip_chord=canard_root * p.canard_taper,
         semispan=p.canard_semispan_cal * d,
-        sweep_length=0.5 * canard_root * (1.0 - p.canard_taper),  # symmetric taper, no sweep
+        sweep_length=canard_sweep,
         x_root_le=x_canard_module + 0.5 * (tubes[1].length - canard_root),
         thickness=p.canard_thickness,
         body_diameter=d,

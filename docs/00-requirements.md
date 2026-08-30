@@ -124,7 +124,7 @@ Values marked *(computed)* are outputs of `scripts/sweep.py` and
 | R5 | Max Mach | ≤ 0.8 | Keeps you subsonic. Transonic aero invalidates Barrowman, makes the controller design far harder, and adds no value to a controls project |
 | R6 | Apogee | ≤ 1600 m (5250 ft) AGL | **Neither a waiver limit nor a field-size limit** — both are unbounded at this site (C5, C5a). The cap is retained on the three grounds that survive: keeping max Mach under 0.8 with real margin (R5), keeping the manoeuvre visible and filmable from the pad, and holding search time and cost per flight low enough to fly five or six times *with the data intact*. An unbounded field removes the risk of landing off the property; it does not make a rocket easier to find. See `scripts/recovery_study.py` |
 | R7 | Internal diameter for actuator bay | Not binding — 4 servos need 79 mm of arc against 188 mm available, 45 mm central void (see §4) | **Superseded.** Diameter is set by the 54 mm motor mount and recovery packing volume, not by the actuators |
-| R8 | Commanded lateral acceleration authority early in coast | ≥ 0.5 g | Enough for a measurable, visible correction. Baseline achieves 2.08 g at 8°, for 450 m of crossrange |
+| R8 | Commanded lateral acceleration authority early in coast | ≥ 0.5 g | Enough for a measurable, visible correction. Baseline achieves 1.82 g at 8°, for 394 m of crossrange |
 | R9 | Roll authority | Net Cl_delta must retain correct sign at all conditions, with ≥ 50% of canard-only authority surviving interference | See §5 |
 | R10 | Control loop rate | ≥ 100 Hz | Baseline pitch mode is 2.4 Hz, so 100 Hz gives ~40x margin |
 | R11 | Recovery | Dual deploy: 18 in drogue at apogee, **56 in** main at 200 m (650 ft). 5.0 m/s landing, 50 ft·lbf, 100 s descent | Sized by `design/recovery.py`, drogue fixed at 18 in and main solved for the landing rate. Landing energy is inside the ~75 ft·lbf guidance; confirm the current figure with your prefect |
@@ -191,7 +191,7 @@ does not need to shrink — it meets every requirement with margin. The right re
 ### 4.4 Torque
 
 Torque is unaffected by any of this, and remains the constraint that actually selects the
-servo. Peak aerodynamic hinge moment is **0.0626 N·m per panel** at max dynamic pressure
+servo. Peak aerodynamic hinge moment is **0.0573 N·m per panel** at max dynamic pressure
 and 8° deflection (`scripts/baseline.py`), with the hinge at 0.20c, forward of the 0.25c
 panel CP so the panel is restoring rather than divergent. After a 0.4 derate on stall
 torque, against a 2.0× requirement:
@@ -202,7 +202,7 @@ torque, against a 2.0× requirement:
 | micro class | 23.6 mm | 11.6 mm | 0.20 N·m | 1.28× | fails |
 | mini class | 22.8 mm | 12.5 mm | 0.25 N·m | 1.60× | fails |
 | Hitec HS-5065MG | 23.4 mm | 11.4 mm | 0.219 N·m | 1.40× | fails — the common rocketry pick |
-| **KST X08 Plus V6.0** | **23.5 mm** | **8.0 mm** | **0.52 N·m** | **3.32×** | **selected (D4)** |
+| **KST X08 Plus V6.0** | **23.5 mm** | **8.0 mm** | **0.52 N·m** | **3.63×** | **selected (D4)** |
 | MKS HV6100 | 22.5 mm | 10.0 mm | 0.333 N·m | 2.13× | fallback |
 
 Note the Hitec HS-5065MG, the usual choice in hobby rocketry active-control work, misses at
@@ -285,19 +285,19 @@ On the selected Cesaroni J449 Blue Streak:
 | Airframe | 79.4 mm OD (3 in) fiberglass, 2.3 mm wall, 1361 mm long, L/D 17.1 |
 | Nose | 4:1 tangent ogive, 318 mm |
 | Bays, nose to tail | nav 127 mm, canard module 143 mm, recovery 357 mm, booster 416 mm |
-| Canards | 4 panels, 55.6 root / 38.9 tip / **67.5 mm semispan**, 45° interdigitated |
+| Canards | 4 panels, 55.6 root / 38.9 tip / **67.5 mm semispan**, **35.4° LE sweep** matching the aft fins, 45° interdigitated |
 | Aft fins | 4 panels, 151 root / 68 tip / **123.1 mm semispan**, 87 mm sweep |
 | Mass | 5.48 kg dry, 6.10 kg wet (includes 100 g nose ballast) |
-| Static margin | 1.97 cal at rail exit, 2.46 cal in coast |
+| Static margin | 2.10 cal at rail exit, 2.59 cal in coast |
 | Flight | apogee 1379 m (4525 ft), max Mach 0.531, max q 19.4 kPa, 8.4 g peak, T/W 7.4 |
-| Control | 2.08 g lateral at 8° deflection, 450 m crossrange over an 11.4 s window |
-| Roll | Cl_delta +6.10 /rad canards vs −0.94 /rad aft fins interdigitated (15.4% cancellation) |
-| Actuator | KST X08 Plus V6.0, 3.3× torque margin, +2.3 mm packaging margin |
-| Hinge | 0.0626 N·m per panel, hinge at 0.20c — forward of the 0.25c panel CP, so restoring |
-| Fin flutter | aft fins 1.97× margin, canards 5.42× (see §8) |
+| Control | 1.82 g lateral at 8° deflection, 394 m crossrange over an 11.4 s window |
+| Roll | Cl_delta +5.70 /rad canards vs −0.96 /rad aft fins interdigitated (16.8% cancellation) |
+| Actuator | KST X08 Plus V6.0, 3.63× torque margin, 79 mm of arc needed against 188 mm (§4.2) |
+| Hinge | 0.0573 N·m per panel, hinge at 0.20c of MAC — forward of the 0.25c panel CP, so restoring at any sweep |
+| Fin flutter | aft fins 1.97× margin, canards 5.42× — pure sweep changes neither (see §8) |
 | Recovery | 100 s descent, ~0.93 km walk at 15 mph wind, 56 in main. Bay 4.5 cal, verified against vendor pack volumes with +13 mm (§4.3) |
-| Nose ballast | **100 g at 191 mm from the nose tip**, 75 g minimum for R1, provision 300 g (§7.1) |
-| Margin robustness | P(SM < 1.0) = 0.6% as designed, 1.8% bare; P(SM < 1.4) = 7.9% / 14.6% |
+| Nose ballast | **100 g at 191 mm from the nose tip**, no longer required by R1 but retained as the tuning parameter, provision 300 g (§7.1) |
+| Margin robustness | P(SM < 1.0) = 0.2% as designed, 0.7% bare; P(SM < 1.4) = 4.0% / 8.4% |
 | OpenRocket correlation | CNa agrees to 0.3%, CP to 0.17 cal (see `03-openrocket-correlation.md`) |
 
 ## 7. Static margin robustness
@@ -314,11 +314,11 @@ semispan alone walks that back, but pays for it in control authority:
 
 | Aft semispan | Nominal SM | P(SM<1.4) | P(SM<1.0) | Relative authority |
 |---|---|---|---|---|
-| 1.05 cal | 0.50 | 97.7% | 83.1% | 100% |
-| 1.15 cal | 0.83 | 87.1% | 54.1% | 60% |
-| 1.25 cal | 1.12 | 64.7% | 24.9% | 45% |
-| 1.40 cal | 1.50 | 27.2% | 4.8% | 34% |
-| 1.55 cal | 1.81 | 7.9% | 0.6% | 29% |
+| 1.05 cal | 0.79 | 88.8% | 57.6% | 100% |
+| 1.15 cal | 1.08 | 68.8% | 28.7% | 77% |
+| 1.25 cal | 1.33 | 43.8% | 11.0% | 64% |
+| 1.40 cal | 1.66 | 15.1% | 1.8% | 54% |
+| 1.55 cal | 1.93 | 4.1% | 0.2% | 48% |
 
 Buying acceptable risk this way costs over two thirds of the lateral authority.
 
@@ -331,35 +331,37 @@ crossrange and on safety at the same time instead of trading one against the oth
 
 | Canard semispan | Aft semispan | Nominal SM | P(SM<1.0) | Lateral g | Crossrange | Flutter | Torque | Verdict |
 |---|---|---|---|---|---|---|---|---|
-| 0.70 cal | 1.40 cal | 1.96 | 0.7% | 1.64 g | 363 m | 2.22 | 3.4× | ok |
-| 0.70 cal | 1.55 cal | 2.25 | 0.1% | 1.50 g | 326 m | 1.96 | 3.6× | ok |
-| 0.85 cal | 1.25 cal | 1.26 | 25.4% | 2.70 g | 600 m | 2.56 | 2.3× | SM 1.29 < 1.4 |
-| 0.85 cal | 1.40 cal | 1.63 | 5.2% | 2.33 g | 510 m | 2.23 | 2.5× | risk 5.2% |
-| **0.85 cal** | **1.55 cal** | **1.94** | **0.8%** | **2.08 g** | **450 m** | **1.97** | **2.7×** | **selected** |
-| 0.85 cal | 1.70 cal | 2.19 | 0.1% | 1.90 g | 407 m | 1.77 | 2.8× | ok |
-| 0.85 cal | 1.85 cal | 2.40 | 0.0% | 1.77 g | 373 m | 1.60 | 2.9× | ok |
-| 1.00 cal | 1.40 cal | 1.33 | 19.7% | 3.14 g | 684 m | 2.24 | 1.9× | SM 1.37 < 1.4; torque |
+| 0.70 cal | 1.40 cal | 2.07 | 0.3% | 1.46 g | 321 m | 2.22 | 3.7× | ok |
+| 0.70 cal | 1.55 cal | 2.33 | 0.0% | 1.36 g | 296 m | 1.96 | 3.8× | ok |
+| 0.85 cal | 1.25 cal | 1.47 | 11.5% | 2.14 g | 476 m | 2.56 | 2.7× | risk 11.5% |
+| 0.85 cal | 1.40 cal | 1.79 | 2.1% | 1.96 g | 429 m | 2.23 | 2.8× | risk 2.1% |
+| **0.85 cal** | **1.55 cal** | **2.06** | **0.4%** | **1.82 g** | **394 m** | **1.97** | **2.9×** | **selected** |
+| 0.85 cal | 1.70 cal | 2.29 | 0.0% | 1.71 g | 366 m | 1.77 | 3.0× | ok |
+| 0.85 cal | 1.85 cal | 2.48 | 0.0% | 1.62 g | 342 m | 1.60 | 3.1× | ok |
+| 1.00 cal | 1.40 cal | 1.55 | 8.0% | 2.50 g | 545 m | 2.24 | 2.2× | risk 8.0% |
 
 **Decisions D11 and D5: canard semispan 0.85 cal, aft semispan 1.55 cal.** It satisfies
-every constraint — P(SM<1.0) at 0.8% against a 1% limit, flutter 1.97 against 1.5, servo
-torque 2.7× against 2.0 — at the highest crossrange of any row that does. Note the table is
+every constraint — P(SM<1.0) at 0.4% against a 1% limit, flutter 1.97 against 1.5, servo
+torque 2.9× against 2.0 — at the highest crossrange of any row that does. Note the table is
 computed **with** the 100 g of nose ballast the design now carries; §7.1 explains why that
 ballast is not optional.
 
 ### 7.1 Why the design carries ballast
 
-Without it the selected point sits at **1.8%**, above the 1% limit. The cause is hardware,
-not aerodynamics: the mass budget originally
+**This section is kept, but its headline no longer holds.** With the canards swept to
+35.4° (section 5) they are less destabilising, and the bare vehicle now sits at **0.7%**,
+inside the 1% limit. Ballast is no longer *required* by R1 — it is retained because 0.7%
+is thin, and because it is the one parameter you can still set after weighing the finished
+vehicle. The original argument, which held for the unswept planform: the mass budget
 carried a 55 g placeholder per servo, and the real part (KST X08 Plus, 9 g) removed ~180 g
-from the canard module, which sits *forward* of the CG. CG moved 10.5 mm aft and nominal
-margin fell 1.94 → 1.80 cal.
+from ahead of the CG, taking the unswept vehicle to 1.8%.
 
 There are two ways to buy that back, and they are not equally good:
 
 | | Crossrange | Flutter margin | Reversible after build? |
 |---|---|---|---|
-| Grow aft fins to 1.70 cal | 407 m | 1.77× | No — cut once |
-| **Keep 1.55 cal, add 100 g ballast** | **450 m** | **1.97×** | **Yes — it is a washer stack** |
+| Grow aft fins to 1.70 cal | 366 m | 1.77× | No — cut once |
+| **Keep 1.55 cal, add 100 g ballast** | **394 m** | **1.97×** | **Yes — it is a washer stack** |
 
 **Ballast wins.** It preserves flutter margin, costs less crossrange, and — the real
 argument — it is the one variable you can still set *after* weighing the finished vehicle.
@@ -371,14 +373,14 @@ Ballast at a station 191 mm from the nose tip:
 
 | Ballast | Median SM | 5th pct | P(SM<1.0) | P(SM<1.4) | Authority | R1 |
 |---|---|---|---|---|---|---|
-| 0 g | 1.80 | 1.17 | 1.8% | 14.6% | 100% | **FAIL** |
-| 50 g | 1.87 | 1.24 | 1.1% | 10.8% | 96% | **FAIL** |
-| 75 g | 1.91 | — | 0.8% | 8.9% | ~94% | PASS (minimum) |
-| **100 g** | **1.94** | **1.31** | **0.6%** | **7.9%** | **93%** | **PASS — design point** |
-| 200 g | 2.07 | 1.45 | 0.2% | 3.7% | 87% | PASS |
-| 300 g | 2.20 | 1.58 | — | 1.7% | 82% | PASS |
+| 0 g | 1.93 | 1.30 | 0.77% | 8.4% | 100% | PASS (but thin) |
+| 50 g | 2.00 | 1.37 | 0.44% | 5.9% | 97% | PASS |
+| 75 g | 2.03 | 1.40 | 0.34% | 5.0% | ~95% | PASS |
+| **100 g** | **2.07** | **1.44** | **0.26%** | **4.0%** | **93%** | **PASS — design point** |
+| 200 g | 2.20 | 1.58 | 0.07% | 1.8% | 88% | PASS |
+| 300 g | 2.33 | 1.71 | 0.03% | 0.7% | 83% | PASS |
 
-**75 g is the minimum that satisfies R1; carry 100 g as the design point** and provision
+**R1 is now met with no ballast at all; carry 100 g as the design point anyway** and provision
 for at least 300 g so you have room to respond to whatever the scale actually says. Note
 that authority falls roughly as 1/SM, so ballast is not free — but at 100 g it costs 7% of
 a quantity you have 4.7× more of than R8 requires.
