@@ -31,7 +31,11 @@ Read this first if you are picking the project back up.
   reports clearances — the interference check `docs/05` had carried as NOT RUN since the
   module was built. Two things the block had hidden came out of it; they are corrections 9
   and 10 below. The four revolute hinge mates are the one piece not finished: the mate
-  connectors and the rigid groups are in, the mates are not.
+  connectors and the rigid groups are in — **and as of Aug 2026 so are the mates**, added in
+  the browser because the API will not author that connector reference. `Assembly 1` now
+  carries `Canard 0 (+X) hinge` … `Canard 3 (-Y) hinge`, REVOLUTE, ±8°, each pairing
+  `tube{n}` with `shaft{n}`. Mass and CoM did not move, which is how you know the paired
+  connectors really were coincident.
 - **The hinge is a mechanism now, and closing it found a third thing.** Both fits
   correction 10 left open are closed — see correction 11 and `docs/05` "The hinge stack".
   `design/hinge.py` models the shaft, bearing and coupling as a load path rather than as a

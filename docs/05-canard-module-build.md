@@ -95,14 +95,35 @@ shaft ran 7.785 mm into the servo case and 3.015 mm into its spline. The servo h
 is a ⌀7.975 bearing seat carrying its own dimension. Full argument and margins under "The
 hinge stack" below; model in `design/hinge.py`.
 
+**The four revolute hinge mates are IN** (Aug 2026), so `Assembly 1` is a mechanism and not
+just a pose. `Canard 0 (+X) hinge` … `Canard 3 (-Y) hinge`, each pairing `tube{n}` with
+`shaft{n}` from `canardHingeConnectors`, REVOLUTE, limited to ±8°. Mass and CoM did not
+move (258.650 g, Z 75.122 mm), which is the check that the connectors really were
+coincident — mating two connectors that are not coincident drags the geometry.
+
+They were added **in the browser**, because the assembly-feature API still will not create
+them. The useful discovery is that the restriction is on CREATION only: once the mates
+existed, `POST /assemblies/.../features/featureid/{fid}` renamed all four from
+`Revolute 1..4` without complaint. So the API can maintain a mate whose connector query
+already resolves; it just cannot author that query. If these ever need rebuilding, expect
+to place them by hand and script everything after.
+
+In the UI the recipe is: expand `Canard module tube` in the instance list (its four mate
+connectors are in quadrant order 0,1,2,3 — the status bar confirms it, the first reads
+X 34.800 / Y 0.000 / Z 68.270), click the tube connector, ctrl/cmd-click the matching
+`Canard shaft n` connector, check that the status bar reads **Min dist 0.000 mm**, then hit
+Revolute. Tick Limits and enter −8 deg, **Tab**, 8 deg — clicking between the two limit
+fields lands on the units autocomplete instead, and `Ctrl/Cmd+A` in that dialog clears the
+mate connector selection rather than the text.
+
 **Not started**: printed bay (step 6 below) — blocked on picking real bracket hardware,
 since a placeholder shell wouldn't tell you anything the mass/interference checks need.
 Forward wiring pass-through and aft gas seal are still open. **The four revolute hinge
 mates in `Assembly 1` are not in.** The mate connectors they need exist, in pairs on each
 hinge axis (`canardHingeConnectors`), and the rigid groups either side of each hinge exist;
-only the mates themselves are missing, because the assembly-feature API would not resolve a
-Part Studio mate connector reference. Adding them by hand is four picks each. See
-`scripts/make_module_assembly.py`, which builds everything up to that point.
+and **the mates are now in too** — see above. `scripts/make_module_assembly.py` still
+builds everything up to that point; its `revolute()` remains the record of what the API
+would not do.
 
 **The interference sweep is RUN.** `python scripts/canard_sweep.py` drives the deflection
 through ±8° and reports clearances; images land in `out/cad/`. The answer is that nothing

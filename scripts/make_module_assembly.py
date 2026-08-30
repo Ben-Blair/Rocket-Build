@@ -62,8 +62,26 @@ def hinge_connector_ids() -> dict[str, str]:
     return found
 
 
-def clear_features() -> None:
-    for f in get(f"/assemblies/d/{DOC}/w/{WS}/e/{ASSEMBLY}/features").get("features", []):
+def clear_features(force: bool = False) -> None:
+    """Delete every assembly feature.
+
+    REFUSES to run if any real mate is present. The four revolute hinges were placed by
+    hand in the browser precisely because this script could not create them, so wiping
+    them here would destroy work that cannot be scripted back. Groups are cheap to rebuild
+    and are cleared without ceremony; mates are not.
+    """
+    feats = get(f"/assemblies/d/{DOC}/w/{WS}/e/{ASSEMBLY}/features").get("features", [])
+    mates = [f for f in feats if f.get("btType") == "BTMMate-64"]
+    if mates and not force:
+        raise SystemExit(
+            "REFUSING to clear the assembly: it holds "
+            f"{len(mates)} mate(s) this script cannot recreate — "
+            + ", ".join(f.get("name", "?") for f in mates)
+            + ".\nThey were placed by hand in the browser; the assembly-feature API will "
+              "not author a Part Studio mate connector reference. Re-run with --force only "
+              "if you are prepared to place them again by hand."
+        )
+    for f in feats:
         call("DELETE", f"/assemblies/d/{DOC}/w/{WS}/e/{ASSEMBLY}"
                        f"/features/featureid/{quote(f['featureId'], safe='')}")
 
@@ -115,11 +133,25 @@ def revolute(name: str, a_path: list[str], a_fid: str,
     }, name)
 
 
+# STATUS, Aug 2026: the four revolute mates this script could not create were placed by
+# hand in the browser and are now in Assembly 1 as "Canard 0 (+X) hinge" .. "Canard 3 (-Y)
+# hinge", REVOLUTE, limited to +/-8 deg, each pairing tube{n} with shaft{n}. The revolute()
+# below is KEPT AS THE RECORD of what the API would not do, and it is a narrower failure
+# than it looked: the API cannot CREATE a mate whose connector reference points into a Part
+# Studio, but it will happily EDIT one that already exists -- all four were renamed from
+# "Revolute 1..4" through POST /assemblies/.../features/featureid/{fid} straight after.
+# So: author mates by hand, script everything afterwards. Running --mates will clear the
+# assembly features, which now includes those four; do not, unless you intend to place them
+# again.
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--mates", action="store_true",
                     help="rebuild the groups and hinge mates")
     ap.add_argument("--limit", type=float, default=DEFLECTION_LIMIT_DEG)
+    ap.add_argument("--force", action="store_true",
+                    help="clear the assembly even if it holds hand-placed mates")
     args = ap.parse_args()
     if not args.mates:
         print(__doc__)
@@ -139,7 +171,7 @@ def main() -> None:
     splines = inst["Servo output spline (15T, 4 mm)"]
 
     print("clearing existing assembly features")
-    clear_features()
+    clear_features(force=args.force)
 
     print("\ngroups")
     group("Airframe (tube + servo bodies)", [tube] + cases + bosses)
