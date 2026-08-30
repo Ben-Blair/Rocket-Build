@@ -26,6 +26,14 @@ P(SM<1.0) 0.4%, 424 m crossrange. `scripts/baseline.py` regenerates
 all of it; `evaluate()` reports feasible with no violations, and that now includes a check
 that the recovery hardware physically fits in the bay.
 
+**One open decision you should know about before the defence:** §7 used to claim the
+selected fin sizes gave the highest crossrange of any combination that passes every
+constraint. They do not — they rank third. `scripts/robustness.py` picks canard 1.00 / aft
+1.70 cal, which passes everything and buys 16% more crossrange (493 m against 424 m) at the
+cost of flutter margin (1.78 against 1.97) and servo torque (2.3× against 2.8×). 0.85/1.55
+is retained on margin, and because the Onshape module is built to it — but that is a choice,
+and §7 now says so instead of hiding it.
+
 Seven corrections are worth knowing about. The first four changed the design; the last two
 are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:

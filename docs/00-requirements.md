@@ -339,12 +339,41 @@ crossrange and on safety at the same time instead of trading one against the oth
 | 0.85 cal | 1.70 cal | 2.23 | 0.1% | 1.83 g | 390 m | 1.77 | 2.9× | ok |
 | 0.85 cal | 1.85 cal | 2.43 | 0.0% | 1.72 g | 362 m | 1.60 | 3.0× | ok |
 | 1.00 cal | 1.40 cal | 1.46 | 11.7% | 2.74 g | 597 m | 2.24 | 2.1× | risk 11.7% |
+| 1.00 cal | 1.55 cal | 1.74 | 2.8% | 2.50 g | 538 m | 1.98 | 2.2× | risk 2.8% |
+| *1.00 cal* | *1.70 cal* | *1.98* | *0.6%* | *2.32 g* | *493 m* | *1.78* | *2.3×* | *ok — beats the selected point* |
+| *1.00 cal* | *1.85 cal* | *2.19* | *0.1%* | *2.18 g* | *456 m* | *1.61* | *2.4×* | *ok — beats the selected point* |
 
 **Decisions D11 and D5: canard semispan 0.85 cal, aft semispan 1.55 cal.** It satisfies
 every constraint — P(SM<1.0) at 0.5% against a 1% limit, flutter 1.97 against 1.5, servo
-torque 2.8× against 2.0 — at the highest crossrange of any row that does. Note the table is
-computed **with** the 100 g of nose ballast the design now carries; §7.1 explains why that
-ballast is not optional.
+torque 2.8× against 2.0.
+
+**It is NOT the highest crossrange that does, and this document used to claim it was.**
+That claim survived because the table above quoted a subset of rows that happened to
+exclude the ones that beat it. Ranking every fully-passing combination:
+
+| | crossrange | |
+|---|---|---|
+| canard 1.00 / aft 1.70 | **493 m** | passes everything — `robustness.py` picks this as BEST |
+| canard 1.00 / aft 1.85 | 456 m | passes everything |
+| **canard 0.85 / aft 1.55** | **424 m** | **selected — third, not first** |
+| canard 0.85 / aft 1.70 | 390 m | passes everything |
+| canard 0.70 / aft 1.40 | 346 m | passes everything |
+
+So `scripts/robustness.py` and this document disagree about the answer, and the script is
+the one doing the arithmetic. **The 0.85/1.55 point is retained deliberately, on margin
+rather than on authority**: 1.00/1.70 buys 16% more crossrange but spends flutter margin
+(1.78 against 1.97) and servo torque margin (2.3× against 2.8×) to get it. The flutter
+number is the one to weigh, because §8 reads it as ±25% — published G10 shear modulus spans
+3–7 GPa and flutter speed goes as sqrt(G) — so 1.78 nominal has a materially worse tail than
+1.97 does. There is also a practical lock-in: the Onshape canard module is built to a
+0.85 cal semispan, and growing it means rebuilding that model.
+
+**This is a live decision, not a closed one.** If crossrange turns out to matter for GV-5,
+1.00/1.70 is the row to revisit, and the cost is a CAD rebuild plus a thinner flutter tail.
+Do not let it stay buried in a table again.
+
+Note the table is computed **with** the 100 g of nose ballast the design now carries; §7.1
+explains why that ballast is not optional.
 
 ### 7.1 Why the design carries ballast
 
