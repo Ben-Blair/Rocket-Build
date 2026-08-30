@@ -43,6 +43,18 @@ Read this first if you are picking the project back up.
   applies it to Onshape and is safe to re-run. `scripts/baseline.py` now carries a
   hinge-stack verdict, and the check is run against the **as-built** layout too, where it
   fails on five counts. A check that has never failed is not evidence of anything.
+- **The hinge load path is closed end to end.** The two items the hinge stack left open
+  are both done (corrections 12 and 13): the **sleeve-to-panel joint** is a 1.8 × 14 mm
+  tang 30 mm into the root — which turns the panel into a 0.6/1.8/0.6 bonded laminate,
+  a manufacturing change and not a design one — and the **tube at the hinge station** is
+  checked and passes by two to three orders of magnitude on everything except the bearing
+  seat, which sits at 3.2× *only* because the housing collar has not been built.
+  `design/tube_section.py` and `design/materials.py` are new; `design/hinge.py` carries the
+  joint; `scripts/hinge_report.py` prints both and `scripts/baseline.py` carries both
+  verdicts so neither can silently regress. **The one open item in the whole hinge is the
+  housing collar**, still blocked on bracket hardware, now worth a measured 6.7× on the
+  bearing seat.
+
 - **Step 4 is next**: avionics. Decisions D7 (flight computer) and D8 (state estimation)
   are open and drive the largest, least specified line in the budget.
 
@@ -62,7 +74,7 @@ cost of flutter margin (1.78 against 1.97) and servo torque (2.3× against 2.8×
 is retained on margin, and because the Onshape module is built to it — but that is a choice,
 and §7 now says so instead of hiding it.
 
-Eleven corrections are worth knowing about. The first four changed the design; two of the
+Thirteen corrections are worth knowing about. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
@@ -180,9 +192,40 @@ that silently recurs:
    bearing takes the bending at 3.4× margin and the spline socket engages 91% of the
    spline. Cost: central void — every band lost the same 8 mm, ⌀20.17 → ⌀12.17 over the
    8.2 mm where the cable bosses sit and ⌀40.77 → ⌀32.77 alongside the cases — plus 1.2 g
-   and 1.3% of module roll inertia. **No control conclusion moved.** The **sleeve-to-panel joint** is
-   now the open design decision, in the slot the coupling used to occupy: a ⌀6 shaft cannot
-   simply enter a 3.0 mm panel, and that joint carries the full 0.734 N·m.
+   and 1.3% of module roll inertia. **No control conclusion moved.**
+
+12. **The last link was the hard one, and the answer was that the panel is made
+   differently.** Correction 11 left the **sleeve-to-panel joint** open — a ⌀6 shaft cannot
+   simply enter a 3.0 mm panel. It is the *hard* end of the load path, not the easy one:
+   every number in the hinge stack shrinks going inboard because the bearing takes the
+   couple out, and going outboard the moment is at its maximum, **0.721 N·m into 3.0 mm of
+   G10**. Three of the four candidate joints lose to something already frozen rather than to
+   structure — a root boss needs 9 mm of panel thickness and t/c drives flutter; a clevis
+   stands proud of the panel in the fastest flow it sees; a one-piece aluminium panel adds
+   154 g aft of a CG that already needs 100 g of nose ballast. The winner is a **1.8 × 14 mm
+   tang, 30 mm into the root**, tang 2.9× and skin 2.9×, deliberately balanced.
+
+   The finding worth keeping is not the tang. It is that **a 1.8 mm slot 30 mm deep into a
+   3.0 mm plate is a 17:1 blind cut and nobody can machine it**, so the panel becomes a
+   **0.6 / 1.8 / 0.6 bonded laminate** with the core cut away. Same thickness, planform,
+   mass and aerodynamics — the answer to "how does the shaft meet the panel" turned out to
+   be a *manufacturing* change, and it would not have surfaced from any stress number.
+
+13. **The tube passed by three orders of magnitude, and the one number that did not is the
+   one nobody was worried about.** `check_hinge_stack()` had emitted *"check the tube, not
+   just the hinge"* since the hinge stack went in and nothing had. Four ⌀7.975 bores at one
+   station remove 13.2% of a 79.4 × 2.3 tube's circumference; net section runs at **256×**,
+   torsion 348×, shell buckling 434×. The airframe was never the risk.
+
+   **The bearing seat is, at 3.2×** — and only because the housing collar does not exist.
+   3.700 mm of the 6.0 mm bearing sits inboard of the tube ID, so with no collar the 2.3 mm
+   wall holds it alone at 116.2 MPa; with the collar, 17.4 MPa and 21.3×. Peak pressure goes
+   as 1/L², so those are **6.7× apart**. The printed bay was already blocked on bracket
+   hardware; it is now blocked on something with a number attached. Two caveats stated
+   rather than buried: the allowables are G-10 *sheet* and a filament-wound tube is not
+   sheet (**under 4×, go get the real datasheet** — the seat is under it), and **global
+   airframe beam bending under a gust is still not modelled anywhere in this project.**
+   `design/tube_section.py` is the first structural model it has, and it runs at trim.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.

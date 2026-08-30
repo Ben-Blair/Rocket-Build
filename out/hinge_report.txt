@@ -102,6 +102,88 @@ to fit the smaller of them.
     note  3.700 mm of the bearing sits inboard of the tube ID and needs a housing collar; that is a requirement on the printed bay
 
 ============================================================================================
+THE SLEEVE-TO-PANEL JOINT  --  the last link, and the hardest
+============================================================================================
+How the three numbers were picked, because they are coupled and none of them is free:
+
+  * THICKNESS 1.8 mm sets the skins at 0.6 mm. Thicker tang, stronger tang, weaker
+    skin -- and the skin's stress goes as 1/t^2, so the trade is sharp. 1.8/0.6 puts
+    the tang and the skin within 20% of the same margin, which is what "balanced"
+    means here.
+
+  * WIDTH 14 mm is where the two curves cross the other way. A wider tang lowers the
+    slot pressure (1/b) but widens the skin's span (b^2), so the skin's stress rises
+    with width overall. A narrower tang saves the skin and fails the tang.
+
+  * ENGAGEMENT 30 mm is bought cheaply: the slot pressure goes as 1/L^2 and the root
+    chord is 67.5 mm, so depth is the only one of the three that improves everything
+    at once and is not paid for anywhere. It stops at 44% of the chord.
+
+  THE OBVIOUS JOINT  --  the dia 6 sleeve simply entering the panel
+    tang              6.00 x 6.00 mm, 6.0 mm engaged, skins -1.50 mm
+    moment at root    0.7212 N m from 25.37 N
+    tang bending          20.0 MPa   6061-T6 13.8x, 303 stainless 12.0x, 4140 steel 32.7x
+    skin over slot      -- there is no skin
+    slot bearing        20.740 MPa from bending, 14.444 MPa from stall torque (18x)
+    bond shear           0.352 MPa   99x
+    VERDICT: NOT BUILDABLE -- 1 violation(s)
+      FAIL  the tang is 6.00 mm thick in a 3.00 mm panel -- there is no panel left
+      note  slot is 6.0 mm into a 67.5 mm root chord (9%)
+
+  SELECTED  --  a 1.8 x 14 mm tang, 30 mm into the panel root
+    tang              1.80 x 14.00 mm, 30.0 mm engaged, skins +0.60 mm
+    moment at root    0.7212 N m from 25.37 N
+    tang bending          95.4 MPa   6061-T6 2.9x, 303 stainless 2.5x, 4140 steel 6.9x
+    skin over slot       164.9 MPa   2.9x against 480 MPa flexural
+    slot bearing         0.404 MPa from bending, 0.531 MPa from stall torque (697x)
+    bond shear           0.030 MPa   1159x
+    VERDICT: buildable, every margin met.
+      note  skin over the slot 0.60 mm each side
+      note  slot is 30.0 mm into a 67.5 mm root chord (44%)
+      note  stress steps up 2.8x from the round sleeve to the tang, at the maximum-moment station -- blend the transition, do not shoulder it
+      note  a 1.8 mm slot 30 mm deep in a 3.0 mm plate is a 17:1 blind cut; build the panel as a 0.6/1.8/0.6 bonded laminate with the core cut away instead
+
+============================================================================================
+THE TUBE AT THE HINGE STATION  --  four bores at one station
+============================================================================================
+  check_hinge_stack() has emitted 'check the tube, not just the hinge' since the
+  hinge stack went in, and nothing had. This is that check.
+
+  station           512.91 mm from the nose tip, 68.27 mm into the canard module
+  section           dia 79.4 x 2.3 wall, 4 x dia 7.975 bores
+  area              557.1 mm^2 gross -> 483.7 mm^2 net (13.2% removed)
+  ligament          52.6 mm between adjacent bores
+
+  axial    143.6 N    t = 2.47 s, thrust 448 N, drag 56 N
+                      = 1.229 kg forward of the station at 7.24 g, plus 56 N of drag
+  bend     0.999 N m  q = 19.42 kPa at 1.19 deg trim alpha, free body forward of the station with inertial relief
+  twist    6.965 N m  full roll command, 4 panels x 25.4 N at R 68.6 mm
+
+  The bearing hands its couple to whatever holds it, and 3.700 mm of it is held
+  by a housing collar that has not been built. Both cases:
+    no collar (the vehicle today): the 2.3 mm wall alone
+      seat pressure    116.2 MPa   margin 3.2x against 370 MPa
+    with the collar: the full 6.0 mm bearing
+      seat pressure     17.4 MPa   margin 21.3x against 370 MPa
+
+  net section          1.212 MPa peak at the bore edge (Kt = 3.0)
+    of which axial     0.297 MPa, bending 0.107 MPa
+  torsional shear      0.374 MPa
+  shell buckling       128.9 MPa allowable against 0.297 MPa applied
+  press-fit hoop        9.38 MPa from a 0.025 mm interference
+
+    bearing seat crush                                3.2x
+    press-fit hoop                                   29.9x
+    net section (compression + bending, Kt)         255.8x
+    torsional shear                                 348.0x
+    shell buckling                                  434.1x
+
+  VERDICT: the tube is fine, and it is not close.
+    note  Lurie beta 0.42 (< 1.0), so the flat-plate Kt = 3.0 stands
+    note  52.6 mm of ligament between adjacent bores (13% of the circumference removed)
+    note  worst margin is 3.2x, under the 4x at which the G10-sheet allowables in this module stop being good enough -- get the real tube datasheet
+
+============================================================================================
 WHAT THIS COSTS, AND WHAT IT DOES NOT
 ============================================================================================
   central void            dia 20.17 -> dia 12.17, over the 8.2 mm band where the cable bosses
@@ -113,7 +195,13 @@ WHAT THIS COSTS, AND WHAT IT DOES NOT
                           servo moved instead of the panel.
   servo torque margin     UNCHANGED at 1:1 direct drive; the coupling is a spline
                           socket, not a gear.
-  still open              the sleeve-to-panel joint. The sleeve ends flush at the
-                          panel root and the panel is 3.0 mm thick, so a
-                          dia 6 shaft cannot simply enter it. That joint has
-                          to carry 0.734 N m into a 3.0 mm panel.
+  the panel               CHANGES. The tang joint needs a 1.8 mm slot 30 mm into
+                          the root, which is a 17:1 blind cut in a 3.0 mm plate and is not
+                          machinable. The panel becomes a 0.6/1.8/0.6 bonded
+                          laminate. Same thickness, same planform, same mass --
+                          a manufacturing change, not a design one.
+  the tube                UNCHANGED and not close: worst margin at the hinge
+                          station is the bearing seat, and only because the
+                          housing collar has not been built yet.
+  still open              the housing collar. Blocked on bracket hardware, and
+                          worth 6.7x on the bearing seat when it exists.

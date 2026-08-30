@@ -54,13 +54,33 @@ Requires **Level 2 certification**. Budget 5 reloads for the GV-1…GV-5 campaig
 |---|---|---|---|---|---|
 | Servo, KST X08 Plus V6.0 | 23.5 × 8.0 × 16.8 mm, 9 g, 5.3 kgf·cm @ 8.4 V | 4 | 0.036 kg | **$43–55 ea** | ✅ |
 | Servo frame with outboard bearing | Hyperflight SRB-KST-X08 or IDS/LDS kit — carries the panel bending moment off the servo spline | 4 | in shafts | ~$15 ea | |
-| Canard shafts, bushings, hardware | Steel shaft through the tube wall into the canard root | 4 | 0.240 kg | ~$40 | |
-| Printed canard bay | PETG / ASA / CF-nylon — **not PLA**, heat-set inserts | 1 | in structure | ~$10 | |
+| Canard hinge shaft | ⌀6 sleeve, R 33.485 → 40.200, ⌀4.4 × 3.2 15T spline socket, ending in a **1.8 × 14 × 30 mm tang**. 6061-T6 gives 2.9×, 4140 gives 6.9× | 4 | in shafts | | |
+| Canard hinge bearing | **⌀6 / ⌀8 × 6.0 plain, iglidur G class.** Press fit, H7/r6, 0.025 mm interference. This is the part that keeps the panel bending moment out of the servo | 4 | in shafts | ~$5 ea | |
+| Canard shafts, bushings, hardware | The two lines above plus fasteners | 4 | 0.240 kg | ~$40 | |
+| Canard panels | **0.6 / 1.8 / 0.6 mm bonded G10 laminate**, core cut away at the root for the tang. NOT a solid 3 mm plate — see below | 4 | in canards | | |
+| Printed canard bay | PETG / ASA / CF-nylon — **not PLA**, heat-set inserts. **Must carry the bearing housing collar**, 3.7 mm of ⌀8 bore per hinge | 1 | in structure | ~$10 | |
+
+**Three lines here are load path, not hardware, and buying the wrong thing quietly deletes
+them.** The panel makes 0.0599 N·m about the hinge — that is what sizes the servo — and
+**25.4 N at a bearing 29 mm away, which is 0.734 N·m of bending.** Without the plain bearing
+that moment is carried by a 2.3 mm fibreglass hole and then by the servo's own output shaft:
+175 MPa against an 80 MPa allowable, 0.46× where 2.0× is required. The servo frame with the
+outboard bearing is the second line of defence at the other end of the spline. The **housing
+collar in the printed bay** is the third: it holds 3.700 mm of the 6.0 mm bearing, and
+without it the bearing seat in the tube runs at 3.2× instead of 21.3×.
+
+**The canard panels are a laminate, not a plate.** The tang joint needs a 1.8 mm slot 30 mm
+into a 3.0 mm panel root — a 17:1 blind cut nobody can machine — so the panel is built up
+from 0.6 / 1.8 / 0.6 mm G10 with the core cut away. Same thickness, planform and mass; order
+sheet in three thicknesses, not one. See docs/05 "The root joint".
 
 Servos mount **flat against the inner wall**, output shaft radial through the wall. Hinge
 line at 0.20 of MAC, forward of the 0.25c panel CP so the panel is restoring. Torque margin
-3.60× against a peak hinge moment of 0.0577 N·m per panel. Packaging is not binding: 79 mm of
-arc needed against 188 mm available, 45 mm central void.
+3.5× against a peak hinge moment of 0.0599 N·m per panel. Packaging is not binding: 44 mm of
+arc needed against 144 mm available — but the **central void is 12 mm, not the 45 mm this
+line used to claim**. The servo moved 4.000 mm inboard to make room for the hinge bearing
+and every band lost the same 8 mm. The wiring has to fit ⌀12.17 over the 8.2 mm band where
+the cable bosses sit. Regenerate with `python scripts/baseline.py`.
 
 ## 5. Avionics
 

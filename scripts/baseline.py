@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from design import aero, control, flutter, hinge, trajectory
+from design import aero, control, flutter, hinge, trajectory, tube_section
 from design.configure import baseline, build_vehicle, evaluate
 from design.packaging import (
     SERVO_GEOMETRY, SERVOS, check_direct_drive, check_flat_mount, torque_margin,
@@ -193,9 +193,10 @@ def main() -> None:
         print(f"  servo travel        +/-{math.degrees(geom.travel_half_angle):.0f} deg, "
               f"so +/-{DEFLECTION_LIMIT_DEG:.0f} deg of canard uses "
               f"{DEFLECTION_LIMIT_DEG / math.degrees(geom.travel_half_angle) * 100:.0f}% of it")
-    worst = max(
-        (control.pitch_authority(r, p, p.mass, DEFLECTION_LIMIT_DEG) for p in f.points if p.q > 100),
-        key=lambda a: abs(a.hinge_moment_per_panel),
+    worst_pt, worst = max(
+        ((p, control.pitch_authority(r, p, p.mass, DEFLECTION_LIMIT_DEG))
+         for p in f.points if p.q > 100),
+        key=lambda pair: abs(pair[1].hinge_moment_per_panel),
     )
     margin = torque_margin(worst.hinge_moment_per_panel, servo, GEAR_RATIO)
     hm = worst.hinge_moment_per_panel
@@ -227,6 +228,43 @@ def main() -> None:
           f"{stack.spline_engagement * 1000:.3f} mm "
           f"({stack.spline_engagement_fraction * 100:.0f}%)")
     print(f"  hinge stack         {'OK' if chk.ok else 'VIOLATIONS: ' + '; '.join(chk.violations)}")
+
+    # The last link: how the shaft meets the panel. The moment is at its MAXIMUM here --
+    # the bearing has not taken it out yet -- and the panel is 3.0 mm of G10.
+    joint = hinge.selected_root_joint(stack, r.canards.thickness, r.canards.root_chord)
+    jl = hinge.root_joint_loads(joint, hl.normal_force,
+                                r.diameter / 2.0 + hinge.spanwise_centroid(
+                                    r.canards.root_chord, r.canards.tip_chord,
+                                    r.canards.semispan),
+                                servo.stall_torque)
+    jchk = hinge.check_root_joint(joint, jl)
+    print(f"  root joint          {joint.tang_thickness * 1000:.1f} x "
+          f"{joint.tang_width * 1000:.0f} mm tang, {joint.engagement * 1000:.0f} mm engaged; "
+          f"tang {min(jl.tang_margin.values()):.1f}-{max(jl.tang_margin.values()):.1f}x, "
+          f"skin {hinge.G10_FLEXURAL / jl.skin_bending_stress:.1f}x")
+    print(f"  root joint check    {'OK' if jchk.ok else 'VIOLATIONS: ' + '; '.join(jchk.violations)}")
+
+    # And the structure all of it is cut into. Four dia 8 bores at one station in a 2.3 mm
+    # wall is a 13% net-section loss that nothing had ever priced.
+    station = hinge.canard_hinge_station(r)
+    cut = tube_section.CutStation(station, r.diameter, r.tubes[1].wall_thickness,
+                                  stack.wall_bore_dia, r.canards.count, r.tubes[1].name)
+    sl = tube_section.canard_module_loads(
+        r, m, f, aero.stability(r, worst_pt.cg, mach=worst_pt.mach), station,
+        panel_normal_force=hl.normal_force,
+        panel_cp_radius=r.canards.spanwise_cp_radius,
+        seat_moment=hl.moment_at_bearing,
+        alpha_trim_rad=math.radians(worst.alpha_trim_deg),
+        q=worst.dynamic_pressure)
+    # No collar yet, so the 2.3 mm wall holds the bearing alone. That is the vehicle today.
+    sec = tube_section.check_cut_station(cut, sl, stack.bearing_od,
+                                         hinge.BEARING_SEAT_INTERFERENCE,
+                                         seat_length=cut.wall_thickness)
+    worst_name = min(sec.margins, key=sec.margins.get)
+    print(f"  tube at the hinge   {cut.hole_count} x dia {cut.hole_dia * 1000:.2f} bores take "
+          f"{cut.area_loss_fraction * 100:.0f}% of the section; worst margin "
+          f"{sec.margins[worst_name]:.1f}x ({worst_name})")
+    print(f"  tube section check  {'OK' if sec.ok else 'VIOLATIONS: ' + '; '.join(sec.violations)}")
     print(f"  servo speed         {servo.speed_60deg:.2f} s/60deg "
           f"--> {60.0 / servo.speed_60deg:.0f} deg/s slew rate")
     print(f"  pitch mode          {worst.pitch_natural_freq_hz:.1f} Hz; loop rate should be "

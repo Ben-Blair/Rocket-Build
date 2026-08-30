@@ -93,7 +93,9 @@ closing them exposed a solid-on-solid clash the sweep had not been asked about: 
 shaft ran 7.785 mm into the servo case and 3.015 mm into its spline. The servo has moved
 4.000 mm inboard, the shaft is a ⌀6 sleeve that stops at its output face, and the wall bore
 is a ⌀7.975 bearing seat carrying its own dimension. Full argument and margins under "The
-hinge stack" below; model in `design/hinge.py`.
+hinge stack" below; model in `design/hinge.py`. **The two items that left open — how the
+sleeve meets the panel, and what four bores do to the tube — are closed too**; see "The
+root joint" and "The tube at the hinge station".
 
 **The four revolute hinge mates are IN** (Aug 2026), so `Assembly 1` is a mechanism and not
 just a pose. `Canard 0 (+X) hinge` … `Canard 3 (-Y) hinge`, each pairing `tube{n}` with
@@ -118,6 +120,9 @@ mate connector selection rather than the text.
 
 **Not started**: printed bay (step 6 below) — blocked on picking real bracket hardware,
 since a placeholder shell wouldn't tell you anything the mass/interference checks need.
+**It is now the only open item in the hinge load path, and it has a number on it**: the
+housing collar carries 3.700 mm of the 6.0 mm bearing, and building it takes the bearing
+seat from 3.2× to 21.3×. See "The tube at the hinge station" below.
 Forward wiring pass-through and aft gas seal are still open. **The four revolute hinge
 mates in `Assembly 1` are not in.** The mate connectors they need exist, in pairs on each
 hinge axis (`canardHingeConnectors`), and the rigid groups either side of each hinge exist;
@@ -241,10 +246,13 @@ anything.
   bodies without also drilling the four obsolete servo blocks, which is not worth the
   risk to a working tree for a feature that changes no mass and no clearance. The socket
   is a manufacturing dimension, carried here and in `out/hinge_report.txt`.
-- **The sleeve-to-panel joint.** The sleeve ends flush at R 40.200 against a 3.0 mm panel,
-  so a ⌀6 shaft cannot simply enter it — it needs a tang or a root boss, and that joint has
-  to carry the full 0.734 N·m. This is now the next real design decision, in the place the
-  spline coupling used to occupy.
+- **The tang and its slot are not modelled either.** Same reasoning as the spline socket
+  above: they are manufacturing dimensions, they change no mass and no clearance, and
+  cutting them needs a boolean scope that reaches four patterned bodies without touching
+  the four obsolete servo blocks. They are carried in "The root joint" below and in
+  `out/hinge_report.txt`. **The panel becoming a laminate is not a CAD change either** —
+  the solid is identical — but it *is* a build-sheet change, so it is written up rather
+  than left in a script.
 
 **Module mass properties, measured Aug 2026 — from `Assembly 1`, with real servos:**
 
@@ -271,6 +279,119 @@ assuming. The previous figures — 0.259864 kg, Z 75.090, 585.266 / 612.442 — 
 That 0.25865 kg is against roughly 0.565 kg in the mass budget, and the gap is real, not an
 error: the servo frames, outboard bearings and printed bay are not modelled yet. Re-measure
 once they exist.
+
+## The root joint — how the shaft meets the panel
+
+Closed August 2026. This is the item the hinge stack left as "the next real design
+decision, in the place the spline coupling used to occupy", and it is the **hard** end of
+the load path, not the easy one: every number in the stack gets smaller going inboard,
+because the bearing takes the couple out. Going outboard the moment is at its maximum —
+**0.721 N·m at the panel root** — and it has to be handed into 3.0 mm of G10.
+
+Four ways to make the joint. Three lose, and it is worth recording why, because two of them
+look better than the winner until you price them:
+
+| | |
+|---|---|
+| **Root boss** — thicken the panel root into a hub, bore it ⌀6 | Needs ~9 mm of local thickness. Panel is 3.0 and its thickness is **frozen aerodynamics**: t/c drives the flutter margin, which the 0.40 taper already spent from 5.42× to 4.46×. Rejected — it moves a frozen number to solve a joint problem |
+| **External clevis** — a fork straddling the panel, cross-bolted | Structurally the best of the four and the easiest to build. It also stands proud of the panel surface, at the root, in the fastest flow the panel sees, on all four panels. Rejected on drag, and it invalidates the swept interference check |
+| **One piece** — machine shaft and panel from one aluminium billet | The honest structural answer: no joint at all. +38 g per panel, **+154 g on the vehicle**, all of it aft of the CG, on a design that already needs 100 g of nose ballast to satisfy R1. Rejected on mass and CG, not on structure. Revisit if the ballast budget ever grows |
+| **Tang in a slot** — the sleeve's end milled to a flat blade, bonded into the panel root | **SELECTED.** Spends no aerodynamics, no mass and no CG. It moves the problem into the one place with room: the *plane* of the panel, 67.5 mm of root chord, rather than its 3.0 mm thickness |
+
+**The selected tang: 1.8 × 14.0 mm, 30.0 mm into the root.** The three numbers are coupled
+and none is free:
+
+- **Thickness 1.8** sets the skins at 0.6 mm each. Thicker tang, stronger tang, weaker
+  skin — and the skin's stress goes as 1/t², so the trade is sharp. 1.8/0.6 lands the tang
+  and the skin within 20% of the same margin, which is what "balanced" means here.
+- **Width 14** is where the curves cross the other way. Wider lowers the slot pressure
+  (1/b) but widens the skin's span (b²), so skin stress *rises* with width. Narrower saves
+  the skin and fails the tang.
+- **Engagement 30** is the cheap one: slot pressure goes as 1/L² and the root chord is
+  67.5 mm, so depth improves everything at once and is paid for nowhere. It stops at 44%
+  of the chord.
+
+| | |
+|---|---|
+| Tang bending | 95.4 MPa — **2.9×** in 6061-T6, 2.5× in 303 stainless, 6.9× in 4140 |
+| Skin over the slot | 164.9 MPa — **2.9×** against a 480 MPa flexural allowable |
+| Slot bearing | 0.40 MPa from bending, 0.53 MPa from **stall** torque — 697× |
+| Bond shear | 0.030 MPa — 1159×. The couple is carried in bearing, not in the bond |
+
+Two things to carry into the build, both of which fall out of the model rather than out of
+anyone's judgement:
+
+- **The round-to-flat transition steps the stress up 2.8×, at the maximum-moment station.**
+  Blend it. Do not shoulder it.
+- **THE PANEL STOPS BEING A PLATE.** A 1.8 mm slot 30 mm deep into the edge of a 3.0 mm
+  plate is a **17:1 blind cut**, which is not a thing you machine. The panel is built as a
+  **0.6 / 1.8 / 0.6 mm bonded G10 laminate** with the core cut away where the tang goes.
+  Same thickness, same planform, same mass, same aerodynamics — a manufacturing change, not
+  a design one, and the real answer to "how does the shaft meet the panel" turned out to be
+  "the panel is made differently."
+
+The check is exercised against the obvious joint too — the ⌀6 sleeve simply entering the
+panel — where it fails on *there is no panel left*. Same principle as `as_built`: a check
+that has never failed is not evidence of anything.
+
+Model in `design/hinge.py` (`RootJoint`, `root_joint_loads`, `check_root_joint`);
+`scripts/hinge_report.py` prints it; `scripts/baseline.py` carries the verdict.
+
+## The tube at the hinge station — four bores at one station
+
+`check_hinge_stack()` has emitted *"the wall bore is ⌀7.97 mm in a 2.3 mm wall — check the
+tube, not just the hinge"* since the hinge stack went in, and until August 2026 nothing had.
+It is the same shape of gap the hinge stack itself was written for: **the bore was sized
+against the bearing, and nobody asked what four of them do to the tube.**
+
+Four ⌀7.975 bores at one station take **13.2% of the circumference** of a 79.4 × 2.3 tube —
+557.1 mm² gross down to 483.7 mm² net, 52.6 mm of ligament between adjacent bores.
+
+Loads, from three different flight conditions and deliberately **not** combined — the
+vehicle is not doing all three at once, and the margins are wide enough that the question
+does not arise:
+
+| | |
+|---|---|
+| Axial | **143.6 N** at t = 2.47 s: 1.229 kg forward of the station at 7.24 g, plus 56 N of drag |
+| Bending | **0.999 N·m** at max q, free body forward of the station **with inertial relief** |
+| Torsion | **6.965 N·m** at a full roll command: four panels × 25.4 N at R 68.6 mm |
+
+| margin | |
+|---|---|
+| **bearing seat crush** | **3.2×** |
+| press-fit hoop | 29.9× |
+| net section (compression + bending, Kt = 3.0) | 255.8× |
+| torsional shear | 348.0× |
+| shell buckling | 434.1× |
+
+**The tube is fine, and it is not close** — by two to three orders of magnitude on every
+margin except one. The interesting result is the exception.
+
+**The bearing seat is the tightest thing at this station, and only because the housing
+collar does not exist.** The bearing hands its couple to whatever holds it, and 3.700 mm of
+its 6.0 mm sits inboard of the tube ID. With no collar, the 2.3 mm wall holds it alone:
+**116.2 MPa, 3.2×**. With the collar, the full 6.0 mm carries it: **17.4 MPa, 21.3×**. The
+peak pressure goes as 1/L², so the two answers are a factor of **6.7×** apart, and that gap
+is the whole argument for building the collar. It is still blocked on bracket hardware
+(step 6) — but it is now blocked on something with a number attached.
+
+Two honest caveats, both stated in `design/materials.py` rather than buried:
+
+- **The allowables are NEMA G-10 / FR-4 *sheet* properties, and a filament-wound airframe
+  tube is not sheet.** A ±45° wind is stiffer in torsion and weaker in axial; a rolled or
+  pultruded tube is different again. The project has only ever committed to one material
+  fact, the 1850 kg/m³ density in `configure.py`. The convention adopted: **if a margin
+  lands under 4×, stop and get the real tube datasheet.** The bearing seat at 3.2× is under
+  that line, and the report says so.
+- **Global airframe beam bending under a gust is not modelled** — here or anywhere in the
+  project; this is the first structural model it has. The free body runs at the **trim**
+  condition the trajectory actually flies, not at a certification gust case.
+  `check_cut_station()` takes a `gust_factor` so a reviewer can scale it without editing
+  the load path.
+
+Model in `design/tube_section.py`, allowables in `design/materials.py`,
+printed by `scripts/hinge_report.py`, verdict carried in `scripts/baseline.py`.
 
 ## Drawing 1 — the Step 3 dimensioned drawing
 

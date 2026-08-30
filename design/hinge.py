@@ -50,19 +50,19 @@ from dataclasses import dataclass
 # them changes every conclusion downstream at the same time.
 # ---------------------------------------------------------------------------------------
 
-# Static permissible surface pressure for a polymer plain bearing running on a hard shaft.
-# 80 MPa is the igus iglidur G class; iglidur J is 35 MPa and iglidur X is ~150 MPa. The
-# design factor below is applied on top, so pick the class AFTER reading the margin.
-BEARING_PRESSURE_LIMIT = 80.0e6  # Pa
+# Allowables live in design/materials.py, stated once for the whole project. They are
+# re-exported here because callers already read them off this module -- the design factor
+# below is applied on top, so pick the bearing class AFTER reading the margin.
+from .materials import (  # noqa: E402
+    BEARING_PRESSURE_LIMIT, SHAFT_YIELD,
+    G10_BEARING, G10_FLEXURAL, G10_INTERLAMINAR_SHEAR,
+)
 
 # Required ratio of allowable to actual. 2.0 to match the servo torque margin requirement
 # in docs/00 -- a hinge whose bearing is marginal is not a better hinge than one whose
 # servo is marginal.
 BEARING_MARGIN_REQUIRED = 2.0
 
-# Yield strengths for the shaft. The shaft is small and highly stressed at the bearing;
-# 6061-T6 works but 303 stainless is the sensible part to buy for a 7 mm long journal.
-SHAFT_YIELD = {"6061-T6": 276.0e6, "303 stainless": 240.0e6, "4140 steel": 655.0e6}
 SHAFT_MARGIN_REQUIRED = 2.0
 
 # Minimum diametral running clearance between a turning shaft and whatever it turns
@@ -503,3 +503,337 @@ def selected(tube_outer_radius: float, wall: float, geometry,
         wall_bore_dia=bearing_od - BEARING_SEAT_INTERFERENCE,
         sleeve_gap=0.300e-3,
     )
+
+
+# =======================================================================================
+# THE SLEEVE-TO-PANEL JOINT
+#
+# The last link in the load path, and the one docs/05 has carried as "the next real design
+# decision, in the place the spline coupling used to occupy".
+#
+# The problem in one line: the sleeve ends flush at the panel root, R 40.200, and the panel
+# is 3.0 mm thick, so a dia 6 shaft cannot simply enter it. And this joint is not the easy
+# end of the load path -- it is the HARD end. Every number in the stack above gets smaller
+# going inboard, because the bearing takes the couple out; going outboard the moment is at
+# its maximum, 0.72 N m at the panel root, and it has to be handed into 3.0 mm of G10.
+#
+# Four ways to make this joint, and the reason three of them lose:
+#
+#   ROOT BOSS -- thicken the panel root into a hub and bore it for the dia 6 sleeve. Needs
+#     about 9 mm of local thickness for a dia 6 blind bore with any wall. The panel is 3.0
+#     and its thickness is frozen aerodynamics: t/c drives the flutter margin, which the
+#     0.40 taper already spent down from 5.42x to 4.46x (configure.py). Rejected: it moves
+#     a frozen number to solve a joint problem.
+#
+#   EXTERNAL CLEVIS -- a fork on the sleeve straddling the panel, cross-bolted. Structurally
+#     the best of the four and the easiest to build. It also stands proud of the panel
+#     surface, at the root, in the highest-velocity flow the panel sees, on all four panels.
+#     Rejected on drag and on the interference sweep it would invalidate.
+#
+#   ONE PIECE -- machine shaft and panel from a single aluminium billet. No joint at all,
+#     which is the honest structural answer. It changes the panel from 1850 kg/m^3 G10 to
+#     2700 kg/m^3 aluminium: +38 g per panel, +154 g on the vehicle, all of it AFT of the
+#     CG at the worst possible station for a static margin that already needs 100 g of nose
+#     ballast to satisfy R1. Rejected on mass and CG, not on structure. Worth revisiting if
+#     the ballast budget ever grows.
+#
+#   TANG IN A SLOT -- the sleeve's outboard end is milled to a flat blade that lands in a
+#     slot in the panel root and is bonded there. Selected. It spends no aerodynamics, no
+#     mass and no CG, and it moves the whole problem into the one place that has room: the
+#     PLANE of the panel, which is 67.5 mm of root chord, rather than its thickness.
+#
+# What the tang costs, and it is a real cost that belongs in the build sheet rather than
+# in a footnote: a 1.8 mm slot milled 30 mm deep into the edge of a 3.0 mm plate is a
+# 17:1 depth-to-width blind cut, which is not a thing you machine. The panel therefore
+# stops being a plate and becomes a LAMINATE -- 0.6 / 1.8 / 0.6 mm G10, bonded, with the
+# core cut away where the tang goes. That is a manufacturing change, and it is the reason
+# this joint is written up here rather than dimensioned in a table: the answer to "how does
+# the shaft meet the panel" turned out to be "the panel is made differently".
+# =======================================================================================
+
+# Minimum skin left over a tang slot. Below this the panel is a handling risk before it is
+# ever a stress one -- a 0.5 mm G10 skin over a 14 mm slot is a part that gets damaged in
+# the lay-up jig, not in flight.
+MIN_SKIN_THICKNESS = 0.5e-3
+
+# Simply-supported is used for the skin over the slot. The skin is continuous into the
+# panel at both slot edges, so the truth is nearer fixed-fixed, which carries the same
+# pressure at 2/3 of the stress. Taking the conservative end is worth about 1.5x of margin
+# that is deliberately not being claimed.
+SKIN_BENDING_COEFFICIENT = 8.0
+
+
+@dataclass(frozen=True)
+class RootJoint:
+    """A flat tang on the sleeve, bonded into a slot in the canard panel root.
+
+    All lengths in metres. `engagement` is measured OUTBOARD from the panel root face,
+    which is the same R the hinge stack's `panel_root` names, so the two cannot drift.
+    """
+
+    panel_root: float          # R of the panel root face
+    panel_thickness: float
+    panel_root_chord: float
+    sleeve_dia: float
+    tang_thickness: float
+    tang_width: float
+    engagement: float          # how far the tang reaches into the panel
+
+    @property
+    def skin_thickness(self) -> float:
+        """What is left of the panel on each side of the slot. This is the number that
+        decides the joint: it goes as the square in the skin's bending stress, and every
+        millimetre the tang gains, the two skins lose half of between them."""
+        return (self.panel_thickness - self.tang_thickness) / 2.0
+
+    @property
+    def tang_section_modulus(self) -> float:
+        """Bending about the WEAK axis. The panel's aerodynamic load is perpendicular to
+        the panel, so it bends the blade through its thickness, not its width. Getting
+        this the other way round would flatter the joint by (w/t)^2 -- a factor of 60."""
+        return self.tang_width * self.tang_thickness ** 2 / 6.0
+
+    @property
+    def slot_chord_fraction(self) -> float:
+        return self.engagement / self.panel_root_chord
+
+    @property
+    def transition_stress_ratio(self) -> float:
+        """Round sleeve section modulus over tang section modulus, at the same station.
+
+        The sleeve goes from a dia 6 round to a flat blade at the panel root, which is the
+        maximum-moment station, and the stress steps up by this factor across that
+        transition. It is the reason the transition needs a generous blend radius and not
+        a shoulder."""
+        round_z = math.pi * self.sleeve_dia ** 3 / 32.0
+        return round_z / self.tang_section_modulus
+
+
+@dataclass(frozen=True)
+class RootJointLoads:
+    moment: float               # N*m, bending at the panel root
+    normal_force: float         # N
+    torque: float               # N*m about the hinge axis; the SERVO's stall, not the air's
+    tang_bending_stress: float
+    tang_margin: dict[str, float]
+    slot_pressure_bending: float    # Pa, peak on the slot face from the couple
+    slot_pressure_torque: float     # Pa, peak from the stall torque, at the slot edges
+    skin_bending_stress: float      # Pa, the skin working as a plate across the slot
+    bond_shear: float               # Pa, average over the bonded tang faces
+
+
+def root_joint_loads(joint: RootJoint, normal_force: float, load_radius: float,
+                     stall_torque: float) -> RootJointLoads:
+    """Loads in the tang joint.
+
+    Two load cases arrive here and they are NOT the same one twice:
+
+      * the air bends the panel, giving a couple about an axis in the panel plane. That is
+        the big one, and it is reacted by pressure on the slot faces peaking at the slot
+        mouth -- the same 6M/(b*L^2) + N/(b*L) form as the bearing, one interface further
+        out, because it is the same physics.
+
+      * the SERVO twists the panel, giving a torque about the hinge axis. Sized by stall
+        and not by the aero hinge moment, for the reason the spline socket is: a servo
+        driven into a stop delivers stall torque to everything downstream of it, and stall
+        is 8.7x the aero moment.
+
+    The torque's pressure peaks at the two slot EDGES, across the width, and the skin is
+    supported at exactly those edges -- so it barely bends the skin even though its peak
+    pressure is comparable. It is checked against bearing strength, not skin bending, and
+    the two pressures are deliberately not summed into one skin stress. Summing them would
+    fail this joint on a load path that does not exist.
+    """
+    m = normal_force * (load_radius - joint.panel_root)
+    b, ell, w = joint.tang_width, joint.engagement, joint.tang_width
+
+    p_bend = 6.0 * m / (b * ell * ell) + normal_force / (b * ell)
+    p_torque = 6.0 * stall_torque / (ell * w * w)
+
+    sigma_tang = m / joint.tang_section_modulus
+
+    # The skin over the slot, as a strip spanning the slot width under the slot pressure.
+    m_per_width = p_bend * joint.tang_width ** 2 / SKIN_BENDING_COEFFICIENT
+    sigma_skin = 6.0 * m_per_width / joint.skin_thickness ** 2 if joint.skin_thickness > 0 else math.inf
+
+    # The bond carries the direct force and keeps the tang in the slot; the couple is
+    # carried in bearing, not in shear, which is why this number is small and is not the
+    # sizing case. Two faces.
+    bond_area = 2.0 * joint.tang_width * joint.engagement
+    tau_bond = normal_force / bond_area
+
+    return RootJointLoads(
+        moment=m,
+        normal_force=normal_force,
+        torque=stall_torque,
+        tang_bending_stress=sigma_tang,
+        tang_margin={k: v / sigma_tang for k, v in SHAFT_YIELD.items()},
+        slot_pressure_bending=p_bend,
+        slot_pressure_torque=p_torque,
+        skin_bending_stress=sigma_skin,
+        bond_shear=tau_bond,
+    )
+
+
+def check_root_joint(joint: RootJoint, loads: RootJointLoads) -> HingeCheck:
+    """Everything that has to be true for the tang joint to carry its load and be built."""
+    v: list[str] = []
+    notes: list[str] = []
+    mm = 1000.0
+
+    if joint.tang_thickness >= joint.panel_thickness:
+        v.append(
+            f"the tang is {joint.tang_thickness * mm:.2f} mm thick in a "
+            f"{joint.panel_thickness * mm:.2f} mm panel -- there is no panel left")
+    elif joint.skin_thickness < MIN_SKIN_THICKNESS:
+        v.append(
+            f"skin over the slot is {joint.skin_thickness * mm:.3f} mm, under the "
+            f"{MIN_SKIN_THICKNESS * mm:.2f} mm minimum; that is a handling risk before it "
+            f"is a stress one")
+    else:
+        notes.append(f"skin over the slot {joint.skin_thickness * mm:.2f} mm each side")
+
+    worst_tang = min(loads.tang_margin.values())
+    best_tang = max(loads.tang_margin.values())
+    if best_tang < SHAFT_MARGIN_REQUIRED:
+        v.append(
+            f"tang bending {loads.tang_bending_stress / 1e6:.1f} MPa fails "
+            f"{SHAFT_MARGIN_REQUIRED:.1f}x in EVERY listed material (best is "
+            f"{best_tang:.2f}x); the tang is too thin or too narrow")
+    elif worst_tang < SHAFT_MARGIN_REQUIRED:
+        notes.append(
+            f"tang margin is {worst_tang:.1f}x in the weakest listed material and "
+            f"{best_tang:.1f}x in the strongest -- this joint SELECTS the material rather "
+            f"than tolerating any of them")
+
+    skin_margin = (G10_FLEXURAL / loads.skin_bending_stress
+                   if loads.skin_bending_stress > 0 else math.inf)
+    if joint.skin_thickness <= 0:
+        pass  # "there is no panel left" above already said this; a skin stress of infinity
+              # adds nothing and reads like a second, different problem.
+    elif skin_margin < SHAFT_MARGIN_REQUIRED:
+        v.append(
+            f"the skin over the slot works at {loads.skin_bending_stress / 1e6:.0f} MPa "
+            f"against a {G10_FLEXURAL / 1e6:.0f} MPa flexural allowable, only "
+            f"{skin_margin:.2f}x; a wider tang makes this WORSE, not better, because the "
+            f"skin spans the tang width")
+
+    for label, p in (("bending", loads.slot_pressure_bending),
+                     ("stall torque", loads.slot_pressure_torque)):
+        m = G10_BEARING / p if p > 0 else math.inf
+        if m < SHAFT_MARGIN_REQUIRED:
+            v.append(f"slot bearing pressure from {label} is {p / 1e6:.2f} MPa, only {m:.2f}x")
+
+    bond_margin = (G10_INTERLAMINAR_SHEAR / loads.bond_shear
+                   if loads.bond_shear > 0 else math.inf)
+    if bond_margin < SHAFT_MARGIN_REQUIRED:
+        v.append(f"bond shear {loads.bond_shear / 1e6:.2f} MPa is only {bond_margin:.2f}x")
+
+    if joint.slot_chord_fraction > 0.6:
+        v.append(
+            f"the slot runs {joint.slot_chord_fraction * 100:.0f}% of the root chord; "
+            f"past about 60% it reaches the panel's own structure rather than its root")
+    else:
+        notes.append(
+            f"slot is {joint.engagement * mm:.1f} mm into a {joint.panel_root_chord * mm:.1f} mm "
+            f"root chord ({joint.slot_chord_fraction * 100:.0f}%)")
+
+    # These two describe how to BUILD the joint, so they are only meaningful once the
+    # joint is buildable at all. Emitting them for a tang thicker than its panel produces
+    # a negative skin thickness in a manufacturing instruction, which is worse than silence.
+    if joint.skin_thickness > 0:
+        notes.append(
+            f"stress steps up {joint.transition_stress_ratio:.1f}x from the round sleeve to "
+            f"the tang, at the maximum-moment station -- blend the transition, do not "
+            f"shoulder it")
+        notes.append(
+            f"a {joint.tang_thickness * mm:.1f} mm slot {joint.engagement * mm:.0f} mm deep in "
+            f"a {joint.panel_thickness * mm:.1f} mm plate is a "
+            f"{joint.engagement / joint.tang_thickness:.0f}:1 blind cut; build the panel as a "
+            f"{joint.skin_thickness * mm:.1f}/{joint.tang_thickness * mm:.1f}/"
+            f"{joint.skin_thickness * mm:.1f} bonded laminate with the core cut away instead")
+
+    return HingeCheck(ok=not v, violations=v, notes=notes)
+
+
+TANG_THICKNESS = 1.800e-3
+TANG_WIDTH = 14.000e-3
+TANG_ENGAGEMENT = 30.000e-3
+
+
+def selected_root_joint(stack: HingeStack, panel_thickness: float,
+                        panel_root_chord: float) -> RootJoint:
+    """The joint this module selects: a 1.8 x 14 mm tang, 30 mm into the panel root.
+
+    How the three numbers were picked, because they are coupled and none of them is free:
+
+      * THICKNESS 1.8 mm sets the skins at 0.6 mm. Thicker tang, stronger tang, weaker
+        skin -- and the skin's stress goes as 1/t^2, so the trade is sharp. 1.8/0.6 puts
+        the tang and the skin within 20% of the same margin, which is what "balanced"
+        means here.
+
+      * WIDTH 14 mm is where the two curves cross the other way. A wider tang lowers the
+        slot pressure (1/b) but widens the skin's span (b^2), so the skin's stress rises
+        with width overall. A narrower tang saves the skin and fails the tang.
+
+      * ENGAGEMENT 30 mm is bought cheaply: the slot pressure goes as 1/L^2 and the root
+        chord is 67.5 mm, so depth is the only one of the three that improves everything
+        at once and is not paid for anywhere. It stops at 44% of the chord.
+    """
+    return RootJoint(
+        panel_root=stack.panel_root,
+        panel_thickness=panel_thickness,
+        panel_root_chord=panel_root_chord,
+        sleeve_dia=stack.journal_dia,
+        tang_thickness=TANG_THICKNESS,
+        tang_width=TANG_WIDTH,
+        engagement=TANG_ENGAGEMENT,
+    )
+
+
+# Fraction of MAC at which the hinge sits, matching packaging.hinge_moment()'s default
+# and scripts/make_cad_profiles.HINGE_FRAC. Forward of the 0.25c panel CP, so restoring.
+HINGE_FRAC_OF_MAC = 0.20
+
+
+def naive_root_joint(stack: HingeStack, panel_thickness: float,
+                     panel_root_chord: float) -> RootJoint:
+    """What the model implies today, and what anyone would draw first: the dia 6 sleeve
+    simply entering the panel.
+
+    Kept, and exercised by scripts/hinge_report.py, so `check_root_joint` can be shown to
+    FAIL on it. The same reason `as_built` is kept: a check that has never failed is not
+    evidence of anything.
+    """
+    return RootJoint(
+        panel_root=stack.panel_root,
+        panel_thickness=panel_thickness,
+        panel_root_chord=panel_root_chord,
+        sleeve_dia=stack.journal_dia,
+        tang_thickness=stack.journal_dia,   # the shaft itself, butted into a 3 mm panel
+        tang_width=stack.journal_dia,
+        engagement=stack.journal_dia,
+    )
+
+
+def canard_hinge_station(rocket) -> float:
+    """Axial station of the canard hinge line, metres from the nose tip.
+
+    DERIVED, not typed. The hinge sits at `packaging.hinge_moment`'s `hinge_frac` of the
+    MAC, aft of the MAC's own leading edge, which is where scripts/make_cad_profiles.py
+    puts the HINGE layer in the DXF and where the Onshape sketches are dimensioned to. It
+    comes out at 68.27 mm aft of the module's forward face, which is the number docs/05
+    carries for the `Hinge Plane` offset -- so this function is also the check that the CAD
+    and the analysis still agree about where the hinge is.
+
+    That check is not hypothetical. The hinge station has been wrong in this project once
+    already, by 4.4x in hinge moment, because a sketch dimension measured to a circle's
+    tangent instead of its centre and a datum plane drove nothing (docs/01, corrections to
+    Sketch 3 and the Hinge Plane).
+    """
+    c = rocket.canards
+    taper = c.tip_chord / c.root_chord
+    mac = (2.0 / 3.0) * c.root_chord * (1 + taper + taper ** 2) / (1 + taper)
+    y_mac = (c.semispan / 3.0) * (1 + 2 * taper) / (1 + taper)
+    x_le_mac = c.sweep_length * y_mac / c.semispan
+    return c.x_root_le + x_le_mac + HINGE_FRAC_OF_MAC * mac

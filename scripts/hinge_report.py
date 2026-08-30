@@ -15,12 +15,13 @@ is left. No tolerance callout fixes that. The layout has to move.
 
 from __future__ import annotations
 
+import math
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from design import control, hinge
+from design import aero, control, hinge, tube_section
 from design.configure import baseline, evaluate
 from design.packaging import SERVO_GEOMETRY, SERVOS
 
@@ -60,6 +61,34 @@ def stations(stack: hinge.HingeStack, label: str) -> None:
     ]
     for name, r in sorted(rows, key=lambda t: t[1]):
         say(f"    {name:34s} R {r * MM:8.3f}")
+
+
+def joint_report(joint: hinge.RootJoint, loads: hinge.RootJointLoads) -> hinge.HingeCheck:
+    chk = hinge.check_root_joint(joint, loads)
+    say(f"    tang              {joint.tang_thickness * MM:.2f} x {joint.tang_width * MM:.2f} mm, "
+        f"{joint.engagement * MM:.1f} mm engaged, skins {joint.skin_thickness * MM:+.2f} mm")
+    say(f"    moment at root    {loads.moment:.4f} N m from {loads.normal_force:.2f} N")
+    say(f"    tang bending      {loads.tang_bending_stress / 1e6:8.1f} MPa   " +
+        ", ".join(f"{k} {v:.1f}x" for k, v in loads.tang_margin.items()))
+    say(f"    skin over slot    {loads.skin_bending_stress / 1e6:8.1f} MPa   "
+        f"{hinge.G10_FLEXURAL / loads.skin_bending_stress:.1f}x against "
+        f"{hinge.G10_FLEXURAL / 1e6:.0f} MPa flexural"
+        if loads.skin_bending_stress not in (0.0, float("inf")) else
+        "    skin over slot      -- there is no skin")
+    say(f"    slot bearing      {loads.slot_pressure_bending / 1e6:8.3f} MPa from bending, "
+        f"{loads.slot_pressure_torque / 1e6:.3f} MPa from stall torque "
+        f"({hinge.G10_BEARING / max(loads.slot_pressure_bending, loads.slot_pressure_torque):.0f}x)")
+    say(f"    bond shear        {loads.bond_shear / 1e6:8.3f} MPa   "
+        f"{hinge.G10_INTERLAMINAR_SHEAR / loads.bond_shear:.0f}x")
+    if chk.ok:
+        say("    VERDICT: buildable, every margin met.")
+    else:
+        say(f"    VERDICT: NOT BUILDABLE -- {len(chk.violations)} violation(s)")
+    for x in chk.violations:
+        say(f"      FAIL  {x}")
+    for x in chk.notes:
+        say(f"      note  {x}")
+    return chk
 
 
 def report(stack: hinge.HingeStack, loads: hinge.HingeLoads, label: str) -> hinge.HingeCheck:
@@ -113,10 +142,13 @@ def main() -> None:
     geom = SERVO_GEOMETRY[p.servo]
     servo = SERVOS[p.servo]
 
-    worst = max(
-        (control.pitch_authority(r, pt, pt.mass, DEFLECTION_LIMIT_DEG)
+    # Keep the POINT alongside the authority result: AuthorityResult does not carry Mach,
+    # and the airframe bending free body needs it -- CNa at Mach 0.53 is 15% above its
+    # incompressible value, which is not a rounding error in a load.
+    worst_pt, worst = max(
+        ((pt, control.pitch_authority(r, pt, pt.mass, DEFLECTION_LIMIT_DEG))
          for pt in f.points if pt.q > 100),
-        key=lambda a: abs(a.hinge_moment_per_panel),
+        key=lambda pair: abs(pair[1].hinge_moment_per_panel),
     )
     hm = worst.hinge_moment_per_panel
     load_r = r.diameter / 2.0 + hinge.spanwise_centroid(
@@ -147,6 +179,101 @@ def main() -> None:
                                   geom.spline_teeth)
     chk_sel = report(sel, loads_sel, "selected")
 
+    # ==================================================================================
+    rule("THE SLEEVE-TO-PANEL JOINT  --  the last link, and the hardest")
+    say(hinge.selected_root_joint.__doc__.split("\n", 2)[2].rstrip())
+
+    naive = hinge.naive_root_joint(sel, c.thickness, c.root_chord)
+    naive_loads = hinge.root_joint_loads(naive, loads_sel.normal_force, load_r,
+                                         servo.stall_torque)
+    say("\n  THE OBVIOUS JOINT  --  the dia 6 sleeve simply entering the panel")
+    chk_naive = joint_report(naive, naive_loads)
+
+    joint = hinge.selected_root_joint(sel, c.thickness, c.root_chord)
+    jloads = hinge.root_joint_loads(joint, loads_sel.normal_force, load_r,
+                                    servo.stall_torque)
+    say(f"\n  SELECTED  --  a {joint.tang_thickness * MM:.1f} x {joint.tang_width * MM:.0f} mm tang, "
+        f"{joint.engagement * MM:.0f} mm into the panel root")
+    chk_joint = joint_report(joint, jloads)
+
+    # ==================================================================================
+    rule("THE TUBE AT THE HINGE STATION  --  four bores at one station")
+    say("  check_hinge_stack() has emitted 'check the tube, not just the hinge' since the")
+    say("  hinge stack went in, and nothing had. This is that check.")
+
+    station = hinge.canard_hinge_station(r)
+    cut = tube_section.CutStation(
+        station=station,
+        outer_diameter=r.diameter,
+        wall_thickness=r.tubes[1].wall_thickness,
+        hole_dia=sel.wall_bore_dia,
+        hole_count=c.count,
+        tube_name=r.tubes[1].name,
+    )
+    stab = aero.stability(r, worst_pt.cg, mach=worst_pt.mach)
+    sloads = tube_section.canard_module_loads(
+        r, ev.masses, f, stab, station,
+        panel_normal_force=loads_sel.normal_force,
+        panel_cp_radius=c.spanwise_cp_radius,
+        seat_moment=loads_sel.moment_at_bearing,
+        alpha_trim_rad=math.radians(worst.alpha_trim_deg),
+        q=worst.dynamic_pressure,
+    )
+
+    say(f"\n  station           {station * MM:.2f} mm from the nose tip, "
+        f"{(station - r.tube_station(1)) * MM:.2f} mm into the {cut.tube_name}")
+    say(f"  section           dia {cut.outer_diameter * MM:.1f} x {cut.wall_thickness * MM:.1f} wall, "
+        f"{cut.hole_count} x dia {cut.hole_dia * MM:.3f} bores")
+    say(f"  area              {cut.gross_area * 1e6:.1f} mm^2 gross -> "
+        f"{cut.net_area * 1e6:.1f} mm^2 net ({cut.area_loss_fraction * 100:.1f}% removed)")
+    say(f"  ligament          {cut.ligament * MM:.1f} mm between adjacent bores")
+    say("")
+    say(f"  axial  {sloads.axial:7.1f} N    {sloads.axial_case}")
+    say(f"         {'':7s}      = {sloads.mass_forward:.3f} kg forward of the station at "
+        f"{sloads.specific_force_g:.2f} g, plus {sloads.drag_at_axial_case:.0f} N of drag")
+    say(f"  bend   {sloads.bending:7.3f} N m  {sloads.bending_case}")
+    say(f"  twist  {sloads.torsion:7.3f} N m  {sloads.torsion_case}")
+
+    # The collar does not exist yet, so the wall carries the bearing alone. Price both.
+    say("\n  The bearing hands its couple to whatever holds it, and 3.700 mm of it is held")
+    say("  by a housing collar that has not been built. Both cases:")
+    results = {}
+    for label, seat_len in (("no collar (the vehicle today): the 2.3 mm wall alone",
+                             cut.wall_thickness),
+                            ("with the collar: the full 6.0 mm bearing",
+                             sel.bearing_length)):
+        res = tube_section.check_cut_station(
+            cut, sloads, bearing_od=sel.bearing_od,
+            seat_interference=hinge.BEARING_SEAT_INTERFERENCE, seat_length=seat_len)
+        results[label] = res
+        say(f"    {label}")
+        say(f"      seat pressure {res.seat_pressure / 1e6:8.1f} MPa   "
+            f"margin {res.margins['bearing seat crush']:.1f}x against "
+            f"{tube_section.G10_BEARING / 1e6:.0f} MPa")
+
+    res = results["no collar (the vehicle today): the 2.3 mm wall alone"]
+    say(f"\n  net section       {res.peak_stress / 1e6:8.3f} MPa peak at the bore edge "
+        f"(Kt = {res.kt_used:.1f})")
+    say(f"    of which axial  {res.axial_stress / 1e6:8.3f} MPa, "
+        f"bending {res.bending_stress / 1e6:.3f} MPa")
+    say(f"  torsional shear   {res.shear_stress / 1e6:8.3f} MPa")
+    say(f"  shell buckling    {res.buckling_allowable / 1e6:8.1f} MPa allowable against "
+        f"{res.axial_stress / 1e6:.3f} MPa applied")
+    say(f"  press-fit hoop    {res.press_fit_hoop / 1e6:8.2f} MPa from a "
+        f"{hinge.BEARING_SEAT_INTERFERENCE * MM:.3f} mm interference")
+    say("")
+    for name, m in sorted(res.margins.items(), key=lambda kv: kv[1]):
+        say(f"    {name:42s} {m:10.1f}x")
+    say("")
+    if res.ok:
+        say("  VERDICT: the tube is fine, and it is not close.")
+    else:
+        say(f"  VERDICT: NOT ACCEPTABLE -- {len(res.violations)} violation(s)")
+    for x in res.violations:
+        say(f"    FAIL  {x}")
+    for x in res.notes:
+        say(f"    note  {x}")
+
     rule("WHAT THIS COSTS, AND WHAT IT DOES NOT")
     say(f"  central void            dia {built.central_void * MM:.2f} -> "
         f"dia {sel.central_void * MM:.2f}, over the 8.2 mm band where the cable bosses")
@@ -158,11 +285,19 @@ def main() -> None:
     say("                          servo moved instead of the panel.")
     say("  servo torque margin     UNCHANGED at 1:1 direct drive; the coupling is a spline")
     say("                          socket, not a gear.")
-    say("  still open              the sleeve-to-panel joint. The sleeve ends flush at the")
-    say(f"                          panel root and the panel is {c.thickness * MM:.1f} mm thick, so a")
-    say(f"                          dia {sel.journal_dia * MM:.0f} shaft cannot simply enter it. That joint has")
-    say(f"                          to carry {loads_sel.moment_at_wall:.3f} N m into a "
-        f"{c.thickness * MM:.1f} mm panel.")
+    say(f"  the panel               CHANGES. The tang joint needs a "
+        f"{joint.tang_thickness * MM:.1f} mm slot {joint.engagement * MM:.0f} mm into")
+    say(f"                          the root, which is a {joint.engagement / joint.tang_thickness:.0f}:1 blind cut in a "
+        f"{c.thickness * MM:.1f} mm plate and is not")
+    say(f"                          machinable. The panel becomes a {joint.skin_thickness * MM:.1f}/"
+        f"{joint.tang_thickness * MM:.1f}/{joint.skin_thickness * MM:.1f} bonded")
+    say("                          laminate. Same thickness, same planform, same mass --")
+    say("                          a manufacturing change, not a design one.")
+    say("  the tube                UNCHANGED and not close: worst margin at the hinge")
+    say("                          station is the bearing seat, and only because the")
+    say("                          housing collar has not been built yet.")
+    say("  still open              the housing collar. Blocked on bracket hardware, and")
+    say(f"                          worth {results['with the collar: the full 6.0 mm bearing'].margins['bearing seat crush'] / results['no collar (the vehicle today): the 2.3 mm wall alone'].margins['bearing seat crush']:.1f}x on the bearing seat when it exists.")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(_lines) + "\n")
@@ -173,6 +308,13 @@ def main() -> None:
                          "checking anything -- fix the check before trusting it")
     if not chk_sel.ok:
         raise SystemExit("the selected layout does not pass its own check")
+    if chk_naive.ok:
+        raise SystemExit("the dia 6 sleeve butted into a 3 mm panel PASSED the root joint "
+                         "check, which means that check is not checking anything")
+    if not chk_joint.ok:
+        raise SystemExit("the selected root joint does not pass its own check")
+    if not results["no collar (the vehicle today): the 2.3 mm wall alone"].ok:
+        raise SystemExit("the tube does not pass its own section check at the hinge station")
 
 
 if __name__ == "__main__":
