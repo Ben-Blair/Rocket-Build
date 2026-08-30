@@ -50,11 +50,13 @@ FEATURE_TYPE = "canardRootTang"
 FEATURE_NAME = "Canard root tang"
 EXPECTED_PARTS = 13          # the tang joins a shaft and the slot cuts a panel, so the
                              # part COUNT must not move. If it does, a boolean missed.
-BOND_LINE_MM = 0.100
+BOND_LINE_MM = hinge.BOND_LINE * 1000.0   # imported, not typed -- the FeatureScript takes
+                                          # it as a parameter from here
 OVERSHOOT_MM = 1.000         # must match OVERSHOOT in the FeatureScript
 MASS_TOLERANCE_G = 0.05
 
 PS = f"/partstudios/d/{DOC}/w/{WS}/e/{PART_STUDIO}"
+PARTS = f"/parts/d/{DOC}/w/{WS}/e/{PART_STUDIO}"
 MM = 1000.0
 
 
@@ -143,7 +145,37 @@ def report(j: hinge.RootJoint, station_mm: float) -> None:
           f"net {net:+.4f} g")
 
 
+def check_panel_thickness(j: hinge.RootJoint) -> None:
+    """The CAD panel must be the thickness the joint was sized against.
+
+    Not a formality. The slot is cut to a fixed 2.000 mm centred in the panel, so the skins
+    that survive are whatever the panel has left over -- 0.6 mm in a 3.2 mm panel, 0.5 mm in
+    a 3.0 mm one. Skin stress goes as 1/t^2, so building this tang into a panel that is
+    0.2 mm thin drops the margin from 2.5x to 1.7x, and NOTHING downstream would notice: the
+    tang fits, the boolean succeeds, the part count holds and the mass is within grams. It
+    would simply be weaker than every document says it is.
+
+    That is exactly the failure this joint has already had once, in the analysis rather than
+    the CAD (docs/01, correction 15). Checking it here is cheap.
+    """
+    want = j.panel_thickness * MM
+    panel = [p for p in parts() if p["name"].startswith("Canard panel 0")][0]
+    bb = get(f"{PARTS}/partid/{quote(panel['partId'], safe='')}/boundingboxes")
+    got = (bb["highY"] - bb["lowY"]) * MM
+    print(f"  panel in CAD    {got:.3f} mm thick, design wants {want:.3f}")
+    if abs(got - want) > 0.01:
+        raise SystemExit(
+            f"REFUSING to cut the tang: the Onshape panel is {got:.3f} mm thick and "
+            f"design/configure.py says {want:.3f}. The slot is a fixed "
+            f"{j.slot_thickness * MM:.3f} mm, so this would leave "
+            f"{(got - j.slot_thickness * MM) / 2:.3f} mm skins instead of "
+            f"{j.skin_thickness * MM:.3f}, and the skin margin would be "
+            f"{((got - j.slot_thickness * MM) / 2 / (j.skin_thickness * MM)) ** 2:.2f}x of "
+            f"what the report claims. Run make_hinge_stack.py --panel first.")
+
+
 def apply(j: hinge.RootJoint, station_mm: float) -> None:
+    check_panel_thickness(j)
     have = existing()
     if have:
         print(f"  already present: {', '.join(f['name'] for f in have)} -- leaving it alone")

@@ -4,6 +4,7 @@
     python scripts/make_hinge_stack.py --shaft      # shaft: dia 6, and out of the servo
     python scripts/make_hinge_stack.py --bore       # wall bore: a bearing seat, not a copy
     python scripts/make_hinge_stack.py --servos     # move the four servos 4 mm inboard
+    python scripts/make_hinge_stack.py --panel      # panel thickness, 3.0 -> 3.2 laminate
     python scripts/make_hinge_stack.py --all
 
 The design is in design/hinge.py and the argument for it is in out/hinge_report.txt. This
@@ -262,8 +263,29 @@ def step_bore(stack: hinge.HingeStack) -> None:
     existing = [f for f in fl["features"]
                 if f.get("name", "").startswith("Wall bore")]
     if existing:
+        have = model_bore_dia(fl)
         print(f"    already present: {', '.join(f['name'] for f in existing)}")
-        print(f"    wall bore is dia {model_bore_dia(fl):.3f}; leaving it alone")
+        if abs(have - dia * MM) < 1e-3:
+            print(f"    wall bore is dia {have:.3f}, which is what the design wants")
+            return
+        # NOT "leaving it alone". The seat moved dia 7.975 -> dia 8.000 H7 in Aug 2026,
+        # because dia 7.975 is not a reamer anyone sells and the press interference on a
+        # polymer bushing comes from the bushing being supplied oversize, not from
+        # undersizing the hole. A step that silently skips a design change is how the CAD
+        # and the analysis drift apart, which is the failure this whole project is
+        # organised against -- so correct it in place and say so.
+        print(f"    wall bore is dia {have:.3f}, design wants dia {dia * MM:.3f} -- CORRECTING")
+        sk = [f for f in existing if f.get("name", "").startswith("Wall bore sketch")]
+        if len(sk) != 1:
+            raise SystemExit(f"expected one 'Wall bore sketch', found {len(sk)}; "
+                             f"fix by hand rather than guessing which to edit")
+        before = total_mass_g()
+        set_sketch_diameter(sk[0]["name"], dia)
+        f = copy.deepcopy(by_name(feature_list(), sk[0]["name"]))
+        f["name"] = f"Wall bore sketch (dia {dia * MM:.3f} bearing seat)"
+        update_feature(feature_list(), f)
+        verify("wall bore correction")
+        print(f"    module {before:.4f} -> {total_mass_g():.4f} g")
         return
     sk = copy.deepcopy(by_name(fl, "Sketch 3"))
     sk["name"] = f"Wall bore sketch (dia {dia * MM:.3f} bearing seat)"
@@ -433,15 +455,49 @@ def step_servos(stack: hinge.HingeStack) -> None:
           f"{mp['mass'][0] * 1000:.3f} g, CoM Z {mp['centroid'][2] * MM:.3f} mm")
 
 
+def step_panel(panel_thickness_m: float) -> None:
+    """Set the canard panel thickness from design/configure.py.
+
+    The panel went 3.0 -> 3.2 mm in August 2026, and NOT for an aerodynamic reason: the
+    root joint's tang slot is a gap left in the middle sheet of a bonded laminate, so the
+    panel's thickness is the sum of three sheets and can only be a sum of thicknesses that
+    are actually sold. 0.6 / 2.0 / 0.6 is the best such stack. See docs/05.
+
+    This matters in the CAD because the tang slot is cut to a FIXED 2.000 mm centred in the
+    panel, so the skins that survive are whatever the panel has left. Cutting it into a
+    3.0 mm panel leaves 0.5 mm skins instead of 0.6 and drops the skin margin from 2.5x to
+    1.7x -- and nothing downstream would notice, because the tang still fits, the boolean
+    still succeeds and the mass is within grams. scripts/make_root_tang.py refuses to run
+    until this step has.
+    """
+    print("\npanel thickness")
+    before = total_mass_g()
+    set_quantity("Extrude 2", "depth", f"{panel_thickness_m * MM:.4f} mm")
+    verify("panel thickness")
+    panel = [x for x in parts() if x["name"].startswith("Canard panel 0")][0]
+    bb = get(f"/parts/d/{DOC}/w/{WS}/e/{PART_STUDIO}"
+             f"/partid/{quote(panel['partId'], safe='')}/boundingboxes")
+    got = (bb["highY"] - bb["lowY"]) * MM
+    print(f"    panel 0 measures {got:.3f} mm thick; "
+          f"module {before:.4f} -> {total_mass_g():.4f} g")
+    if abs(got - panel_thickness_m * MM) > 0.01:
+        raise SystemExit(
+            f"panel measures {got:.3f} mm after setting depth to "
+            f"{panel_thickness_m * MM:.3f} -- the extrude is probably not symmetric about "
+            f"its sketch plane. Fix it by hand; do not guess.")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--shaft", action="store_true")
     ap.add_argument("--bore", action="store_true")
     ap.add_argument("--servos", action="store_true")
+    ap.add_argument("--panel", action="store_true",
+                    help="set the canard panel thickness from design/configure.py")
     ap.add_argument("--all", action="store_true")
     a = ap.parse_args()
-    if not any((a.check, a.shaft, a.bore, a.servos, a.all)):
+    if not any((a.check, a.shaft, a.bore, a.servos, a.panel, a.all)):
         print(__doc__)
         return
 
@@ -464,6 +520,8 @@ def main() -> None:
         step_bore(stack)
     if a.servos or a.all:
         step_servos(stack)
+    if a.panel or a.all:
+        step_panel(p.canard_thickness)
 
 
 if __name__ == "__main__":
