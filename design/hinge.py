@@ -584,6 +584,13 @@ class RootJoint:
     panel_semispan: float
     panel_sweep: float         # axial offset, root LE to tip LE
     root_le_to_hinge: float    # axial distance from the root LE aft to the hinge axis
+    body_radius: float         # R of the tube OD -- the THEORETICAL root, where the
+                               # planform's semispan and sweep are measured from. This is
+                               # NOT `panel_root`: the panel face stands 0.5 mm off the
+                               # tube, so a length measured from the panel and a length
+                               # measured from the planform differ by that standoff. The
+                               # CAD is what caught it -- panel 0 runs R 40.20 to 107.19,
+                               # and 107.19 is 39.700 + 67.490, not 40.200 + 67.490.
     sleeve_dia: float
     tang_thickness: float
     tang_width: float
@@ -594,16 +601,31 @@ class RootJoint:
     # the tang is a fixed band [-w/2, +w/2] about the hinge, because it is the end of a
     # shaft that turns about the hinge.
 
-    def leading_edge(self, y: float) -> float:
-        """Axial station of the leading edge at spanwise station `y` outboard of the root."""
-        return self.panel_sweep * y / self.panel_semispan - self.root_le_to_hinge
+    # Everything below takes a RADIUS, not a span coordinate. `HingeStack` says why in its
+    # own docstring -- radius is the coordinate these parts are actually positioned in --
+    # and this module got it wrong once by taking `engagement` (measured from the panel
+    # root face) into a planform function (measured from the tube surface), which quietly
+    # under-read the leading edge by 0.36 mm.
 
-    def chord(self, y: float) -> float:
-        t = y / self.panel_semispan
+    def _span_at(self, radius: float) -> float:
+        """Spanwise station in PLANFORM coordinates, i.e. from the theoretical root."""
+        return radius - self.body_radius
+
+    def leading_edge(self, radius: float) -> float:
+        """Axial station of the leading edge, relative to the hinge axis, positive aft."""
+        return (self.panel_sweep * self._span_at(radius) / self.panel_semispan
+                - self.root_le_to_hinge)
+
+    def chord(self, radius: float) -> float:
+        t = self._span_at(radius) / self.panel_semispan
         return self.panel_root_chord + (self.panel_tip_chord - self.panel_root_chord) * t
 
-    def trailing_edge(self, y: float) -> float:
-        return self.leading_edge(y) + self.chord(y)
+    def trailing_edge(self, radius: float) -> float:
+        return self.leading_edge(radius) + self.chord(radius)
+
+    @property
+    def tang_tip_radius(self) -> float:
+        return self.panel_root + self.engagement
 
     @property
     def leading_edge_clearance(self) -> float:
@@ -616,11 +638,11 @@ class RootJoint:
         enough, and the tang comes out through the leading edge of the panel -- which is
         not a stress failure, it is a part that cannot be made.
         """
-        return -self.tang_width / 2.0 - self.leading_edge(self.engagement)
+        return -self.tang_width / 2.0 - self.leading_edge(self.tang_tip_radius)
 
     @property
     def trailing_edge_clearance(self) -> float:
-        return self.trailing_edge(self.engagement) - self.tang_width / 2.0
+        return self.trailing_edge(self.tang_tip_radius) - self.tang_width / 2.0
 
     @property
     def skin_thickness(self) -> float:
@@ -829,8 +851,8 @@ def check_root_joint(joint: RootJoint, loads: RootJointLoads) -> HingeCheck:
 
 
 TANG_THICKNESS = 1.800e-3
-TANG_WIDTH = 12.500e-3
-TANG_ENGAGEMENT = 26.500e-3
+TANG_WIDTH = 11.500e-3
+TANG_ENGAGEMENT = 25.000e-3
 
 
 def swept_out_root_joint(stack: HingeStack, canards) -> RootJoint:
@@ -847,7 +869,7 @@ def swept_out_root_joint(stack: HingeStack, canards) -> RootJoint:
 
 
 def selected_root_joint(stack: HingeStack, canards) -> RootJoint:
-    """The joint this module selects: a 1.8 x 12.5 mm tang, 26.5 mm into the panel root.
+    """The joint this module selects: a 1.8 x 11.5 mm tang, 25.0 mm into the panel root.
 
     How the three numbers were picked, because they are coupled and none is free:
 
@@ -856,12 +878,11 @@ def selected_root_joint(stack: HingeStack, canards) -> RootJoint:
         the one number that did NOT move when the leading-edge constraint arrived, which
         is why the panel is still a 0.6/1.8/0.6 laminate.
 
-      * WIDTH 12.5 mm. A wider tang carries more (sigma goes as 1/w) but its skin spans
+      * WIDTH 11.5 mm. A wider tang carries more (sigma goes as 1/w) but its skin spans
         further, and skin stress rises with width overall. It also pushes the tang's
-        forward corner towards the leading edge. So width is paid for twice and 12.5 is
-        where the tang and the skin land within 1% of each other, at 2.58x and 2.59x.
+        forward corner towards the leading edge. So width is paid for twice.
 
-      * ENGAGEMENT 26.5 mm, and THIS IS THE ONE THAT WAS WRONG. The first version of this
+      * ENGAGEMENT 25.0 mm, and THIS IS THE ONE THAT WAS WRONG TWICE. The first version of this
         module put it at 30 mm and called depth "bought cheaply -- it improves everything
         at once and is not paid for anywhere", reasoning that slot pressure goes as 1/L^2.
         That is true and it is not the constraint. **The panel is swept 35.4 degrees**, so
@@ -872,9 +893,19 @@ def selected_root_joint(stack: HingeStack, canards) -> RootJoint:
         tang stands 5.18 mm PROUD of the leading edge and the part cannot be made at all.
 
     So the shape of the trade is the opposite of what it first looked like: depth is the
-    EXPENSIVE axis, not the free one. 26.5 mm keeps 5.50 mm of leading edge and costs
-    0.3x of margin -- 2.9x to 2.6x on both the tang and the skin, against a 2.0x
-    requirement.
+    EXPENSIVE axis, not the free one.
+
+    Wrong the second time by 0.36 mm, and only the CAD caught it. `engagement` is measured
+    from the PANEL ROOT FACE at R 40.200; the planform's sweep and semispan are measured
+    from the THEORETICAL root at the tube surface, R 39.700. Feeding one into the other
+    over-read the leading-edge clearance by the 0.500 mm standoff times the 0.71 sweep
+    gradient. The model agreed with itself and disagreed with the model in Onshape, where
+    panel 0 runs R 40.20 to 107.19 -- and 107.19 is 39.700 + 67.490, not 40.200 + 67.490.
+    Everything on this joint is now indexed by RADIUS, which is what `HingeStack` already
+    said to do and what this class had not been doing.
+
+    25.0 mm delivers 6.71 mm of leading edge against a 5.0 mm requirement, at 2.5x on the
+    skin and 2.4x on the tang against a 2.0x requirement.
     """
     return _joint(stack, canards, TANG_THICKNESS, TANG_WIDTH, TANG_ENGAGEMENT)
 
@@ -900,6 +931,7 @@ def _joint(stack: HingeStack, canards, thickness: float, width: float,
         panel_semispan=canards.semispan,
         panel_sweep=canards.sweep_length,
         root_le_to_hinge=x_le_mac + HINGE_FRAC_OF_MAC * mac,
+        body_radius=canards.body_diameter / 2.0,
         sleeve_dia=stack.journal_dia,
         tang_thickness=thickness,
         tang_width=width,

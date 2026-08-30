@@ -54,7 +54,7 @@ Requires **Level 2 certification**. Budget 5 reloads for the GV-1…GV-5 campaig
 |---|---|---|---|---|---|
 | Servo, KST X08 Plus V6.0 | 23.5 × 8.0 × 16.8 mm, 9 g, 5.3 kgf·cm @ 8.4 V | 4 | 0.036 kg | **$43–55 ea** | ✅ |
 | Servo frame with outboard bearing | Hyperflight SRB-KST-X08 or IDS/LDS kit — carries the panel bending moment off the servo spline | 4 | in shafts | ~$15 ea | |
-| Canard hinge shaft | ⌀6 sleeve, R 33.485 → 40.200, ⌀4.4 × 3.2 15T spline socket, ending in a **1.8 × 12.5 × 26.5 mm tang**. 6061-T6 gives 2.6×, 4140 gives 6.1× | 4 | in shafts | | |
+| Canard hinge shaft | ⌀6 sleeve, R 33.485 → 40.200, ⌀4.4 × 3.2 15T spline socket, ending in a **1.8 × 11.5 × 25.0 mm tang**. 6061-T6 gives 2.4×, 4140 gives 5.6× | 4 | in shafts | | |
 | Canard hinge bearing | **⌀6 / ⌀8 × 6.0 plain, iglidur G class.** Press fit, H7/r6, 0.025 mm interference. This is the part that keeps the panel bending moment out of the servo | 4 | in shafts | ~$5 ea | |
 | Canard shafts, bushings, hardware | The two lines above plus fasteners | 4 | 0.240 kg | ~$40 | |
 | Canard panels | **0.6 / 1.8 / 0.6 mm bonded G10 laminate**, core cut away at the root for the tang. NOT a solid 3 mm plate — see below | 4 | in canards | | |
@@ -69,8 +69,8 @@ outboard bearing is the second line of defence at the other end of the spline. T
 collar in the printed bay** is the third: it holds 3.700 mm of the 6.0 mm bearing, and
 without it the bearing seat in the tube runs at 3.2× instead of 21.3×.
 
-**The canard panels are a laminate, not a plate.** The tang joint needs a 1.8 mm slot 26.5 mm
-into a 3.0 mm panel root — a 15:1 blind cut nobody can machine — so the panel is built up
+**The canard panels are a laminate, not a plate.** The tang joint needs a 1.8 mm slot 25 mm
+into a 3.0 mm panel root — a 14:1 blind cut nobody can machine — so the panel is built up
 from 0.6 / 1.8 / 0.6 mm G10 with the core cut away. Same thickness, planform and mass; order
 sheet in three thicknesses, not one. See docs/05 "The root joint".
 

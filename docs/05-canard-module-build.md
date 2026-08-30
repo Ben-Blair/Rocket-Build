@@ -298,25 +298,25 @@ look better than the winner until you price them:
 | **One piece** — machine shaft and panel from one aluminium billet | The honest structural answer: no joint at all. +38 g per panel, **+154 g on the vehicle**, all of it aft of the CG, on a design that already needs 100 g of nose ballast to satisfy R1. Rejected on mass and CG, not on structure. Revisit if the ballast budget ever grows |
 | **Tang in a slot** — the sleeve's end milled to a flat blade, bonded into the panel root | **SELECTED.** Spends no aerodynamics, no mass and no CG. It moves the problem into the one place with room: the *plane* of the panel, 67.5 mm of root chord, rather than its 3.0 mm thickness |
 
-**The selected tang: 1.8 × 12.5 mm, 26.5 mm into the root.** The three numbers are coupled
+**The selected tang: 1.8 × 11.5 mm, 25.0 mm into the root.** The three numbers are coupled
 and none is free:
 
 - **Thickness 1.8** sets the skins at 0.6 mm each. Thicker tang, stronger tang, weaker
   skin — and the skin's stress goes as 1/t², so the trade is sharp. This is the one number
   that did *not* move when the leading-edge constraint turned up, which is why the panel is
   still a 0.6/1.8/0.6 laminate.
-- **Width 12.5** is paid for twice. Wider carries more (σ goes as 1/w) but its skin spans
+- **Width 11.5** is paid for twice. Wider carries more (σ goes as 1/w) but its skin spans
   further, so skin stress *rises* with width — and it pushes the tang's forward corner
-  towards the leading edge. 12.5 lands the tang and skin within 1% of each other.
-- **Engagement 26.5**, and **this is the one that was wrong the first time.** See below.
+  towards the leading edge.
+- **Engagement 25.0**, and **this is the one that was wrong twice.** See below.
 
 | | |
 |---|---|
-| Tang bending | 106.9 MPa — **2.6×** in 6061-T6, 2.2× in 303 stainless, 6.1× in 4140 |
-| Skin over the slot | 185.4 MPa — **2.6×** against a 480 MPa flexural allowable |
-| **Leading-edge clearance** | **5.50 mm** at the tang tip, against a 5.0 mm minimum |
-| Slot bearing | 0.57 MPa from bending, 0.75 MPa from **stall** torque — 491× |
-| Bond shear | 0.038 MPa — 914×. The couple is carried in bearing, not in the bond |
+| Tang bending | 116.1 MPa — **2.4×** in 6061-T6, 2.1× in 303 stainless, 5.6× in 4140 |
+| Skin over the slot | 190.2 MPa — **2.5×** against a 480 MPa flexural allowable |
+| **Leading-edge clearance** | **6.71 mm** at the tang tip, against a 5.0 mm minimum |
+| Slot bearing | 0.69 MPa from bending, 0.94 MPa from **stall** torque — 392× |
+| Bond shear | 0.044 MPa — 793×. The couple is carried in bearing, not in the bond |
 
 ### The depth was the expensive axis, not the free one
 
@@ -332,10 +332,10 @@ a millimetre of leading-edge material:
 
 | engagement | material ahead of the tang tip | |
 |---|---|---|
-| 26.5 mm | **+5.50 mm** | selected |
-| 30.0 mm | +2.26 mm | previously selected, on strength alone |
-| 33.2 mm | 0.00 mm | the tang reaches the leading edge |
-| 40.5 mm | **−5.18 mm** | *what the old 60%-of-chord rule allowed* |
+| 25.0 mm | **+6.71 mm** | selected |
+| 30.0 mm | +1.91 mm | previously selected, on strength alone |
+| 32.7 mm | 0.00 mm | the tang reaches the leading edge |
+| 40.5 mm | **−5.53 mm** | *what the old 60%-of-chord rule allowed* |
 
 That last row is the point. The depth rule that was supposed to bound this **passed a tang
 standing 5.18 mm proud of the panel's leading edge** — not a part with a thin margin, a part
@@ -345,9 +345,32 @@ because it reads like a check.
 Both failing cases are kept and exercised by `scripts/hinge_report.py`, which exits
 non-zero if either passes: the ⌀6 sleeve butted into a 3 mm panel (fails on *there is no
 panel left*), and the 1.8 × 14 × 30 tang — **whose every stress margin is better than the
-selected joint's, 2.9× against 2.6×, and which is still not buildable.** That is the only
+selected joint's, 2.9× against 2.4×, and which is still not buildable.** That is the only
 case in this project that fails on geometry while passing on strength, which is exactly why
 it is worth keeping.
+
+### And a datum error under that, which only the CAD caught
+
+The first fix set the tang at 26.5 mm and read **5.50 mm** of leading edge. The real number
+was **5.14 mm**, and the difference is a datum:
+
+- `engagement` is measured from the **panel root face**, R 40.200.
+- The planform's sweep and semispan are measured from the **theoretical root** — the tube
+  surface, R 39.700.
+
+Those differ by the 0.500 mm assembly standoff, and feeding one into the other over-read
+the clearance by 0.500 × 0.71. The analysis agreed with itself perfectly; it disagreed with
+Onshape, where **panel 0 runs R 40.20 → 107.19, and 107.19 is 39.700 + 67.490, not
+40.200 + 67.490.** Reading the real model is what surfaced it.
+
+Everything on the joint is now indexed by **radius**, which is what `HingeStack`'s own
+docstring already said to do — *"radius, not distance from the wall, because radius is the
+coordinate every one of these parts is actually positioned in"* — and which `RootJoint` had
+not been doing. `body_radius` is now a field, and `leading_edge()`, `chord()` and
+`trailing_edge()` all take a radius.
+
+The selected 25.0 mm delivers **6.71 mm**, so the joint is no longer sitting 0.14 mm above
+its own requirement.
 
 **A second bug fell out of writing the check.** `slot_chord_fraction` divided the engagement
 by the **root chord**. The tang reaches along the **span**; the chord is what its *width*
@@ -361,10 +384,10 @@ cannot drift from the aerodynamics.
 Two things to carry into the build, both of which fall out of the model rather than out of
 anyone's judgement:
 
-- **The round-to-flat transition steps the stress up 3.1×, at the maximum-moment station.**
+- **The round-to-flat transition steps the stress up 3.4×, at the maximum-moment station.**
   Blend it. Do not shoulder it.
-- **THE PANEL STOPS BEING A PLATE.** A 1.8 mm slot 26.5 mm deep into the edge of a 3.0 mm
-  plate is a **15:1 blind cut**, which is not a thing you machine. The panel is built as a
+- **THE PANEL STOPS BEING A PLATE.** A 1.8 mm slot 25 mm deep into the edge of a 3.0 mm
+  plate is a **14:1 blind cut**, which is not a thing you machine. The panel is built as a
   **0.6 / 1.8 / 0.6 mm bonded G10 laminate** with the core cut away where the tang goes.
   Same thickness, same planform, same mass, same aerodynamics — a manufacturing change, not
   a design one, and the real answer to "how does the shaft meet the panel" turned out to be

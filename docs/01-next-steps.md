@@ -44,8 +44,8 @@ Read this first if you are picking the project back up.
   hinge-stack verdict, and the check is run against the **as-built** layout too, where it
   fails on five counts. A check that has never failed is not evidence of anything.
 - **The hinge load path is closed end to end.** The two items the hinge stack left open
-  are both done (corrections 12–14): the **sleeve-to-panel joint** is a 1.8 × 12.5 mm
-  tang 26.5 mm into the root — which turns the panel into a 0.6/1.8/0.6 bonded laminate,
+  are both done (corrections 12–14): the **sleeve-to-panel joint** is a 1.8 × 11.5 mm
+  tang 25.0 mm into the root — which turns the panel into a 0.6/1.8/0.6 bonded laminate,
   a manufacturing change and not a design one — and the **tube at the hinge station** is
   checked and passes by two to three orders of magnitude on everything except the bearing
   seat, which sits at 3.2× *only* because the housing collar has not been built.
@@ -205,8 +205,8 @@ that silently recurs:
    154 g aft of a CG that already needs 100 g of nose ballast. The winner is a **1.8 × 14 mm
    tang, 30 mm into the root**, tang 2.9× and skin 2.9×, deliberately balanced.
 
-   The finding worth keeping is not the tang. It is that **a 1.8 mm slot 26.5 mm deep into
-   a 3.0 mm plate is a 15:1 blind cut and nobody can machine it**, so the panel becomes a
+   The finding worth keeping is not the tang. It is that **a 1.8 mm slot 25 mm deep into
+   a 3.0 mm plate is a 14:1 blind cut and nobody can machine it**, so the panel becomes a
    **0.6 / 1.8 / 0.6 bonded laminate** with the core cut away. Same thickness, planform,
    mass and aerodynamics — the answer to "how does the shaft meet the panel" turned out to
    be a *manufacturing* change, and it would not have surfaced from any stress number.
@@ -221,8 +221,16 @@ that silently recurs:
    tang stands 5.18 mm proud of the leading edge** — a rule that admits an unbuildable part
    reads like a check and is worse than none.
 
-   Now 1.8 × 12.5 × 26.5, with **5.50 mm** of leading edge and margins at 2.6× on both the
-   tang and the skin. The cost of fixing it was 0.3× of margin against a 2.0× requirement.
+   Now 1.8 × 11.5 × 25.0, with **6.71 mm** of leading edge, 2.5× on the skin and 2.4× on
+   the tang. Fixing it cost about 0.5× of margin against a 2.0× requirement.
+
+   **And there was a datum error underneath, which only reading the CAD caught.** The first
+   fix read 5.50 mm of clearance where the truth was 5.14: `engagement` is measured from the
+   panel root face at R 40.200, the planform's sweep and semispan from the theoretical root
+   at the tube surface, R 39.700, and the 0.500 mm standoff between them was being ignored.
+   The analysis agreed with itself and disagreed with Onshape, where panel 0 runs R 40.20 to
+   107.19 — and 107.19 is 39.700 + 67.490. `RootJoint` is now indexed by radius throughout,
+   which is what `HingeStack`'s docstring had already said to do.
    The old tang is kept and exercised: **every stress margin in it is better than the
    selected joint's and it is still not buildable**, which is the only case in this project
    that fails on geometry while passing on strength.
