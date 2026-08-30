@@ -104,20 +104,32 @@ to fit the smaller of them.
 ============================================================================================
 THE SLEEVE-TO-PANEL JOINT  --  the last link, and the hardest
 ============================================================================================
-How the three numbers were picked, because they are coupled and none of them is free:
+How the three numbers were picked, because they are coupled and none is free:
 
-  * THICKNESS 1.8 mm sets the skins at 0.6 mm. Thicker tang, stronger tang, weaker
-    skin -- and the skin's stress goes as 1/t^2, so the trade is sharp. 1.8/0.6 puts
-    the tang and the skin within 20% of the same margin, which is what "balanced"
-    means here.
+  * THICKNESS 1.8 mm sets the skins at 0.6 mm each. Thicker tang, stronger tang,
+    weaker skin -- and the skin's stress goes as 1/t^2, so the trade is sharp. This is
+    the one number that did NOT move when the leading-edge constraint arrived, which
+    is why the panel is still a 0.6/1.8/0.6 laminate.
 
-  * WIDTH 14 mm is where the two curves cross the other way. A wider tang lowers the
-    slot pressure (1/b) but widens the skin's span (b^2), so the skin's stress rises
-    with width overall. A narrower tang saves the skin and fails the tang.
+  * WIDTH 12.5 mm. A wider tang carries more (sigma goes as 1/w) but its skin spans
+    further, and skin stress rises with width overall. It also pushes the tang's
+    forward corner towards the leading edge. So width is paid for twice and 12.5 is
+    where the tang and the skin land within 1% of each other, at 2.58x and 2.59x.
 
-  * ENGAGEMENT 30 mm is bought cheaply: the slot pressure goes as 1/L^2 and the root
-    chord is 67.5 mm, so depth is the only one of the three that improves everything
-    at once and is not paid for anywhere. It stops at 44% of the chord.
+  * ENGAGEMENT 26.5 mm, and THIS IS THE ONE THAT WAS WRONG. The first version of this
+    module put it at 30 mm and called depth "bought cheaply -- it improves everything
+    at once and is not paid for anywhere", reasoning that slot pressure goes as 1/L^2.
+    That is true and it is not the constraint. **The panel is swept 35.4 degrees**, so
+    its leading edge runs aft 0.71 mm for every mm of span while the tang stays in a
+    fixed axial band about the hinge. Depth is paid for in leading-edge material, at
+    better than half a millimetre per millimetre. 30 mm left 2.26 mm of panel ahead of
+    the tang; the depth rule that was supposed to catch this allowed 40.5 mm, where the
+    tang stands 5.18 mm PROUD of the leading edge and the part cannot be made at all.
+
+So the shape of the trade is the opposite of what it first looked like: depth is the
+EXPENSIVE axis, not the free one. 26.5 mm keeps 5.50 mm of leading edge and costs
+0.3x of margin -- 2.9x to 2.6x on both the tang and the skin, against a 2.0x
+requirement.
 
   THE OBVIOUS JOINT  --  the dia 6 sleeve simply entering the panel
     tang              6.00 x 6.00 mm, 6.0 mm engaged, skins -1.50 mm
@@ -128,20 +140,37 @@ How the three numbers were picked, because they are coupled and none of them is 
     bond shear           0.352 MPa   99x
     VERDICT: NOT BUILDABLE -- 1 violation(s)
       FAIL  the tang is 6.00 mm thick in a 3.00 mm panel -- there is no panel left
-      note  slot is 6.0 mm into a 67.5 mm root chord (9%)
+      note  tang tip clears the swept leading edge by 23.30 mm and the trailing edge by 34.6 mm
+      note  slot is 6.0 mm into a 67.5 mm semispan (9%)
 
-  SELECTED  --  a 1.8 x 14 mm tang, 30 mm into the panel root
+  STRONG ENOUGH, AND STILL NOT BUILDABLE  --  the 1.8 x 14 x 30 tang this
+  file selected before anything checked the swept leading edge
     tang              1.80 x 14.00 mm, 30.0 mm engaged, skins +0.60 mm
     moment at root    0.7212 N m from 25.37 N
     tang bending          95.4 MPa   6061-T6 2.9x, 303 stainless 2.5x, 4140 steel 6.9x
     skin over slot       164.9 MPa   2.9x against 480 MPa flexural
     slot bearing         0.404 MPa from bending, 0.531 MPa from stall torque (697x)
     bond shear           0.030 MPa   1159x
-    VERDICT: buildable, every margin met.
+    VERDICT: NOT BUILDABLE -- 1 violation(s)
+      FAIL  at its tip the tang is only 2.26 mm inside the panel's leading edge (+2.26 mm against a 5.0 mm minimum) -- the panel is swept 35.4 deg, so its leading edge runs aft 0.71 mm per mm of span while the tang stays in a fixed axial band
       note  skin over the slot 0.60 mm each side
-      note  slot is 30.0 mm into a 67.5 mm root chord (44%)
+      note  slot is 30.0 mm into a 67.5 mm semispan (44%)
       note  stress steps up 2.8x from the round sleeve to the tang, at the maximum-moment station -- blend the transition, do not shoulder it
       note  a 1.8 mm slot 30 mm deep in a 3.0 mm plate is a 17:1 blind cut; build the panel as a 0.6/1.8/0.6 bonded laminate with the core cut away instead
+
+  SELECTED  --  a 1.8 x 12.5 mm tang, 26.5 mm into the panel root
+    tang              1.80 x 12.50 mm, 26.5 mm engaged, skins +0.60 mm
+    moment at root    0.7212 N m from 25.37 N
+    tang bending         106.9 MPa   6061-T6 2.6x, 303 stainless 2.2x, 4140 steel 6.1x
+    skin over slot       185.4 MPa   2.6x against 480 MPa flexural
+    slot bearing         0.570 MPa from bending, 0.754 MPa from stall torque (491x)
+    bond shear           0.038 MPa   914x
+    VERDICT: buildable, every margin met.
+      note  skin over the slot 0.60 mm each side
+      note  tang tip clears the swept leading edge by 5.50 mm and the trailing edge by 33.6 mm
+      note  slot is 26.5 mm into a 67.5 mm semispan (39%)
+      note  stress steps up 3.1x from the round sleeve to the tang, at the maximum-moment station -- blend the transition, do not shoulder it
+      note  a 1.8 mm slot 26 mm deep in a 3.0 mm plate is a 15:1 blind cut; build the panel as a 0.6/1.8/0.6 bonded laminate with the core cut away instead
 
 ============================================================================================
 THE TUBE AT THE HINGE STATION  --  four bores at one station
@@ -195,8 +224,8 @@ WHAT THIS COSTS, AND WHAT IT DOES NOT
                           servo moved instead of the panel.
   servo torque margin     UNCHANGED at 1:1 direct drive; the coupling is a spline
                           socket, not a gear.
-  the panel               CHANGES. The tang joint needs a 1.8 mm slot 30 mm into
-                          the root, which is a 17:1 blind cut in a 3.0 mm plate and is not
+  the panel               CHANGES. The tang joint needs a 1.8 mm slot 26 mm into
+                          the root, which is a 15:1 blind cut in a 3.0 mm plate and is not
                           machinable. The panel becomes a 0.6/1.8/0.6 bonded
                           laminate. Same thickness, same planform, same mass --
                           a manufacturing change, not a design one.

@@ -183,17 +183,24 @@ def main() -> None:
     rule("THE SLEEVE-TO-PANEL JOINT  --  the last link, and the hardest")
     say(hinge.selected_root_joint.__doc__.split("\n", 2)[2].rstrip())
 
-    naive = hinge.naive_root_joint(sel, c.thickness, c.root_chord)
+    naive = hinge.naive_root_joint(sel, c)
     naive_loads = hinge.root_joint_loads(naive, loads_sel.normal_force, load_r,
                                          servo.stall_torque)
     say("\n  THE OBVIOUS JOINT  --  the dia 6 sleeve simply entering the panel")
     chk_naive = joint_report(naive, naive_loads)
 
-    joint = hinge.selected_root_joint(sel, c.thickness, c.root_chord)
+    swept = hinge.swept_out_root_joint(sel, c)
+    swept_loads = hinge.root_joint_loads(swept, loads_sel.normal_force, load_r,
+                                         servo.stall_torque)
+    say("\n  STRONG ENOUGH, AND STILL NOT BUILDABLE  --  the 1.8 x 14 x 30 tang this")
+    say("  file selected before anything checked the swept leading edge")
+    chk_swept = joint_report(swept, swept_loads)
+
+    joint = hinge.selected_root_joint(sel, c)
     jloads = hinge.root_joint_loads(joint, loads_sel.normal_force, load_r,
                                     servo.stall_torque)
-    say(f"\n  SELECTED  --  a {joint.tang_thickness * MM:.1f} x {joint.tang_width * MM:.0f} mm tang, "
-        f"{joint.engagement * MM:.0f} mm into the panel root")
+    say(f"\n  SELECTED  --  a {joint.tang_thickness * MM:.1f} x {joint.tang_width * MM:.1f} mm tang, "
+        f"{joint.engagement * MM:.1f} mm into the panel root")
     chk_joint = joint_report(joint, jloads)
 
     # ==================================================================================
@@ -308,6 +315,9 @@ def main() -> None:
                          "checking anything -- fix the check before trusting it")
     if not chk_sel.ok:
         raise SystemExit("the selected layout does not pass its own check")
+    if chk_swept.ok:
+        raise SystemExit("the 1.8 x 14 x 30 tang PASSED, so the leading-edge check is not "
+                         "checking anything -- it is 2.26 mm from exiting the panel")
     if chk_naive.ok:
         raise SystemExit("the dia 6 sleeve butted into a 3 mm panel PASSED the root joint "
                          "check, which means that check is not checking anything")

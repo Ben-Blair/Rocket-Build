@@ -556,6 +556,12 @@ def selected(tube_outer_radius: float, wall: float, geometry,
 # the lay-up jig, not in flight.
 MIN_SKIN_THICKNESS = 0.5e-3
 
+# Material between the tang's forward corner and the panel's leading edge. The leading
+# edge gets bevelled or rounded for aerodynamics, the slot carries a bond line, and a
+# fibreglass panel has to survive its own lay-up jig: 5 mm covers all three with something
+# left over. Nothing subtler is justified until the LE profile is actually drawn.
+MIN_EDGE_CLEARANCE = 5.0e-3
+
 # Simply-supported is used for the skin over the slot. The skin is continuous into the
 # panel at both slot edges, so the truth is nearer fixed-fixed, which carries the same
 # pressure at 2/3 of the stress. Taking the conservative end is worth about 1.5x of margin
@@ -574,10 +580,47 @@ class RootJoint:
     panel_root: float          # R of the panel root face
     panel_thickness: float
     panel_root_chord: float
+    panel_tip_chord: float
+    panel_semispan: float
+    panel_sweep: float         # axial offset, root LE to tip LE
+    root_le_to_hinge: float    # axial distance from the root LE aft to the hinge axis
     sleeve_dia: float
     tang_thickness: float
     tang_width: float
-    engagement: float          # how far the tang reaches into the panel
+    engagement: float          # how far the tang reaches OUTBOARD into the panel
+
+    # ---- where the panel's edges are, relative to the hinge axis ---------------------
+    # Axial, positive AFT, origin on the hinge axis. This is the frame the tang lives in:
+    # the tang is a fixed band [-w/2, +w/2] about the hinge, because it is the end of a
+    # shaft that turns about the hinge.
+
+    def leading_edge(self, y: float) -> float:
+        """Axial station of the leading edge at spanwise station `y` outboard of the root."""
+        return self.panel_sweep * y / self.panel_semispan - self.root_le_to_hinge
+
+    def chord(self, y: float) -> float:
+        t = y / self.panel_semispan
+        return self.panel_root_chord + (self.panel_tip_chord - self.panel_root_chord) * t
+
+    def trailing_edge(self, y: float) -> float:
+        return self.leading_edge(y) + self.chord(y)
+
+    @property
+    def leading_edge_clearance(self) -> float:
+        """Material between the tang's forward corner and the panel's leading edge, at the
+        TANG TIP, which is where the swept LE has come closest.
+
+        THIS IS THE CONSTRAINT THAT ACTUALLY LIMITS THE TANG, and the first version of this
+        module did not have it. The panel is swept 35.4 degrees, so its leading edge runs
+        aft at 0.71 mm per mm of span while the tang stays in a fixed axial band. Deep
+        enough, and the tang comes out through the leading edge of the panel -- which is
+        not a stress failure, it is a part that cannot be made.
+        """
+        return -self.tang_width / 2.0 - self.leading_edge(self.engagement)
+
+    @property
+    def trailing_edge_clearance(self) -> float:
+        return self.trailing_edge(self.engagement) - self.tang_width / 2.0
 
     @property
     def skin_thickness(self) -> float:
@@ -594,8 +637,18 @@ class RootJoint:
         return self.tang_width * self.tang_thickness ** 2 / 6.0
 
     @property
-    def slot_chord_fraction(self) -> float:
-        return self.engagement / self.panel_root_chord
+    def slot_span_fraction(self) -> float:
+        """Engagement as a fraction of the SEMISPAN.
+
+        Span, not chord. The tang is the outboard end of a radial shaft, so it reaches
+        along the span; the chord is what its WIDTH lies along. The first version of this
+        module divided by the root chord and got the right number anyway, because
+        `canard_root_cal` and `canard_semispan_cal` are both 0.85 and the two lengths are
+        both 67.490 mm. Change either one and the check would have silently read the wrong
+        dimension -- the same class of error as the sketch that measured to a circle's
+        tangent instead of its centre (docs/01).
+        """
+        return self.engagement / self.panel_semispan
 
     @property
     def transition_stress_ratio(self) -> float:
@@ -729,14 +782,33 @@ def check_root_joint(joint: RootJoint, loads: RootJointLoads) -> HingeCheck:
     if bond_margin < SHAFT_MARGIN_REQUIRED:
         v.append(f"bond shear {loads.bond_shear / 1e6:.2f} MPa is only {bond_margin:.2f}x")
 
-    if joint.slot_chord_fraction > 0.6:
+    # THE ONE THAT ACTUALLY BINDS. A depth rule on its own does not catch this: at 60% of
+    # the semispan the tang stands 5.2 mm PROUD of the swept leading edge, and a rule that
+    # passes an unbuildable part is worse than no rule.
+    if joint.leading_edge_clearance < MIN_EDGE_CLEARANCE:
+        where = ("stands proud of" if joint.leading_edge_clearance < 0 else "is only "
+                 f"{joint.leading_edge_clearance * mm:.2f} mm inside")
         v.append(
-            f"the slot runs {joint.slot_chord_fraction * 100:.0f}% of the root chord; "
-            f"past about 60% it reaches the panel's own structure rather than its root")
+            f"at its tip the tang {where} the panel's leading edge "
+            f"({joint.leading_edge_clearance * mm:+.2f} mm against a "
+            f"{MIN_EDGE_CLEARANCE * mm:.1f} mm minimum) -- the panel is swept "
+            f"{math.degrees(math.atan2(joint.panel_sweep, joint.panel_semispan)):.1f} deg, so its "
+            f"leading edge runs aft {joint.panel_sweep / joint.panel_semispan:.2f} mm per mm of "
+            f"span while the tang stays in a fixed axial band")
     else:
         notes.append(
-            f"slot is {joint.engagement * mm:.1f} mm into a {joint.panel_root_chord * mm:.1f} mm "
-            f"root chord ({joint.slot_chord_fraction * 100:.0f}%)")
+            f"tang tip clears the swept leading edge by "
+            f"{joint.leading_edge_clearance * mm:.2f} mm and the trailing edge by "
+            f"{joint.trailing_edge_clearance * mm:.1f} mm")
+
+    if joint.slot_span_fraction > 0.6:
+        v.append(
+            f"the slot runs {joint.slot_span_fraction * 100:.0f}% of the semispan; past "
+            f"about 60% it reaches the panel's own structure rather than its root")
+    else:
+        notes.append(
+            f"slot is {joint.engagement * mm:.1f} mm into a {joint.panel_semispan * mm:.1f} mm "
+            f"semispan ({joint.slot_span_fraction * 100:.0f}%)")
 
     # These two describe how to BUILD the joint, so they are only meaningful once the
     # joint is buildable at all. Emitting them for a tang thicker than its panel produces
@@ -757,38 +829,54 @@ def check_root_joint(joint: RootJoint, loads: RootJointLoads) -> HingeCheck:
 
 
 TANG_THICKNESS = 1.800e-3
-TANG_WIDTH = 14.000e-3
-TANG_ENGAGEMENT = 30.000e-3
+TANG_WIDTH = 12.500e-3
+TANG_ENGAGEMENT = 26.500e-3
 
 
-def selected_root_joint(stack: HingeStack, panel_thickness: float,
-                        panel_root_chord: float) -> RootJoint:
-    """The joint this module selects: a 1.8 x 14 mm tang, 30 mm into the panel root.
+def swept_out_root_joint(stack: HingeStack, canards) -> RootJoint:
+    """The 1.8 x 14 x 30 tang this module selected BEFORE the leading edge was checked.
 
-    How the three numbers were picked, because they are coupled and none of them is free:
-
-      * THICKNESS 1.8 mm sets the skins at 0.6 mm. Thicker tang, stronger tang, weaker
-        skin -- and the skin's stress goes as 1/t^2, so the trade is sharp. 1.8/0.6 puts
-        the tang and the skin within 20% of the same margin, which is what "balanced"
-        means here.
-
-      * WIDTH 14 mm is where the two curves cross the other way. A wider tang lowers the
-        slot pressure (1/b) but widens the skin's span (b^2), so the skin's stress rises
-        with width overall. A narrower tang saves the skin and fails the tang.
-
-      * ENGAGEMENT 30 mm is bought cheaply: the slot pressure goes as 1/L^2 and the root
-        chord is 67.5 mm, so depth is the only one of the three that improves everything
-        at once and is not paid for anywhere. It stops at 44% of the chord.
+    Every stress margin in it is better than the selected joint's -- tang and skin both
+    2.9x against 2.6x -- and it is still not buildable, because it leaves 2.26 mm of panel
+    ahead of it against a 5 mm minimum. Kept, and exercised by scripts/hinge_report.py, for
+    the same reason `as_built` and `naive_root_joint` are: a check that has never failed is
+    not evidence of anything, and this is the only case that fails on GEOMETRY while
+    passing on strength.
     """
-    return RootJoint(
-        panel_root=stack.panel_root,
-        panel_thickness=panel_thickness,
-        panel_root_chord=panel_root_chord,
-        sleeve_dia=stack.journal_dia,
-        tang_thickness=TANG_THICKNESS,
-        tang_width=TANG_WIDTH,
-        engagement=TANG_ENGAGEMENT,
-    )
+    return _joint(stack, canards, 1.800e-3, 14.000e-3, 30.000e-3)
+
+
+def selected_root_joint(stack: HingeStack, canards) -> RootJoint:
+    """The joint this module selects: a 1.8 x 12.5 mm tang, 26.5 mm into the panel root.
+
+    How the three numbers were picked, because they are coupled and none is free:
+
+      * THICKNESS 1.8 mm sets the skins at 0.6 mm each. Thicker tang, stronger tang,
+        weaker skin -- and the skin's stress goes as 1/t^2, so the trade is sharp. This is
+        the one number that did NOT move when the leading-edge constraint arrived, which
+        is why the panel is still a 0.6/1.8/0.6 laminate.
+
+      * WIDTH 12.5 mm. A wider tang carries more (sigma goes as 1/w) but its skin spans
+        further, and skin stress rises with width overall. It also pushes the tang's
+        forward corner towards the leading edge. So width is paid for twice and 12.5 is
+        where the tang and the skin land within 1% of each other, at 2.58x and 2.59x.
+
+      * ENGAGEMENT 26.5 mm, and THIS IS THE ONE THAT WAS WRONG. The first version of this
+        module put it at 30 mm and called depth "bought cheaply -- it improves everything
+        at once and is not paid for anywhere", reasoning that slot pressure goes as 1/L^2.
+        That is true and it is not the constraint. **The panel is swept 35.4 degrees**, so
+        its leading edge runs aft 0.71 mm for every mm of span while the tang stays in a
+        fixed axial band about the hinge. Depth is paid for in leading-edge material, at
+        better than half a millimetre per millimetre. 30 mm left 2.26 mm of panel ahead of
+        the tang; the depth rule that was supposed to catch this allowed 40.5 mm, where the
+        tang stands 5.18 mm PROUD of the leading edge and the part cannot be made at all.
+
+    So the shape of the trade is the opposite of what it first looked like: depth is the
+    EXPENSIVE axis, not the free one. 26.5 mm keeps 5.50 mm of leading edge and costs
+    0.3x of margin -- 2.9x to 2.6x on both the tang and the skin, against a 2.0x
+    requirement.
+    """
+    return _joint(stack, canards, TANG_THICKNESS, TANG_WIDTH, TANG_ENGAGEMENT)
 
 
 # Fraction of MAC at which the hinge sits, matching packaging.hinge_moment()'s default
@@ -796,8 +884,30 @@ def selected_root_joint(stack: HingeStack, panel_thickness: float,
 HINGE_FRAC_OF_MAC = 0.20
 
 
-def naive_root_joint(stack: HingeStack, panel_thickness: float,
-                     panel_root_chord: float) -> RootJoint:
+def _joint(stack: HingeStack, canards, thickness: float, width: float,
+           engagement: float) -> RootJoint:
+    """Build a RootJoint against a real panel. Every planform number comes from the FinSet
+    and the hinge station is derived, so the joint cannot drift from the aerodynamics."""
+    taper = canards.tip_chord / canards.root_chord
+    mac = (2.0 / 3.0) * canards.root_chord * (1 + taper + taper ** 2) / (1 + taper)
+    y_mac = (canards.semispan / 3.0) * (1 + 2 * taper) / (1 + taper)
+    x_le_mac = canards.sweep_length * y_mac / canards.semispan
+    return RootJoint(
+        panel_root=stack.panel_root,
+        panel_thickness=canards.thickness,
+        panel_root_chord=canards.root_chord,
+        panel_tip_chord=canards.tip_chord,
+        panel_semispan=canards.semispan,
+        panel_sweep=canards.sweep_length,
+        root_le_to_hinge=x_le_mac + HINGE_FRAC_OF_MAC * mac,
+        sleeve_dia=stack.journal_dia,
+        tang_thickness=thickness,
+        tang_width=width,
+        engagement=engagement,
+    )
+
+
+def naive_root_joint(stack: HingeStack, canards) -> RootJoint:
     """What the model implies today, and what anyone would draw first: the dia 6 sleeve
     simply entering the panel.
 
@@ -805,15 +915,7 @@ def naive_root_joint(stack: HingeStack, panel_thickness: float,
     FAIL on it. The same reason `as_built` is kept: a check that has never failed is not
     evidence of anything.
     """
-    return RootJoint(
-        panel_root=stack.panel_root,
-        panel_thickness=panel_thickness,
-        panel_root_chord=panel_root_chord,
-        sleeve_dia=stack.journal_dia,
-        tang_thickness=stack.journal_dia,   # the shaft itself, butted into a 3 mm panel
-        tang_width=stack.journal_dia,
-        engagement=stack.journal_dia,
-    )
+    return _joint(stack, canards, stack.journal_dia, stack.journal_dia, stack.journal_dia)
 
 
 def canard_hinge_station(rocket) -> float:

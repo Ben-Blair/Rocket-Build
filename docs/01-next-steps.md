@@ -44,8 +44,8 @@ Read this first if you are picking the project back up.
   hinge-stack verdict, and the check is run against the **as-built** layout too, where it
   fails on five counts. A check that has never failed is not evidence of anything.
 - **The hinge load path is closed end to end.** The two items the hinge stack left open
-  are both done (corrections 12 and 13): the **sleeve-to-panel joint** is a 1.8 × 14 mm
-  tang 30 mm into the root — which turns the panel into a 0.6/1.8/0.6 bonded laminate,
+  are both done (corrections 12–14): the **sleeve-to-panel joint** is a 1.8 × 12.5 mm
+  tang 26.5 mm into the root — which turns the panel into a 0.6/1.8/0.6 bonded laminate,
   a manufacturing change and not a design one — and the **tube at the hinge station** is
   checked and passes by two to three orders of magnitude on everything except the bearing
   seat, which sits at 3.2× *only* because the housing collar has not been built.
@@ -74,7 +74,7 @@ cost of flutter margin (1.78 against 1.97) and servo torque (2.3× against 2.8×
 is retained on margin, and because the Onshape module is built to it — but that is a choice,
 and §7 now says so instead of hiding it.
 
-Thirteen corrections are worth knowing about. The first four changed the design; two of the
+Fourteen corrections are worth knowing about. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
@@ -205,11 +205,35 @@ that silently recurs:
    154 g aft of a CG that already needs 100 g of nose ballast. The winner is a **1.8 × 14 mm
    tang, 30 mm into the root**, tang 2.9× and skin 2.9×, deliberately balanced.
 
-   The finding worth keeping is not the tang. It is that **a 1.8 mm slot 30 mm deep into a
-   3.0 mm plate is a 17:1 blind cut and nobody can machine it**, so the panel becomes a
+   The finding worth keeping is not the tang. It is that **a 1.8 mm slot 26.5 mm deep into
+   a 3.0 mm plate is a 15:1 blind cut and nobody can machine it**, so the panel becomes a
    **0.6 / 1.8 / 0.6 bonded laminate** with the core cut away. Same thickness, planform,
    mass and aerodynamics — the answer to "how does the shaft meet the panel" turned out to
    be a *manufacturing* change, and it would not have surfaced from any stress number.
+
+14. **The tang was sized against stress, and the binding constraint was geometry.** The
+   first version of correction 12 chose 1.8 × 14 × 30 and argued that depth was free —
+   slot pressure goes as 1/L², so deeper is better and costs nothing. True, and the wrong
+   axis. **The panel is swept 35.4°, so its leading edge runs aft 0.71 mm per mm of span**
+   while the tang stays in a fixed axial band about the hinge axis, because it is the end
+   of a shaft that turns about that axis. 30 mm of depth left **2.26 mm** of panel ahead of
+   the tang. Worse, the "60% of chord" rule meant to bound it **allowed 40.5 mm, where the
+   tang stands 5.18 mm proud of the leading edge** — a rule that admits an unbuildable part
+   reads like a check and is worse than none.
+
+   Now 1.8 × 12.5 × 26.5, with **5.50 mm** of leading edge and margins at 2.6× on both the
+   tang and the skin. The cost of fixing it was 0.3× of margin against a 2.0× requirement.
+   The old tang is kept and exercised: **every stress margin in it is better than the
+   selected joint's and it is still not buildable**, which is the only case in this project
+   that fails on geometry while passing on strength.
+
+   A second bug fell out of writing the check: `slot_chord_fraction` divided engagement by
+   the root **chord** when the tang reaches along the **span**. It returned the right number
+   anyway, because `canard_root_cal` and `canard_semispan_cal` are both 0.85 and the two
+   lengths are both 67.490 mm — and it would have silently read the wrong dimension the
+   moment either moved. Same class of error as the sketch that measured to a circle's
+   tangent. Found only by trying to build the thing in CAD, which is the general lesson:
+   **the model agreed with itself right up until geometry had to exist.**
 
 13. **The tube passed by three orders of magnitude, and the one number that did not is the
    one nobody was worried about.** `check_hinge_stack()` had emitted *"check the tube, not

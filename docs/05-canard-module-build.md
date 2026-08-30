@@ -298,33 +298,73 @@ look better than the winner until you price them:
 | **One piece** — machine shaft and panel from one aluminium billet | The honest structural answer: no joint at all. +38 g per panel, **+154 g on the vehicle**, all of it aft of the CG, on a design that already needs 100 g of nose ballast to satisfy R1. Rejected on mass and CG, not on structure. Revisit if the ballast budget ever grows |
 | **Tang in a slot** — the sleeve's end milled to a flat blade, bonded into the panel root | **SELECTED.** Spends no aerodynamics, no mass and no CG. It moves the problem into the one place with room: the *plane* of the panel, 67.5 mm of root chord, rather than its 3.0 mm thickness |
 
-**The selected tang: 1.8 × 14.0 mm, 30.0 mm into the root.** The three numbers are coupled
+**The selected tang: 1.8 × 12.5 mm, 26.5 mm into the root.** The three numbers are coupled
 and none is free:
 
 - **Thickness 1.8** sets the skins at 0.6 mm each. Thicker tang, stronger tang, weaker
-  skin — and the skin's stress goes as 1/t², so the trade is sharp. 1.8/0.6 lands the tang
-  and the skin within 20% of the same margin, which is what "balanced" means here.
-- **Width 14** is where the curves cross the other way. Wider lowers the slot pressure
-  (1/b) but widens the skin's span (b²), so skin stress *rises* with width. Narrower saves
-  the skin and fails the tang.
-- **Engagement 30** is the cheap one: slot pressure goes as 1/L² and the root chord is
-  67.5 mm, so depth improves everything at once and is paid for nowhere. It stops at 44%
-  of the chord.
+  skin — and the skin's stress goes as 1/t², so the trade is sharp. This is the one number
+  that did *not* move when the leading-edge constraint turned up, which is why the panel is
+  still a 0.6/1.8/0.6 laminate.
+- **Width 12.5** is paid for twice. Wider carries more (σ goes as 1/w) but its skin spans
+  further, so skin stress *rises* with width — and it pushes the tang's forward corner
+  towards the leading edge. 12.5 lands the tang and skin within 1% of each other.
+- **Engagement 26.5**, and **this is the one that was wrong the first time.** See below.
 
 | | |
 |---|---|
-| Tang bending | 95.4 MPa — **2.9×** in 6061-T6, 2.5× in 303 stainless, 6.9× in 4140 |
-| Skin over the slot | 164.9 MPa — **2.9×** against a 480 MPa flexural allowable |
-| Slot bearing | 0.40 MPa from bending, 0.53 MPa from **stall** torque — 697× |
-| Bond shear | 0.030 MPa — 1159×. The couple is carried in bearing, not in the bond |
+| Tang bending | 106.9 MPa — **2.6×** in 6061-T6, 2.2× in 303 stainless, 6.1× in 4140 |
+| Skin over the slot | 185.4 MPa — **2.6×** against a 480 MPa flexural allowable |
+| **Leading-edge clearance** | **5.50 mm** at the tang tip, against a 5.0 mm minimum |
+| Slot bearing | 0.57 MPa from bending, 0.75 MPa from **stall** torque — 491× |
+| Bond shear | 0.038 MPa — 914×. The couple is carried in bearing, not in the bond |
+
+### The depth was the expensive axis, not the free one
+
+The first version of this section put the tang at **30 mm** and justified it like this:
+*"depth is bought cheaply — slot pressure goes as 1/L², so it improves everything at once
+and is paid for nowhere."* Both halves of that are true and it is still the wrong answer,
+because it priced the tang against stress and the binding constraint is **geometry**.
+
+**The panel is swept 35.4°.** Its leading edge runs aft **0.71 mm for every mm of span**,
+while the tang stays in a fixed axial band about the hinge axis — it has to, being the end
+of a shaft that turns about that axis. So every millimetre of depth spends better than half
+a millimetre of leading-edge material:
+
+| engagement | material ahead of the tang tip | |
+|---|---|---|
+| 26.5 mm | **+5.50 mm** | selected |
+| 30.0 mm | +2.26 mm | previously selected, on strength alone |
+| 33.2 mm | 0.00 mm | the tang reaches the leading edge |
+| 40.5 mm | **−5.18 mm** | *what the old 60%-of-chord rule allowed* |
+
+That last row is the point. The depth rule that was supposed to bound this **passed a tang
+standing 5.18 mm proud of the panel's leading edge** — not a part with a thin margin, a part
+that cannot be made. A rule that admits an unbuildable geometry is worse than no rule,
+because it reads like a check.
+
+Both failing cases are kept and exercised by `scripts/hinge_report.py`, which exits
+non-zero if either passes: the ⌀6 sleeve butted into a 3 mm panel (fails on *there is no
+panel left*), and the 1.8 × 14 × 30 tang — **whose every stress margin is better than the
+selected joint's, 2.9× against 2.6×, and which is still not buildable.** That is the only
+case in this project that fails on geometry while passing on strength, which is exactly why
+it is worth keeping.
+
+**A second bug fell out of writing the check.** `slot_chord_fraction` divided the engagement
+by the **root chord**. The tang reaches along the **span**; the chord is what its *width*
+lies along. It returned the right number anyway — `canard_root_cal` and
+`canard_semispan_cal` are both 0.85, so both lengths are 67.490 mm — and would have
+silently read the wrong dimension the moment either parameter moved. Same class of error as
+the sketch that measured to a circle's tangent instead of its centre. Now
+`slot_span_fraction`, and the panel planform is passed to `RootJoint` whole so the joint
+cannot drift from the aerodynamics.
 
 Two things to carry into the build, both of which fall out of the model rather than out of
 anyone's judgement:
 
-- **The round-to-flat transition steps the stress up 2.8×, at the maximum-moment station.**
+- **The round-to-flat transition steps the stress up 3.1×, at the maximum-moment station.**
   Blend it. Do not shoulder it.
-- **THE PANEL STOPS BEING A PLATE.** A 1.8 mm slot 30 mm deep into the edge of a 3.0 mm
-  plate is a **17:1 blind cut**, which is not a thing you machine. The panel is built as a
+- **THE PANEL STOPS BEING A PLATE.** A 1.8 mm slot 26.5 mm deep into the edge of a 3.0 mm
+  plate is a **15:1 blind cut**, which is not a thing you machine. The panel is built as a
   **0.6 / 1.8 / 0.6 mm bonded G10 laminate** with the core cut away where the tang goes.
   Same thickness, same planform, same mass, same aerodynamics — a manufacturing change, not
   a design one, and the real answer to "how does the shaft meet the panel" turned out to be

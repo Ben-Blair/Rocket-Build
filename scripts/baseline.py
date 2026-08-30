@@ -231,7 +231,7 @@ def main() -> None:
 
     # The last link: how the shaft meets the panel. The moment is at its MAXIMUM here --
     # the bearing has not taken it out yet -- and the panel is 3.0 mm of G10.
-    joint = hinge.selected_root_joint(stack, r.canards.thickness, r.canards.root_chord)
+    joint = hinge.selected_root_joint(stack, r.canards)
     jl = hinge.root_joint_loads(joint, hl.normal_force,
                                 r.diameter / 2.0 + hinge.spanwise_centroid(
                                     r.canards.root_chord, r.canards.tip_chord,
@@ -239,9 +239,10 @@ def main() -> None:
                                 servo.stall_torque)
     jchk = hinge.check_root_joint(joint, jl)
     print(f"  root joint          {joint.tang_thickness * 1000:.1f} x "
-          f"{joint.tang_width * 1000:.0f} mm tang, {joint.engagement * 1000:.0f} mm engaged; "
+          f"{joint.tang_width * 1000:.1f} mm tang, {joint.engagement * 1000:.1f} mm engaged; "
           f"tang {min(jl.tang_margin.values()):.1f}-{max(jl.tang_margin.values()):.1f}x, "
-          f"skin {hinge.G10_FLEXURAL / jl.skin_bending_stress:.1f}x")
+          f"skin {hinge.G10_FLEXURAL / jl.skin_bending_stress:.1f}x, "
+          f"LE clearance {joint.leading_edge_clearance * 1000:.1f} mm")
     print(f"  root joint check    {'OK' if jchk.ok else 'VIOLATIONS: ' + '; '.join(jchk.violations)}")
 
     # And the structure all of it is cut into. Four dia 8 bores at one station in a 2.3 mm
