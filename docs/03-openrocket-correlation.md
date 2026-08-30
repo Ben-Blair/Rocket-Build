@@ -43,17 +43,18 @@ Two deliberate choices about what is transferred and what is recomputed:
 | Total length | 1361.1 mm | 1365.5 mm | +0.3% |
 | Dry mass | 5.48 kg | 5.54 kg | +1.2% |
 | Loaded mass | 6.10 kg | 6.17 kg | +1.1% |
-| CG dry | 800.9 mm | 805.6 mm | +0.6% |
-| CG loaded | 841.8 mm | 845.5 mm | +0.4% |
-| **CNa, no body lift** | **26.19 /rad** | **26.10 /rad** | **−0.3%** |
-| CNa, with body lift | 27.67 /rad | 26.10 /rad | −5.7% |
-| CP, no body lift | 1020.4 mm | 1034.0 mm | +1.3% (+0.17 cal) |
-| CP, with body lift | 1006.2 mm | 1034.0 mm | +2.8% (+0.35 cal) |
-| Static margin, loaded | 2.07 cal | 2.37 cal | +0.30 cal |
+| CG dry | 800.5 mm | 805.3 mm | +0.6% |
+| CG loaded | 841.5 mm | 845.3 mm | +0.5% |
+| **CNa, no body lift** | **26.37 /rad** | **26.28 /rad** | **−0.3%** |
+| CNa, with body lift | 27.86 /rad | 26.28 /rad | −5.6% |
+| CP, no body lift | 1014.3 mm | 1028.9 mm | +1.4% (+0.18 cal) |
+| CP, with body lift | 1000.6 mm | 1028.9 mm | +2.8% (+0.36 cal) |
+| Static margin, loaded | 2.00 cal | 2.31 cal | +0.31 cal |
 
-The agreement survived the canards being swept to 35.4° (Aug 2026) with no change to the
-like-for-like CP delta — which is a real result: the two Barrowman implementations track
-each other through a planform change, not just at one frozen geometry.
+The agreement survived two planform changes in Aug 2026 — the 35.4° sweep and then the
+0.40 taper — with the like-for-like CP delta moving only 0.17 → 0.18 cal. That is a real
+result: two independently written Barrowman implementations tracking each other *through*
+geometry changes is far stronger evidence than agreeing once at a frozen shape.
 
 Masses and CG reflect the real KST X08 Plus servos (9 g each) rather than the earlier 55 g
 budget placeholder, and include the 100 g of nose ballast the design now carries. The

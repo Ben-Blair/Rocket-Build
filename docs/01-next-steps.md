@@ -15,8 +15,9 @@ Read this first if you are picking the project back up.
 
 Current vehicle: 79.4 mm OD fiberglass, 1361 mm, canards 0.85 cal / aft fins 1.55 cal
 interdigitated 45°, **both sets swept 35.4°**, Cesaroni J449 Blue Streak, 4× KST X08 Plus
-servos flat-mounted with the hinge at 0.20 of MAC, 100 g nose ballast. 6.10 kg wet, apogee
-1379 m, Mach 0.531, static margin 2.10–2.59 cal, P(SM<1.0) 0.2%, 394 m crossrange. `scripts/baseline.py` regenerates
+servos flat-mounted with the hinge at 0.20 of MAC, 100 g nose ballast. Canards 67.5 root /
+27.0 tip (0.40 taper). 6.10 kg wet, apogee 1379 m, Mach 0.531, static margin 2.03–2.52 cal,
+P(SM<1.0) 0.4%, 424 m crossrange. `scripts/baseline.py` regenerates
 all of it; `evaluate()` reports feasible with no violations, and that now includes a check
 that the recovery hardware physically fits in the bay.
 
@@ -30,11 +31,12 @@ that silently recurs:
 2. **The canard hinge sign was inverted** — hinge aft of the panel CP is divergent, not
    self-centring. Now at 0.20c, forward of the 0.25c CP, and `hinge_moment()` returns a
    signed value so it cannot hide again.
-3. **Nose ballast was required, and now is not — but keep it** (§7.1). Real 9 g servos
-   removed ~180 g from ahead of the CG and took P(SM<1.0) to 1.8% on the unswept vehicle.
-   Sweeping the canards (correction 7) made them less destabilising, and the bare vehicle
-   now sits at 0.7%, inside the limit. Carry the 100 g anyway: 0.7% is thin, and ballast is
-   the only parameter you can still set after weighing the finished rocket.
+3. **Nose ballast is required, not optional** (§7.1). Real 9 g servos removed ~180 g from
+   ahead of the CG and took P(SM<1.0) to 1.8%. The 35.4° sweep briefly retired this — swept
+   canards are less destabilising and the bare vehicle dropped to 0.7% — but sharpening the
+   taper to 0.40 put the authority back and the risk with it, so it is 1.2% again and
+   ballast is required once more. About 25 g is the minimum; 100 g is the design point.
+   Canard authority and static margin are the same knob seen from two ends.
 4. **The baseline used to live in six places and drifted from the docs.** It now lives
    only in `design/configure.py`. Do not copy those numbers into a script.
 5. **The recovery bay is 4.5 cal because it was checked, not because it was typed.** It
@@ -62,7 +64,14 @@ that silently recurs:
    that looks like one object. `canard_sweep_cal = None` now derives the angle from the aft
    fins so the two cannot drift apart. **The hinge sign does not change with sweep** —
    hinge and panel CP are both referenced to the MAC — but the hinge STATION moves a long
-   way, from 13.5 to 32.1 mm aft of the root LE, which is why the CAD has to be redone.
+   way, which is why the CAD has to be redone.
+8. **Taper was 0.70 because nothing had tried anything else.** Sharpening it to 0.40 (root
+   grown to 0.85 cal to hold panel area at 3188 mm²) recovers most of what the sweep cost —
+   1.82 → 1.96 g, 394 → 424 m — because CNa rises as the tip unloads. Root and taper are
+   now set as a PAIR and must stay that way, or the area moves and every study downstream
+   is invalidated. The price is flutter: the longer root chord drops the canard margin from
+   5.42× to 4.46× at fixed 3.0 mm thickness. Still ~3× the requirement, but this is now the
+   number to watch if the panel ever gets thinner.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.

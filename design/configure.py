@@ -42,8 +42,19 @@ class DesignParams:
     recovery_bay_cal: float = 4.5
     booster_margin_cal: float = 1.2  # booster length beyond the motor
     canard_semispan_cal: float = 0.85
-    canard_root_cal: float = 0.70
-    canard_taper: float = 0.70
+    # Root chord and taper are set TOGETHER and hold panel area constant at 3188 mm^2.
+    # 0.85/0.40 replaced 0.70/0.70 in Aug 2026: at the 35.4 deg sweep below, a more
+    # sharply tapered panel recovers most of the authority the sweep costs (1.82 -> 1.93 g,
+    # 394 -> 418 m of crossrange) because CNa rises as the tip unloads. It also reads more
+    # like a real missile canard, which is why it was chosen -- the aerodynamics came out
+    # ahead as well, which is rare enough to note.
+    #
+    # The cost is flutter: the root chord grows 55.6 -> 67.5 mm at a fixed 3.0 mm thickness,
+    # so t/c falls 0.054 -> 0.044 and the canard flutter margin drops 5.42x -> 4.46x. Still
+    # ~3x the 1.5x requirement, but this is now the parameter to watch if the panel ever
+    # gets thinner. See docs/00-requirements.md section 8.
+    canard_root_cal: float = 0.85
+    canard_taper: float = 0.40
     # Canard leading-edge sweep, calibers of axial offset from root LE to tip LE.
     # None means "match the aft fin sweep ANGLE", which is the design intent: the two sets
     # should read as one vehicle, and hardcoding a number here would silently drift the

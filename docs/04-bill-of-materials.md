@@ -29,12 +29,12 @@ Bay lengths, nose to tail: nav 127 mm, canard module 143 mm, recovery 357 mm, bo
 | Item | Spec | Qty | Mass | Price | |
 |---|---|---|---|---|---|
 | G10 sheet, 1/8 in (3.2 mm) | Aft fin blanks 155 × 124 mm each, plus through-wall tabs. One 12 × 24 in sheet covers both sets | 1 | 0.637 kg | ~$45 | |
-| G10 sheet, 3.0 mm | Canard blanks 56 × 68 mm each — cuts from the offcuts above | — | 0.142 kg | — | |
+| G10 sheet, 3.0 mm | Canard blanks 68 × 68 mm each — cuts from the offcuts above | — | 0.142 kg | — | |
 
 Aft fins: 4 panels, root 150.9 / tip 67.9 / semispan 123.1 mm, 87.3 mm sweep, through-wall
-mounted. Canards: 4 panels, root 55.6 / tip 38.9 / semispan 67.5 mm, **47.9 mm sweep**,
+mounted. Canards: 4 panels, root 67.5 / tip 27.0 / semispan 67.5 mm, **47.9 mm sweep**,
 interdigitated 45° from the aft fins. Both sets carry the same 35.4° leading-edge sweep.
-Flutter margins 1.97× and 5.42×.
+Flutter margins 1.97× and 4.46×.
 
 ## 3. Propulsion
 
@@ -59,7 +59,7 @@ Requires **Level 2 certification**. Budget 5 reloads for the GV-1…GV-5 campaig
 
 Servos mount **flat against the inner wall**, output shaft radial through the wall. Hinge
 line at 0.20 of MAC, forward of the 0.25c panel CP so the panel is restoring. Torque margin
-3.63× against a peak hinge moment of 0.0573 N·m per panel. Packaging is not binding: 79 mm of
+3.60× against a peak hinge moment of 0.0577 N·m per panel. Packaging is not binding: 79 mm of
 arc needed against 188 mm available, 45 mm central void.
 
 ## 5. Avionics
@@ -100,10 +100,9 @@ ejection charges twice before flying.
 |---|---|---|---|---|---|
 | Threaded rod, washers, nuts | Nose shoulder stack at 191 mm from the tip. **100 g design point**, provision for 300 g | 1 | 0.100 kg | ~$15 | |
 
-Without it P(SM < 1.0) is 0.77%, which now passes R1's 1% limit — the 35.4° canard sweep
-made the canards less destabilising and retired the requirement. Carry the 100 g anyway:
-it brings the risk to 0.26%, and it is the last free parameter — set it after weighing the
-built vehicle, not before. See `00-requirements.md` §7.1.
+Without it P(SM < 1.0) is 1.2% against R1's 1% limit. About 25 g is the minimum that
+satisfies R1; 100 g brings it to 0.43%. This is the last free parameter — set it after
+weighing the built vehicle, not before. See `00-requirements.md` §7.1.
 
 ## 8. Consumables
 
