@@ -44,8 +44,8 @@ Read this first if you are picking the project back up.
   hinge-stack verdict, and the check is run against the **as-built** layout too, where it
   fails on five counts. A check that has never failed is not evidence of anything.
 - **The hinge load path is closed end to end.** The two items the hinge stack left open
-  are both done (corrections 12–14): the **sleeve-to-panel joint** is a 1.8 × 11.5 mm
-  tang 25.0 mm into the root — which turns the panel into a 0.6/1.8/0.6 bonded laminate,
+  are both done (corrections 12–14): the **sleeve-to-panel joint** is a 1.8 × 11.9 mm
+  tang 25.5 mm into the root — which turns the panel into a 0.6/1.8/0.6 bonded laminate,
   a manufacturing change and not a design one — and the **tube at the hinge station** is
   checked and passes by two to three orders of magnitude on everything except the bearing
   seat, which sits at 3.2× *only* because the housing collar has not been built.
@@ -74,7 +74,7 @@ cost of flutter margin (1.78 against 1.97) and servo torque (2.3× against 2.8×
 is retained on margin, and because the Onshape module is built to it — but that is a choice,
 and §7 now says so instead of hiding it.
 
-Fourteen corrections are worth knowing about. The first four changed the design; two of the
+Seventeen corrections are worth knowing about. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
@@ -221,8 +221,8 @@ that silently recurs:
    tang stands 5.18 mm proud of the leading edge** — a rule that admits an unbuildable part
    reads like a check and is worse than none.
 
-   Now 1.8 × 11.5 × 25.0, with **6.71 mm** of leading edge, 2.5× on the skin and 2.4× on
-   the tang. Fixing it cost about 0.5× of margin against a 2.0× requirement.
+   Now 1.8 × 11.9 × 25.5, with **6.15 mm** of leading edge and 2.5× on both the skin and
+   the tang.
 
    **And there was a datum error underneath, which only reading the CAD caught.** The first
    fix read 5.50 mm of clearance where the truth was 5.14: `engagement` is measured from the
@@ -258,6 +258,47 @@ that silently recurs:
    sheet (**under 4×, go get the real datasheet** — the seat is under it), and **global
    airframe beam bending under a gust is still not modelled anywhere in this project.**
    `design/tube_section.py` is the first structural model it has, and it runs at trim.
+
+15. **A failing joint was reporting a pass, and only a buyability question found it.** The
+   skin over the tang slot was computed as `(panel − tang)/2`. The slot is the tang **plus a
+   bond line on each face**, so the real skin was 0.5 mm where the model said 0.6 — and skin
+   stress goes as 1/t², so the joint sat at **1.69× against a 2.0× requirement while
+   reporting 2.5×**. What surfaced it was not a stress review. It was being asked which G10
+   sheets to *order*, which forces the stack to be expressed in thicknesses that exist.
+   **"What do I buy" is a different question from "what is optimal", and it finds different
+   bugs.**
+
+16. **The panel is a laminate of two stocked sheets, and the shop is a 3D printer.** The
+   0.6/1.8/0.6 stack was dead twice over — 1.8 mm G10 is not sold anywhere, and it was the
+   thickness that produced correction 15. Now **0.6 / 2.0 / 0.6, 3.2 mm total**, the middle
+   sheet cut away at the root so the slot is never machined at all. `canard_thickness` moved
+   3.0 → 3.2, a frozen parameter changed for a manufacturing reason: flutter margin improves
+   4.46× → 4.92×, static margin improves 2.03 → 2.04 cal (the 9 g lands forward of the CG),
+   and crossrange gives up 1%, 424 → 419 m. Still feasible, no violations.
+
+   Three more things fell out of taking "I have to buy this" seriously:
+   - **The ⌀7.975 bearing seat is not a reamer that exists.** It is ⌀8 H7 now — the most
+     ordinary reamer there is — and the press interference comes from the bushing being
+     supplied oversize, which is how polymer bushings are actually fitted.
+   - **Do not cut the servo spline.** A ⌀4 mm 15T internal spline in a 0.8 mm wall is
+     specialist broaching; a servo horn arrives with it already cut for a few dollars. Safe,
+     because the bearing sits outboard of the coupling and takes all the bending, so the
+     joint carries torque only — 0.520 N·m at stall.
+   - **The commercial servo frames do not do what the BOM claimed.** Hyperflight
+     SRB-KST-X08 and the IDS/LDS frames are RC-glider *linkage* hardware; their counter
+     bearing supports a swinging arm, not a shaft coaxial with the servo output. The
+     third-bearing frame is 50 × 37 × 9 mm against a 23.5 × 8 × 16.8 servo, so four of them
+     inside a 74.8 mm bore is its own problem. Dropped. Our own wall bearing already does
+     that job, in the right place.
+
+17. **The printed bay is unblocked, and it is the best-value part in the module.** It was
+   held on "picking real bracket hardware", and correction 16 removed the bracket. The
+   collar on it carries 3.700 mm of the 6.0 mm bearing — worth **3.2× → 21.3×** on the
+   bearing seat, because peak pressure goes as 1/L². The build order is the part to get
+   right: print the collar bore undersize, bond the bay in, then ream **⌀8 H7 through the
+   wall and the collar in one pass**, so concentricity is a property of the operation rather
+   than a tolerance held across two parts. A pinched bearing is a mechanism failure, and no
+   margin in these documents protects against it.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.

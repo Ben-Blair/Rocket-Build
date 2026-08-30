@@ -200,10 +200,18 @@ export const canardHingeConnectors = defineFeature(function(context is Context, 
  * therefore paid for in leading-edge material at better than half a millimetre per
  * millimetre, which is the opposite of how it first reads.
  *
- * NOTE ON THE PANEL. A 1.8 mm slot 25 mm deep into the edge of a 3.0 mm plate is a 14:1
- * blind cut and nobody machines that. The real panel is a 0.6/1.8/0.6 bonded G10 laminate
- * with the core cut away. The solid modelled here is identical either way -- this is a
- * manufacturing note, not a geometry one -- and it lives in docs/05 and the BOM.
+ * NOTE ON THE PANEL, because the solid modelled here does not show it. The real panel is a
+ * 0.6 / 2.0 / 0.6 mm bonded G10 LAMINATE, 3.2 mm total, with the middle sheet cut away over
+ * 12.1 x 25.5 mm at the root. It is built that way so the slot never has to be cut: a
+ * 1.8 mm slot 25 mm deep into the edge of a solid plate is a 13:1 blind cut needing a
+ * slitting saw on a mill, whereas a gap in the middle sheet is a flat shape cut before
+ * bonding. Every one of those three thicknesses is a stocked G10 sheet -- 1.8 mm, which an
+ * earlier version of this specified, is not sold anywhere.
+ *
+ * The slot cut here is therefore the MIDDLE SHEET's thickness, tang + bond line on each
+ * face, and the skins that survive are the outer sheets. That distinction is not cosmetic:
+ * sizing the skin against the tang instead of against the slot overstated it by 1.44x and
+ * turned a 1.69x margin into an apparent 2.5x.
  */
 annotation { "Feature Type Name" : "Canard root tang" }
 export const canardRootTang = defineFeature(function(context is Context, id is Id, definition is map)

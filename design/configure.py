@@ -86,7 +86,25 @@ class DesignParams:
     # minimum that satisfies R1; 100 g is the design point. See docs 7.1.
     nose_ballast_kg: float = 0.100
     nose_ballast_station: float = 0.191
-    canard_thickness: float = 0.0030
+    # 3.2 mm, and it is 3.2 because of how the panel is BUILT, not because of aerodynamics.
+    #
+    # The canard root has to take the shaft's tang -- a flat blade bonded into a slot in
+    # the panel edge (docs/05, "The root joint"). Cutting that slot into a solid plate is a
+    # deep, thin, blind cut needing a slitting saw on a mill. Building the panel as a
+    # laminate avoids cutting it at all: the slot is simply a gap left in the middle sheet,
+    # which is a flat shape anyone can cut before bonding. But then the panel's thickness
+    # is the sum of three sheets, and it can only be a sum of thicknesses that are actually
+    # SOLD. 0.6 / 2.0 / 0.6 is the best such stack; 0.6 / 1.8 / 0.6 was specified first and
+    # 1.8 mm G10 is not stocked anywhere.
+    #
+    # So this moved 3.0 -> 3.2 for a manufacturing reason. What it costs and buys:
+    # the panels gain about 9 g, and t/c rises 0.044 -> 0.047 so the canard flutter margin
+    # IMPROVES, 4.46x -> 4.92x. The 9 g lands at station 0.507 m, which is FORWARD of the
+    # 0.800 m CG, so it moves the CG forward and the static margin up rather than down --
+    # 2.03-2.52 cal becomes 2.04-2.53. Crossrange gives up about 1%, 424 -> 419 m, which is
+    # the honest cost. All of it is checked by scripts/baseline.py rather than asserted
+    # here. See docs/00-requirements.md section 8 and docs/05.
+    canard_thickness: float = 0.0032
     material_density: float = 1850.0
 
     @property

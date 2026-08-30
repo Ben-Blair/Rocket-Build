@@ -53,26 +53,66 @@ Requires **Level 2 certification**. Budget 5 reloads for the GV-1…GV-5 campaig
 | Item | Spec | Qty | Mass | Price | |
 |---|---|---|---|---|---|
 | Servo, KST X08 Plus V6.0 | 23.5 × 8.0 × 16.8 mm, 9 g, 5.3 kgf·cm @ 8.4 V | 4 | 0.036 kg | **$43–55 ea** | ✅ |
-| Servo frame with outboard bearing | Hyperflight SRB-KST-X08 or IDS/LDS kit — carries the panel bending moment off the servo spline | 4 | in shafts | ~$15 ea | |
-| Canard hinge shaft | ⌀6 sleeve, R 33.485 → 40.200, ⌀4.4 × 3.2 15T spline socket, ending in a **1.8 × 11.5 × 25.0 mm tang**. 6061-T6 gives 2.4×, 4140 gives 5.6× | 4 | in shafts | | |
-| Canard hinge bearing | **⌀6 / ⌀8 × 6.0 plain, iglidur G class.** Press fit, H7/r6, 0.025 mm interference. This is the part that keeps the panel bending moment out of the servo | 4 | in shafts | ~$5 ea | |
-| Canard shafts, bushings, hardware | The two lines above plus fasteners | 4 | 0.240 kg | ~$40 | |
-| Canard panels | **0.6 / 1.8 / 0.6 mm bonded G10 laminate**, core cut away at the root for the tang. NOT a solid 3 mm plate — see below | 4 | in canards | | |
-| Printed canard bay | PETG / ASA / CF-nylon — **not PLA**, heat-set inserts. **Must carry the bearing housing collar**, 3.7 mm of ⌀8 bore per hinge | 1 | in structure | ~$10 | |
+| ~~Servo frame with outboard bearing~~ | **INVESTIGATED AND DROPPED, Aug 2026.** See the note below — it does not do what this line used to claim, and it probably does not fit | 0 | — | — | ❌ |
+| Canard hinge shaft | ⌀6 **6061-T6** rod, 32.2 mm long, one end milled to a **1.8 × 11.9 × 25.5 mm blade**. The only custom-machined part in the module | 4 | in shafts | stock rod ~$10 | |
+| Servo horn, ⌀4 mm 15T | **Buy, don't cut.** An internal 15-tooth spline in a 0.8 mm wall is specialist broaching; a horn is a stock part with that spline already on it. Bond the shaft's inboard end to it | 4 | in shafts | ~$3 ea | |
+| Canard hinge bearing | **⌀6 / ⌀8 × 6.0 plain sleeve, iglidur G class.** Housing reamed **⌀8 H7** — a standard reamer; the interference comes from the bushing being supplied oversize. This is the part that keeps the panel bending out of the servo | 4 | in shafts | ~$5 ea | |
+| ⌀8 H7 chucking reamer | The one piece of tooling this design actually requires. Reams the tube wall **and the printed collar together, after bonding** — see the build note below | 1 | — | ~$15 | |
+| Canard shafts, bushings, hardware | The lines above plus fasteners and epoxy | 4 | 0.240 kg | ~$40 | |
+| **G10 sheet, 0.6 mm** | Panel skins. 8 skins, 2 per panel | ~0.3 m² | in canards | ~$25 | |
+| **G10 sheet, 2.0 mm** | Panel cores. The tang slot is a gap cut in this sheet, not a slot machined later | ~0.15 m² | in canards | ~$20 | |
+| Printed canard bay | PETG / ASA / CF-nylon — **not PLA**, heat-set inserts. **Must carry the bearing housing collar**, 3.700 mm of ⌀8 bore per hinge — that collar is worth 3.2× → 21.3× on the bearing seat | 1 | in structure | ~$10 | |
+| Printed panel bonding jig | Not a flight part. Holds skin/core/skin and the tang in alignment while the epoxy cures, 4× | 1 | — | ~$3 | |
 
-**Three lines here are load path, not hardware, and buying the wrong thing quietly deletes
+**Two lines here are load path, not hardware, and buying the wrong thing quietly deletes
 them.** The panel makes 0.0599 N·m about the hinge — that is what sizes the servo — and
-**25.4 N at a bearing 29 mm away, which is 0.734 N·m of bending.** Without the plain bearing
+**25.3 N at a bearing 29 mm away, which is 0.718 N·m of bending.** Without the plain bearing
 that moment is carried by a 2.3 mm fibreglass hole and then by the servo's own output shaft:
-175 MPa against an 80 MPa allowable, 0.46× where 2.0× is required. The servo frame with the
-outboard bearing is the second line of defence at the other end of the spline. The **housing
-collar in the printed bay** is the third: it holds 3.700 mm of the 6.0 mm bearing, and
-without it the bearing seat in the tube runs at 3.2× instead of 21.3×.
+175 MPa against an 80 MPa allowable, 0.46× where 2.0× is required. The **housing collar in
+the printed bay** is the second: it holds 3.700 mm of the 6.0 mm bearing, and without it the
+bearing seat runs at 3.2× instead of 21.3×.
 
-**The canard panels are a laminate, not a plate.** The tang joint needs a 1.8 mm slot 25 mm
-into a 3.0 mm panel root — a 14:1 blind cut nobody can machine — so the panel is built up
-from 0.6 / 1.8 / 0.6 mm G10 with the core cut away. Same thickness, planform and mass; order
-sheet in three thicknesses, not one. See docs/05 "The root joint".
+**Why the servo frame was dropped.** This line used to read "carries the panel bending
+moment off the servo spline", and that was an assumption nobody had checked. The commercial
+frames — Hyperflight SRB-KST-X08, the Flightcomp/Servorahmen "third bearing frame", the
+Aloft LDS kit — are built for **RC glider linkage**, where a servo swings an arm that pushes
+a rod to a control surface. Their "counter bearing" supports that *arm* on the far side of
+the case; it does not give you a supported shaft coaxial with the servo output, which is
+what a direct-drive canard hinge needs. The third-bearing frame is also **50 × 37 × 9 mm**,
+against a servo of 23.5 × 8 × 16.8 — four of those inside a 74.8 mm bore is a packaging
+problem on its own. Our ⌀6/⌀8 sleeve in the wall already does the job the frame was
+imagined to do, and does it in the right place.
+
+**What the search did turn up, and it is the useful half:** those kits all include a
+**splined servo horn** for the X08's ⌀4 mm 15-tooth output. That is the part worth buying.
+Cutting a 15-tooth internal spline into a ⌀6 shaft with a 0.8 mm wall is specialist
+broaching; a horn arrives with the spline already on it for a few dollars. And the coupling
+only has to carry **torque** — 0.520 N·m at servo stall — because the bearing sits outboard
+of it and takes all the bending. So the shaft's inboard end simply bonds to a bought horn,
+and the hardest feature on the part disappears.
+
+**The canard panels are a laminate, not a plate: 0.6 / 2.0 / 0.6 mm G10, bonded, 3.2 mm
+total.** The middle sheet is cut away over 12.1 × 25.5 mm at the root, and that gap IS the
+tang slot — so the slot never has to be machined. Cutting it into a solid plate instead
+would be a 13:1 deep blind cut needing a slitting saw on a mill; as a laminate it is a flat
+shape you can cut before bonding. **Order two thicknesses, 0.6 and 2.0.** Both are stocked;
+1.8 mm, which an earlier revision specified, is not sold anywhere.
+
+**Two build notes that matter more than any dimension here.**
+
+*Ream the bearing seat after the bay is bonded in, not before.* The bearing needs 6.0 mm of
+support and the tube wall is only 2.3 mm of it, so a collar on the printed bay carries the
+other 3.700 mm. Those two bores have to be concentric — if they are not, the bearing is
+pinched and the hinge binds. Bond the bay in first, then run a **⌀8 H7 reamer through the
+wall and the collar in one pass.** Concentricity is then automatic instead of being a
+tolerance you have to hold across two parts made by different processes. Print the collar
+bore undersize, around ⌀7.5, and let the reamer finish it.
+
+*Bond the panels in a printed jig.* The laminate's whole advantage is that the skin
+thickness is set by the sheet rather than by a machine setup — but only if the three layers
+and the tang stay put while the epoxy cures. A printed fixture that locates the tang on the
+hinge axis at the right chordwise station, and clamps the stack flat, costs an hour of
+print time and removes the only real risk in this approach. Keep epoxy off the ⌀6 journal.
 
 Servos mount **flat against the inner wall**, output shaft radial through the wall. Hinge
 line at 0.20 of MAC, forward of the 0.25c panel CP so the panel is restoring. Torque margin

@@ -118,11 +118,11 @@ Revolute. Tick Limits and enter −8 deg, **Tab**, 8 deg — clicking between th
 fields lands on the units autocomplete instead, and `Ctrl/Cmd+A` in that dialog clears the
 mate connector selection rather than the text.
 
-**Not started**: printed bay (step 6 below) — blocked on picking real bracket hardware,
-since a placeholder shell wouldn't tell you anything the mass/interference checks need.
-**It is now the only open item in the hinge load path, and it has a number on it**: the
-housing collar carries 3.700 mm of the 6.0 mm bearing, and building it takes the bearing
-seat from 3.2× to 21.3×. See "The tube at the hinge station" below.
+**Printed bay**: NO LONGER BLOCKED (Aug 2026). It was held on "picking real bracket
+hardware"; the bracket turned out not to be needed — see docs/04 on why the commercial servo
+frames were dropped — and the bay is printable now. **It is the last open item in the hinge
+load path and it has a number on it**: the housing collar carries 3.700 mm of the 6.0 mm
+bearing, worth **3.2× → 21.3×** on the bearing seat. See "How this actually gets built".
 Forward wiring pass-through and aft gas seal are still open. **The four revolute hinge
 mates in `Assembly 1` are not in.** The mate connectors they need exist, in pairs on each
 hinge axis (`canardHingeConnectors`), and the rigid groups either side of each hinge exist;
@@ -298,25 +298,66 @@ look better than the winner until you price them:
 | **One piece** — machine shaft and panel from one aluminium billet | The honest structural answer: no joint at all. +38 g per panel, **+154 g on the vehicle**, all of it aft of the CG, on a design that already needs 100 g of nose ballast to satisfy R1. Rejected on mass and CG, not on structure. Revisit if the ballast budget ever grows |
 | **Tang in a slot** — the sleeve's end milled to a flat blade, bonded into the panel root | **SELECTED.** Spends no aerodynamics, no mass and no CG. It moves the problem into the one place with room: the *plane* of the panel, 67.5 mm of root chord, rather than its 3.0 mm thickness |
 
-**The selected tang: 1.8 × 11.5 mm, 25.0 mm into the root.** The three numbers are coupled
+**The selected tang: 1.8 × 11.9 mm, 25.5 mm into the root.** The three numbers are coupled
 and none is free:
 
 - **Thickness 1.8** sets the skins at 0.6 mm each. Thicker tang, stronger tang, weaker
   skin — and the skin's stress goes as 1/t², so the trade is sharp. This is the one number
   that did *not* move when the leading-edge constraint turned up, which is why the panel is
   still a 0.6/1.8/0.6 laminate.
-- **Width 11.5** is paid for twice. Wider carries more (σ goes as 1/w) but its skin spans
+- **Width 11.9** is paid for twice. Wider carries more (σ goes as 1/w) but its skin spans
   further, so skin stress *rises* with width — and it pushes the tang's forward corner
   towards the leading edge.
-- **Engagement 25.0**, and **this is the one that was wrong twice.** See below.
+- **Engagement 25.5**, and **this is the one that was wrong twice.** See below.
 
 | | |
 |---|---|
-| Tang bending | 116.1 MPa — **2.4×** in 6061-T6, 2.1× in 303 stainless, 5.6× in 4140 |
-| Skin over the slot | 190.2 MPa — **2.5×** against a 480 MPa flexural allowable |
-| **Leading-edge clearance** | **6.71 mm** at the tang tip, against a 5.0 mm minimum |
-| Slot bearing | 0.69 MPa from bending, 0.94 MPa from **stall** torque — 392× |
-| Bond shear | 0.044 MPa — 793×. The couple is carried in bearing, not in the bond |
+| Tang bending | 111.7 MPa — **2.5×** in 6061-T6, 2.1× in 303 stainless, 5.9× in 4140 |
+| Skin over the slot | 195.1 MPa — **2.5×** against a 480 MPa flexural allowable |
+| **Leading-edge clearance** | **6.15 mm** at the tang tip, against a 5.0 mm minimum |
+| Slot bearing | 0.64 MPa from bending, 0.86 MPa from **stall** torque — 428× |
+| Bond shear | 0.042 MPa — 841×. The couple is carried in bearing, not in the bond |
+
+### The skin is what survives over the SLOT, not over the tang — and that was a bug
+
+Worth stating on its own, because it was a **failing joint reporting a pass.**
+`skin_thickness` was `(panel - tang) / 2`. The slot is the tang plus a 0.1 mm bond line on
+each face, so the real skin is `(panel - tang - 2·bond) / 2` — 0.5 mm where the model said
+0.6. Skin stress goes as 1/t², so the joint was actually at **1.69× against a 2.0×
+requirement** while reporting 2.5×. `RootJoint` now carries `bond_line`, and the skin spans
+`slot_width`, not `tang_width`.
+
+It surfaced only because a buyability question forced the stack to be expressed in sheet
+thicknesses you can order. Asking "which sheets do I buy" is a different question from
+"what dimensions are optimal", and it found something the second question could not.
+
+### The panel is a laminate of two stocked sheets
+
+**0.6 / 2.0 / 0.6 mm bonded G10, 3.2 mm total**, the middle sheet cut away over
+12.1 × 25.5 mm at the root. That gap **is** the slot — it never gets machined.
+
+The earlier spec, 0.6 / 1.8 / 0.6, is dead twice over: **1.8 mm G10 is not stocked
+anywhere**, and it was the thickness that produced the 1.69× above. Every thickness in the
+new stack is a sheet you can order. Check that before changing any of them.
+
+This moved `canard_thickness` **3.0 → 3.2 mm**, which is a frozen parameter changed for a
+manufacturing reason, so it is worth being explicit about what it did:
+
+| | |
+|---|---|
+| canard flutter margin | 4.46× → **4.92×** — thicker t/c, so this improves |
+| panel mass | +9 g, at station 0.507 m, which is **forward** of the 0.800 m CG |
+| static margin | 2.03–2.52 → **2.04–2.53 cal** — up, because that mass is forward |
+| crossrange | 424 → **419 m**, about 1%. This is the honest cost |
+| `evaluate()` | still feasible, no violations |
+
+**The alternative was a solid 3.0 mm plate with the slot cut by a slitting saw on a mill.**
+It keeps the frozen thickness and needs no bonding, but it lands at 2.1× rather than 2.5×,
+and its 0.55 mm skins depend on centring a slot in a 3.0 mm plate to ±0.05 mm — a *setup*
+tolerance rather than a *stock* one. The laminate was chosen because a 3D printer makes its
+one weakness — holding three layers and a tang in alignment while epoxy cures — into a
+printed jig, and because a thickness guaranteed by the sheet beats one guaranteed by a
+fixture.
 
 ### The depth was the expensive axis, not the free one
 
@@ -332,7 +373,7 @@ a millimetre of leading-edge material:
 
 | engagement | material ahead of the tang tip | |
 |---|---|---|
-| 25.0 mm | **+6.71 mm** | selected |
+| 25.5 mm | **+6.15 mm** | selected |
 | 30.0 mm | +1.91 mm | previously selected, on strength alone |
 | 32.7 mm | 0.00 mm | the tang reaches the leading edge |
 | 40.5 mm | **−5.53 mm** | *what the old 60%-of-chord rule allowed* |
@@ -345,7 +386,7 @@ because it reads like a check.
 Both failing cases are kept and exercised by `scripts/hinge_report.py`, which exits
 non-zero if either passes: the ⌀6 sleeve butted into a 3 mm panel (fails on *there is no
 panel left*), and the 1.8 × 14 × 30 tang — **whose every stress margin is better than the
-selected joint's, 2.9× against 2.4×, and which is still not buildable.** That is the only
+selected joint's and which is still not buildable.** That is the only
 case in this project that fails on geometry while passing on strength, which is exactly why
 it is worth keeping.
 
@@ -386,8 +427,8 @@ anyone's judgement:
 
 - **The round-to-flat transition steps the stress up 3.4×, at the maximum-moment station.**
   Blend it. Do not shoulder it.
-- **THE PANEL STOPS BEING A PLATE.** A 1.8 mm slot 25 mm deep into the edge of a 3.0 mm
-  plate is a **14:1 blind cut**, which is not a thing you machine. The panel is built as a
+- **THE PANEL STOPS BEING A PLATE.** A 1.8 mm slot 25.5 mm deep into the edge of a solid
+  plate is a **13:1 blind cut**, which is not a thing you machine without a slitting saw. The panel is built as a
   **0.6 / 1.8 / 0.6 mm bonded G10 laminate** with the core cut away where the tang goes.
   Same thickness, same planform, same mass, same aerodynamics — a manufacturing change, not
   a design one, and the real answer to "how does the shaft meet the panel" turned out to be
@@ -455,6 +496,59 @@ Two honest caveats, both stated in `design/materials.py` rather than buried:
 
 Model in `design/tube_section.py`, allowables in `design/materials.py`,
 printed by `scripts/hinge_report.py`, verdict carried in `scripts/baseline.py`.
+
+## How this actually gets built
+
+Added August 2026, once it was established that parts get **bought** and the shop is a 3D
+printer rather than a machine shop. Every dimension above is reachable that way, but only
+in a particular order, and the order is the part that is easy to get wrong.
+
+**One custom-machined part in the whole module.** The canard shaft: a ⌀6 6061-T6 rod,
+32.2 mm long, with a 1.8 × 11.9 × 25.5 mm blade milled on one end. Everything else is
+bought or printed. If that goes to a shop, it is one drawing and four identical parts.
+
+**Do not cut the servo spline.** The shaft's inboard end used to carry a ⌀4.4 × 3.2 mm
+15-tooth internal spline socket, which is specialist broaching in a 0.8 mm wall. Buy a
+**⌀4 mm 15T servo horn** instead — the spline arrives already cut, for a few dollars — and
+bond the shaft to it. This is safe because **the coupling carries torque only**: the bearing
+sits outboard of the spline and takes every bit of the bending, so the joint sees 0.520 N·m
+at servo stall and nothing else. See docs/04 for what the commercial servo frames do and do
+not do.
+
+**Ream the bearing seat AFTER the printed bay is bonded in.** This is the one that will bite
+if it is done in the obvious order. The bearing is 6.0 mm long, the tube wall is 2.3 mm of
+it, and a collar on the printed bay carries the other **3.700 mm**. Those two bores must be
+concentric — if they are not, the bearing is pinched and the hinge binds, which is a
+mechanism failure rather than a stress one and no margin in this document protects against
+it. So:
+
+1. Print the bay with the collar bore **undersize**, about ⌀7.5. FDM holes come out
+   undersize and rough anyway; do not fight it.
+2. Bond the bay into the tube.
+3. Run a **⌀8 H7 chucking reamer** through the wall and the collar **in one pass**.
+
+Concentricity is then a property of the operation instead of a tolerance held across two
+parts made by different processes. This is also why the seat is ⌀8 H7 and not the ⌀7.975 it
+was first specified as: ⌀7.975 is not a reamer that exists, and the interference a pressed
+bushing needs comes from the bushing being supplied oversize, not from undersizing the hole.
+
+**That collar is the best-value part in the module.** It is worth **3.2× → 21.3×** on the
+bearing seat, because peak pressure under an overhung load goes as 1/L² and the collar more
+than doubles L. The printed bay was previously recorded as "blocked on picking real bracket
+hardware"; it is not blocked any more, and this is the reason to build it.
+
+**Bond the panels in a printed jig.** The laminate's whole advantage is that skin thickness
+is set by the sheet rather than by a machine setup — but only if the three layers and the
+tang stay put while the epoxy cures. A printed fixture that clamps the stack flat and
+locates the tang on the hinge axis at the correct chordwise station costs an hour of print
+time and removes the only real risk in the approach. Keep epoxy off the ⌀6 journal; that
+surface has to turn in the bearing.
+
+**Still unmodelled, deliberately:** the printed bay itself, the collar, the jig, and the
+bought servo horn. They are requirements here and in docs/04, not geometry, and the bay is
+step 6. When the bay is drawn, the collar has to be checked against the bearing — and that
+check needs both of them to exist as solids, which is why `make_bearing_cad.py` builds the
+bearing as a real part rather than leaving it a dimension.
 
 ## Drawing 1 — the Step 3 dimensioned drawing
 

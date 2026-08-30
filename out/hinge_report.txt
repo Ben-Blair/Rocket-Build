@@ -2,7 +2,7 @@
 ============================================================================================
 CANARD HINGE STACK
 ============================================================================================
-  worst case              q = 19.42 kPa, panel local alpha 9.19 deg (8 deg commanded + 1.19 deg trim)
+  worst case              q = 19.35 kPa, panel local alpha 9.18 deg (8 deg commanded + 1.18 deg trim)
   panel                   root 67.49 / tip 27.00 / semispan 67.49 mm, 3188.4 mm^2
   spanwise centroid       28.924 mm outboard of the theoretical root
 
@@ -24,17 +24,17 @@ AS BUILT  --  the Onshape model before this analysis
     spline tip                         R   40.385
 
   shaft sleeve      dia 5.000 x 10.800 long
-  wall bore         dia 5.000   seat fit +0.000 mm, running clearance +0.000 mm
+  wall bore         dia 5.000   seat fit -0.030 mm, running clearance +0.000 mm
   bearing           2.300 long  -- NONE; the wall is doing this job by default
   spline engagement 3.200 mm (100% of the spline)
   spline past panel root +0.185 mm
   central void      dia 20.17, boss-to-boss margin +6.09 mm
 
-  panel normal force        25.374 N at R 68.624 mm
-  hinge moment              0.0599 N m  (the servo's number)
-  bending at the tube OD    0.7339 N m  (the bearing's number)
-  bearing peak pressure      175.3 MPa   margin 0.46x against 80 MPa (need 2.0x)
-  sleeve bending stress       59.8 MPa   6061-T6 4.6x, 303 stainless 4.0x, 4140 steel 11.0x
+  panel normal force        25.249 N at R 68.624 mm
+  hinge moment              0.0596 N m  (the servo's number)
+  bending at the tube OD    0.7303 N m  (the bearing's number)
+  bearing peak pressure      174.4 MPa   margin 0.46x against 80 MPa (need 2.0x)
+  sleeve bending stress       59.5 MPa   6061-T6 4.6x, 303 stainless 4.0x, 4140 steel 11.0x
   spline socket pressure      27.1 MPa at the servo's 0.520 N m stall torque
 
   VERDICT: NOT BUILDABLE -- 5 violation(s)
@@ -42,7 +42,7 @@ AS BUILT  --  the Onshape model before this analysis
     FAIL  running clearance between the dia 5.000 journal and the airframe wall itself is 0.000 mm, against a 0.020 mm minimum -- zero clearance is not an interference, so no interference check will ever report this
     FAIL  the shaft turns directly in the airframe wall; there is no bearing in the load path, so the panel bending moment is carried by a 2.3 mm long fibreglass hole and by the servo's own output shaft
     FAIL  sleeve wall over the spline socket is 0.300 mm; below 0.5 mm there is nothing left to cut teeth into
-    FAIL  bearing pressure 175.3 MPa against a 80 MPa allowable is only 0.46x, short of 2.0x
+    FAIL  bearing pressure 174.4 MPa against a 80 MPa allowable is only 0.46x, short of 2.0x
 
 ============================================================================================
 SELECTED  --  servo 4.000 mm inboard, dia 6 sleeve, bearing seat in the wall
@@ -83,22 +83,22 @@ to fit the smaller of them.
     panel root face                    R   40.200
 
   shaft sleeve      dia 6.000 x 6.715 long
-  wall bore         dia 7.975   seat fit -0.025 mm, running clearance +0.030 mm
+  wall bore         dia 8.000   seat fit -0.030 mm, running clearance +0.030 mm
   bearing           6.000 long, 2.300 of it inside the wall
   spline engagement 2.900 mm (91% of the spline)
   spline past panel root -3.815 mm
   central void      dia 12.17, boss-to-boss margin +2.09 mm
 
-  panel normal force        25.374 N at R 68.624 mm
-  hinge moment              0.0599 N m  (the servo's number)
-  bending at the tube OD    0.7339 N m  (the bearing's number)
-  bearing peak pressure       23.2 MPa   margin 3.45x against 80 MPa (need 2.0x)
-  sleeve bending stress       34.6 MPa   6061-T6 8.0x, 303 stainless 6.9x, 4140 steel 18.9x
+  panel normal force        25.249 N at R 68.624 mm
+  hinge moment              0.0596 N m  (the servo's number)
+  bending at the tube OD    0.7303 N m  (the bearing's number)
+  bearing peak pressure       23.1 MPa   margin 3.46x against 80 MPa (need 2.0x)
+  sleeve bending stress       34.4 MPa   6061-T6 8.0x, 303 stainless 7.0x, 4140 steel 19.0x
   spline socket pressure      29.9 MPa at the servo's 0.520 N m stall torque
 
   VERDICT: buildable, every margin met.
     note  sleeve wall over the spline socket 0.800 mm
-    note  the wall bore is dia 7.97 mm in a 2.3 mm wall -- check the tube, not just the hinge
+    note  the wall bore is dia 8.00 mm in a 2.3 mm wall -- check the tube, not just the hinge
     note  3.700 mm of the bearing sits inboard of the tube ID and needs a housing collar; that is a requirement on the printed bay
 
 ============================================================================================
@@ -142,44 +142,44 @@ skin and 2.4x on the tang against a 2.0x requirement.
 
   THE OBVIOUS JOINT  --  the dia 6 sleeve simply entering the panel
     tang              6.00 x 6.00 mm, 6.0 mm engaged, skins -1.50 mm
-    moment at root    0.7212 N m from 25.37 N
-    tang bending          20.0 MPa   6061-T6 13.8x, 303 stainless 12.0x, 4140 steel 32.7x
+    moment at root    0.7177 N m from 25.25 N
+    tang bending          19.9 MPa   6061-T6 13.8x, 303 stainless 12.0x, 4140 steel 32.9x
     skin over slot      -- there is no skin
-    slot bearing        20.740 MPa from bending, 14.444 MPa from stall torque (18x)
-    bond shear           0.352 MPa   99x
+    slot bearing        20.637 MPa from bending, 14.444 MPa from stall torque (18x)
+    bond shear           0.351 MPa   100x
     VERDICT: NOT BUILDABLE -- 1 violation(s)
-      FAIL  the tang is 6.00 mm thick in a 3.00 mm panel -- there is no panel left
+      FAIL  the tang is 6.00 mm thick in a 3.20 mm panel -- there is no panel left
       note  tang tip clears the swept leading edge by 22.94 mm and the trailing edge by 34.6 mm
       note  slot is 6.0 mm into a 67.5 mm semispan (9%)
 
   STRONG ENOUGH, AND STILL NOT BUILDABLE  --  the 1.8 x 14 x 30 tang this
   file selected before anything checked the swept leading edge
     tang              1.80 x 14.00 mm, 30.0 mm engaged, skins +0.60 mm
-    moment at root    0.7212 N m from 25.37 N
-    tang bending          95.4 MPa   6061-T6 2.9x, 303 stainless 2.5x, 4140 steel 6.9x
-    skin over slot       164.9 MPa   2.9x against 480 MPa flexural
-    slot bearing         0.404 MPa from bending, 0.531 MPa from stall torque (697x)
-    bond shear           0.030 MPa   1159x
+    moment at root    0.7177 N m from 25.25 N
+    tang bending          94.9 MPa   6061-T6 2.9x, 303 stainless 2.5x, 4140 steel 6.9x
+    skin over slot       168.8 MPa   2.8x against 480 MPa flexural
+    slot bearing         0.402 MPa from bending, 0.531 MPa from stall torque (697x)
+    bond shear           0.030 MPa   1164x
     VERDICT: NOT BUILDABLE -- 1 violation(s)
       FAIL  at its tip the tang is only 1.91 mm inside the panel's leading edge (+1.91 mm against a 5.0 mm minimum) -- the panel is swept 35.4 deg, so its leading edge runs aft 0.71 mm per mm of span while the tang stays in a fixed axial band
       note  skin over the slot 0.60 mm each side
       note  slot is 30.0 mm into a 67.5 mm semispan (44%)
       note  stress steps up 2.8x from the round sleeve to the tang, at the maximum-moment station -- blend the transition, do not shoulder it
-      note  a 1.8 mm slot 30 mm deep in a 3.0 mm plate is a 17:1 blind cut; build the panel as a 0.6/1.8/0.6 bonded laminate with the core cut away instead
+      note  PANEL IS A LAMINATE: 0.6 / 2.0 / 0.6 mm bonded G10, = 3.2 mm, the middle sheet cut away over 14.2 x 30.0 mm at the root. Cutting that slot into a solid plate instead would be a 15:1 deep blind cut needing a slitting saw; as a laminate it is a flat shape cut before bonding. Every thickness here is a stocked sheet -- check that before changing any of them
 
-  SELECTED  --  a 1.8 x 11.5 mm tang, 25.0 mm into the panel root
-    tang              1.80 x 11.50 mm, 25.0 mm engaged, skins +0.60 mm
-    moment at root    0.7212 N m from 25.37 N
-    tang bending         116.1 MPa   6061-T6 2.4x, 303 stainless 2.1x, 4140 steel 5.6x
-    skin over slot       190.2 MPa   2.5x against 480 MPa flexural
-    slot bearing         0.690 MPa from bending, 0.944 MPa from stall torque (392x)
-    bond shear           0.044 MPa   793x
+  SELECTED  --  a 1.8 x 11.9 mm tang, 25.5 mm into the panel root
+    tang              1.80 x 11.90 mm, 25.5 mm engaged, skins +0.60 mm
+    moment at root    0.7177 N m from 25.25 N
+    tang bending         111.7 MPa   6061-T6 2.5x, 303 stainless 2.1x, 4140 steel 5.9x
+    skin over slot       195.1 MPa   2.5x against 480 MPa flexural
+    slot bearing         0.640 MPa from bending, 0.864 MPa from stall torque (428x)
+    bond shear           0.042 MPa   841x
     VERDICT: buildable, every margin met.
       note  skin over the slot 0.60 mm each side
-      note  tang tip clears the swept leading edge by 6.71 mm and the trailing edge by 34.0 mm
-      note  slot is 25.0 mm into a 67.5 mm semispan (37%)
-      note  stress steps up 3.4x from the round sleeve to the tang, at the maximum-moment station -- blend the transition, do not shoulder it
-      note  a 1.8 mm slot 25 mm deep in a 3.0 mm plate is a 14:1 blind cut; build the panel as a 0.6/1.8/0.6 bonded laminate with the core cut away instead
+      note  tang tip clears the swept leading edge by 6.15 mm and the trailing edge by 33.8 mm
+      note  slot is 25.5 mm into a 67.5 mm semispan (38%)
+      note  stress steps up 3.3x from the round sleeve to the tang, at the maximum-moment station -- blend the transition, do not shoulder it
+      note  PANEL IS A LAMINATE: 0.6 / 2.0 / 0.6 mm bonded G10, = 3.2 mm, the middle sheet cut away over 12.1 x 25.5 mm at the root. Cutting that slot into a solid plate instead would be a 13:1 deep blind cut needing a slitting saw; as a laminate it is a flat shape cut before bonding. Every thickness here is a stocked sheet -- check that before changing any of them
 
 ============================================================================================
 THE TUBE AT THE HINGE STATION  --  four bores at one station
@@ -188,33 +188,33 @@ THE TUBE AT THE HINGE STATION  --  four bores at one station
   hinge stack went in, and nothing had. This is that check.
 
   station           512.91 mm from the nose tip, 68.27 mm into the canard module
-  section           dia 79.4 x 2.3 wall, 4 x dia 7.975 bores
-  area              557.1 mm^2 gross -> 483.7 mm^2 net (13.2% removed)
+  section           dia 79.4 x 2.3 wall, 4 x dia 8.000 bores
+  area              557.1 mm^2 gross -> 483.5 mm^2 net (13.2% removed)
   ligament          52.6 mm between adjacent bores
 
-  axial    143.6 N    t = 2.47 s, thrust 448 N, drag 56 N
-                      = 1.229 kg forward of the station at 7.24 g, plus 56 N of drag
-  bend     0.999 N m  q = 19.42 kPa at 1.19 deg trim alpha, free body forward of the station with inertial relief
-  twist    6.965 N m  full roll command, 4 panels x 25.4 N at R 68.6 mm
+  axial    143.3 N    t = 2.47 s, thrust 448 N, drag 56 N
+                      = 1.229 kg forward of the station at 7.23 g, plus 56 N of drag
+  bend     0.987 N m  q = 19.35 kPa at 1.18 deg trim alpha, free body forward of the station with inertial relief
+  twist    6.931 N m  full roll command, 4 panels x 25.2 N at R 68.6 mm
 
   The bearing hands its couple to whatever holds it, and 3.700 mm of it is held
   by a housing collar that has not been built. Both cases:
     no collar (the vehicle today): the 2.3 mm wall alone
-      seat pressure    116.2 MPa   margin 3.2x against 370 MPa
+      seat pressure    115.7 MPa   margin 3.2x against 370 MPa
     with the collar: the full 6.0 mm bearing
-      seat pressure     17.4 MPa   margin 21.3x against 370 MPa
+      seat pressure     17.3 MPa   margin 21.4x against 370 MPa
 
-  net section          1.212 MPa peak at the bore edge (Kt = 3.0)
-    of which axial     0.297 MPa, bending 0.107 MPa
-  torsional shear      0.374 MPa
-  shell buckling       128.9 MPa allowable against 0.297 MPa applied
-  press-fit hoop        9.38 MPa from a 0.025 mm interference
+  net section          1.207 MPa peak at the bore edge (Kt = 3.0)
+    of which axial     0.296 MPa, bending 0.106 MPa
+  torsional shear      0.372 MPa
+  shell buckling       128.9 MPa allowable against 0.296 MPa applied
+  press-fit hoop       11.25 MPa from a 0.030 mm interference
 
     bearing seat crush                                3.2x
-    press-fit hoop                                   29.9x
-    net section (compression + bending, Kt)         255.8x
-    torsional shear                                 348.0x
-    shell buckling                                  434.1x
+    press-fit hoop                                   24.9x
+    net section (compression + bending, Kt)         256.9x
+    torsional shear                                 349.6x
+    shell buckling                                  434.8x
 
   VERDICT: the tube is fine, and it is not close.
     note  Lurie beta 0.42 (< 1.0), so the flat-plate Kt = 3.0 stands
@@ -233,8 +233,8 @@ WHAT THIS COSTS, AND WHAT IT DOES NOT
                           servo moved instead of the panel.
   servo torque margin     UNCHANGED at 1:1 direct drive; the coupling is a spline
                           socket, not a gear.
-  the panel               CHANGES. The tang joint needs a 1.8 mm slot 25 mm into
-                          the root, which is a 14:1 blind cut in a 3.0 mm plate and is not
+  the panel               CHANGES. The tang joint needs a 1.8 mm slot 26 mm into
+                          the root, which is a 14:1 blind cut in a 3.2 mm plate and is not
                           machinable. The panel becomes a 0.6/1.8/0.6 bonded
                           laminate. Same thickness, same planform, same mass --
                           a manufacturing change, not a design one.

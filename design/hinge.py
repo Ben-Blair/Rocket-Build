@@ -75,9 +75,26 @@ MIN_RUNNING_CLEARANCE = 0.020e-3  # m, diametral
 # Nominal running fit of the journal inside the bearing bore, once there IS a bearing.
 BEARING_RUNNING_CLEARANCE = 0.030e-3  # m, diametral
 
-# Press fit for the bearing outer diameter in its seat. Diametral interference, negative
-# clearance. H7/r6 on a 8 mm bore is about 0.019-0.034 mm; call it 0.025.
-BEARING_SEAT_INTERFERENCE = 0.025e-3  # m, diametral
+# How the bearing is held in its seat, and this is a BUYABILITY constraint as much as an
+# engineering one.
+#
+# The obvious way to get a press fit is to undersize the hole: a dia 8.000 bushing in a
+# dia 7.975 hole gives 0.025 mm of interference. That is what this module specified first,
+# and it is wrong in practice, because **dia 7.975 is not a reamer you can buy.** It would
+# have to be bored and measured, on a 2.3 mm fibreglass wall, four times.
+#
+# A polymer plain bearing is not fitted that way. igus and every other supplier specify the
+# housing as **H7 at the nominal size** -- here dia 8 H7, +0.015/-0, which is the single
+# most ordinary reamer in existence -- and supply the bushing with an OVERSIZE outside
+# diameter so that pressing it into that H7 hole gives the interference and sizes the bore
+# to running fit as it goes. The interference is a property of the part you order, not of a
+# hole you have to hit to a quarter of a thousandth.
+#
+# So the hole is nominal and the bushing is oversize. Same physics, same interference,
+# and the drawing calls out a standard reamer instead of a special one.
+BEARING_HOUSING_TOLERANCE = 0.015e-3   # H7 on dia 8: +0.015 / -0
+BEARING_SUPPLIED_OVERSIZE = 0.030e-3   # diametral, bushing OD above nominal as supplied
+BEARING_SEAT_INTERFERENCE = BEARING_SUPPLIED_OVERSIZE  # what the press actually sees
 
 # A 15-tooth dia 4 spline has roughly 0.20 mm of working tooth height. Used only to state
 # the contact pressure in the socket; the sizing case is the servo's own stall torque,
@@ -223,9 +240,14 @@ class HingeStack:
 
     @property
     def seat_fit(self) -> float:
-        """Diametral fit of the bearing OD in the wall bore. Negative is interference,
-        which is what a pressed-in bearing wants."""
-        return self.wall_bore_dia - self.bearing_od
+        """Diametral fit of the bearing in its seat. Negative is interference, which is
+        what a pressed bearing wants.
+
+        Measured against the bushing AS SUPPLIED, which is oversize, not against its
+        nominal size. The hole is nominal (dia 8 H7) so that it can be cut with a standard
+        reamer; the interference comes from the part.
+        """
+        return self.wall_bore_dia - (self.bearing_od + BEARING_SUPPLIED_OVERSIZE)
 
 
 @dataclass(frozen=True)
@@ -500,7 +522,7 @@ def selected(tube_outer_radius: float, wall: float, geometry,
         journal_dia=JOURNAL_DIA,
         bearing_length=BEARING_LENGTH,
         bearing_wall=BEARING_WALL,
-        wall_bore_dia=bearing_od - BEARING_SEAT_INTERFERENCE,
+        wall_bore_dia=bearing_od,   # nominal, dia 8 H7 -- a standard reamer
         sleeve_gap=0.300e-3,
     )
 
@@ -595,6 +617,12 @@ class RootJoint:
     tang_thickness: float
     tang_width: float
     engagement: float          # how far the tang reaches OUTBOARD into the panel
+    bond_line: float           # adhesive gap on every tang face. NOT cosmetic: the slot
+                               # is the tang plus this all round, so it is the SLOT that
+                               # eats the panel and the slot that the skin spans. Leaving
+                               # it out of the skin overstated the skin by the square of
+                               # (tang / slot) -- 1.44x here -- which is the difference
+                               # between passing and failing.
 
     # ---- where the panel's edges are, relative to the hinge axis ---------------------
     # Axial, positive AFT, origin on the hinge axis. This is the frame the tang lives in:
@@ -645,11 +673,27 @@ class RootJoint:
         return self.trailing_edge(self.tang_tip_radius) - self.tang_width / 2.0
 
     @property
+    def slot_thickness(self) -> float:
+        """The cut in the panel: the tang plus a bond line on each face."""
+        return self.tang_thickness + 2.0 * self.bond_line
+
+    @property
+    def slot_width(self) -> float:
+        return self.tang_width + 2.0 * self.bond_line
+
+    @property
     def skin_thickness(self) -> float:
-        """What is left of the panel on each side of the slot. This is the number that
-        decides the joint: it goes as the square in the skin's bending stress, and every
-        millimetre the tang gains, the two skins lose half of between them."""
-        return (self.panel_thickness - self.tang_thickness) / 2.0
+        """What is left of the panel on each side of the SLOT -- not of the tang.
+
+        This is the number that decides the joint: it goes as the square in the skin's
+        bending stress, so every extra tenth the slot takes costs the skin more than it
+        looks like it should.
+
+        Built as a laminate, this IS the skin sheet's own thickness, and the slot IS the
+        core sheet's, which is why the stack has to be picked from thicknesses that are
+        actually sold rather than from whatever the optimiser liked.
+        """
+        return (self.panel_thickness - self.slot_thickness) / 2.0
 
     @property
     def tang_section_modulus(self) -> float:
@@ -728,7 +772,7 @@ def root_joint_loads(joint: RootJoint, normal_force: float, load_radius: float,
     sigma_tang = m / joint.tang_section_modulus
 
     # The skin over the slot, as a strip spanning the slot width under the slot pressure.
-    m_per_width = p_bend * joint.tang_width ** 2 / SKIN_BENDING_COEFFICIENT
+    m_per_width = p_bend * joint.slot_width ** 2 / SKIN_BENDING_COEFFICIENT
     sigma_skin = 6.0 * m_per_width / joint.skin_thickness ** 2 if joint.skin_thickness > 0 else math.inf
 
     # The bond carries the direct force and keeps the tang in the slot; the couple is
@@ -791,7 +835,7 @@ def check_root_joint(joint: RootJoint, loads: RootJointLoads) -> HingeCheck:
             f"the skin over the slot works at {loads.skin_bending_stress / 1e6:.0f} MPa "
             f"against a {G10_FLEXURAL / 1e6:.0f} MPa flexural allowable, only "
             f"{skin_margin:.2f}x; a wider tang makes this WORSE, not better, because the "
-            f"skin spans the tang width")
+            f"skin spans the SLOT, which is the tang plus a bond line all round")
 
     for label, p in (("bending", loads.slot_pressure_bending),
                      ("stall torque", loads.slot_pressure_torque)):
@@ -841,18 +885,28 @@ def check_root_joint(joint: RootJoint, loads: RootJointLoads) -> HingeCheck:
             f"the tang, at the maximum-moment station -- blend the transition, do not "
             f"shoulder it")
         notes.append(
-            f"a {joint.tang_thickness * mm:.1f} mm slot {joint.engagement * mm:.0f} mm deep in "
-            f"a {joint.panel_thickness * mm:.1f} mm plate is a "
-            f"{joint.engagement / joint.tang_thickness:.0f}:1 blind cut; build the panel as a "
-            f"{joint.skin_thickness * mm:.1f}/{joint.tang_thickness * mm:.1f}/"
-            f"{joint.skin_thickness * mm:.1f} bonded laminate with the core cut away instead")
+            f"PANEL IS A LAMINATE: {joint.skin_thickness * mm:.1f} / "
+            f"{joint.slot_thickness * mm:.1f} / {joint.skin_thickness * mm:.1f} mm bonded G10, "
+            f"= {joint.panel_thickness * mm:.1f} mm, the middle sheet cut away over "
+            f"{joint.slot_width * mm:.1f} x {joint.engagement * mm:.1f} mm at the root. Cutting "
+            f"that slot into a solid plate instead would be a "
+            f"{joint.engagement / joint.slot_thickness:.0f}:1 deep blind cut needing a "
+            f"slitting saw; as a laminate it is a flat shape cut before bonding. Every "
+            f"thickness here is a stocked sheet -- check that before changing any of them")
 
     return HingeCheck(ok=not v, violations=v, notes=notes)
 
 
+# The tang, and every one of these is set by something you can BUY or by geometry, not by
+# an optimiser running free.
+#   thickness  the middle sheet of the laminate, 2.0 mm stocked, less a 0.1 mm bond line
+#              each face. So the slot IS the sheet and the skins ARE the outer sheets.
+#   width      where the tang and the skin land on the same margin, 2.46x and 2.45x.
+#   engagement as deep as the swept leading edge allows with 6 mm to spare.
 TANG_THICKNESS = 1.800e-3
-TANG_WIDTH = 11.500e-3
-TANG_ENGAGEMENT = 25.000e-3
+TANG_WIDTH = 11.900e-3
+TANG_ENGAGEMENT = 25.500e-3
+BOND_LINE = 0.100e-3
 
 
 def swept_out_root_joint(stack: HingeStack, canards) -> RootJoint:
@@ -916,7 +970,7 @@ HINGE_FRAC_OF_MAC = 0.20
 
 
 def _joint(stack: HingeStack, canards, thickness: float, width: float,
-           engagement: float) -> RootJoint:
+           engagement: float, bond: float = BOND_LINE) -> RootJoint:
     """Build a RootJoint against a real panel. Every planform number comes from the FinSet
     and the hinge station is derived, so the joint cannot drift from the aerodynamics."""
     taper = canards.tip_chord / canards.root_chord
@@ -936,6 +990,7 @@ def _joint(stack: HingeStack, canards, thickness: float, width: float,
         tang_thickness=thickness,
         tang_width=width,
         engagement=engagement,
+        bond_line=bond,
     )
 
 
