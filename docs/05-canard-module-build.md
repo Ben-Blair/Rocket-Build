@@ -76,6 +76,54 @@ That 0.2599 kg is against roughly 0.565 kg in the mass budget, and the gap is re
 error: the servo frames, outboard bearings and printed bay are not modelled yet. Re-measure
 once they exist.
 
+## Drawing 1 — the Step 3 dimensioned drawing
+
+**Where it stands.** ISO A3, first-angle, 1:2, metric title block. Two orthographic views:
+a front view carrying the planform and every axial dimension, and a projected axial view
+showing the 4x pattern at 90 degrees with the servo blocks against the inner wall. Three
+dimensions placed and verified against the model: **142.9** (module length), **37.71**
+(root LE from the forward face) and **diameter 79.4**.
+
+**Two things about Onshape drawings that cost time here, so they are written down:**
+
+- **Drawings do NOT auto-update.** After the model was corrected the drawing kept showing
+  the old geometry and the old numbers, with no banner. The tell is the circular-arrow
+  button in the toolbar turning orange — *"Update from this workspace (ctrl+q)"*. Press it
+  after every model change, or every dimension you read is a lie.
+- **Where you click to place a dimension decides its type.** Click *between* the two picked
+  points and you get the distance along the view; click outside them and you get the
+  perpendicular one, which is usually 0. And the placement click must land OUTSIDE the
+  view's bounding box or Onshape reads it as selecting the view and silently cancels.
+
+**Dimensions still to place.** The values are regenerated from `design/configure.py`, so
+they cannot drift from the analysis. Each is a two-pick plus a placement:
+
+| dimension | mm | view |
+|---|---|---|
+| tube OD | 79.40 | axial — DONE |
+| tube ID | 74.80 | axial |
+| canard spacing | 90.00 deg x 4 | axial |
+| overall span across canards | 214.38 | axial |
+| module length | 142.92 | front — DONE |
+| root LE, from fwd face | 37.71 | front — DONE |
+| **hinge axis, from fwd face** | **68.27** | front |
+| root TE, from fwd face | 105.20 | front |
+| root chord | 67.49 | front |
+| tip chord | 27.00 | front |
+| LE sweep, axial offset | 47.90 | front |
+| panel height, as cut | 66.99 | front |
+| panel root face radius | 40.20 | front |
+| panel thickness | 3.00 | front |
+
+Two notes for whoever finishes it. Label which end is the **forward face** — the model runs
+nose-down, because Top is the forward face and +Z runs aft. And mark the panel CP as
+**reference only**: it is an aerodynamic station, not a machining feature, and the whole
+point of the geometry is that the hinge sits 2.5 mm forward of it.
+
+The remaining dimensions need picks on geometry that is 0.5 mm apart — the panel root now
+stands 0.5 mm proud of the tube — which is under a pixel at the working zoom. That is a
+job for a mouse, not for automation.
+
 ## Why model this before the rest of the rocket
 
 Three reasons, in order of value:
