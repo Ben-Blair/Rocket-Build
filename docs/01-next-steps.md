@@ -45,7 +45,7 @@ Read this first if you are picking the project back up.
   fails on five counts. A check that has never failed is not evidence of anything.
 - **The hinge load path is closed end to end.** The two items the hinge stack left open
   are both done (corrections 12–14): the **sleeve-to-panel joint** is a 1.8 × 11.9 mm
-  tang 25.5 mm into the root — which turns the panel into a 0.6/1.8/0.6 bonded laminate,
+  tang 25.5 mm into the root — which turns the panel into a 0.6/2.0/0.6 bonded laminate,
   a manufacturing change and not a design one — and the **tube at the hinge station** is
   checked and passes by two to three orders of magnitude on everything except the bearing
   seat, which sits at 3.2× *only* because the housing collar has not been built.
@@ -188,9 +188,10 @@ that silently recurs:
    Fixed by moving the **servo** 4.000 mm inboard rather than the panel: the panel is
    frozen aerodynamics, the central void is a budget line. The shaft is now a ⌀6 sleeve
    from R 33.485 that stops at the servo's output face; the wall bore is a ⌀7.975 seat
-   carrying **its own dimension**, so it cannot track the shaft again; a ⌀6/⌀8 × 6.0 plain
-   bearing takes the bending at 3.4× margin and the spline socket engages 91% of the
-   spline. Cost: central void — every band lost the same 8 mm, ⌀20.17 → ⌀12.17 over the
+   (**⌀8 H7 since correction 16**) carrying **its own dimension**, so it cannot track the
+   shaft again; a ⌀6/⌀8 × 6.0 plain bearing takes the bending at 3.4× margin and the spline
+   socket engages 91% of the spline (**that socket is superseded by a bought horn —
+   correction 16**). Cost: central void — every band lost the same 8 mm, ⌀20.17 → ⌀12.17 over the
    8.2 mm where the cable bosses sit and ⌀40.77 → ⌀32.77 alongside the cases — plus 1.2 g
    and 1.3% of module roll inertia. **No control conclusion moved.**
 
@@ -207,8 +208,8 @@ that silently recurs:
 
    The finding worth keeping is not the tang. It is that **a 1.8 mm slot 25 mm deep into
    a 3.0 mm plate is a 14:1 blind cut and nobody can machine it**, so the panel becomes a
-   **0.6 / 1.8 / 0.6 bonded laminate** with the core cut away. Same thickness, planform,
-   mass and aerodynamics — the answer to "how does the shaft meet the panel" turned out to
+   **0.6 / 2.0 / 0.6 bonded laminate** with the core cut away (1.8 mm at first, which is
+   not a stocked sheet — see correction 16). Same planform — the answer to "how does the shaft meet the panel" turned out to
    be a *manufacturing* change, and it would not have surfaced from any stress number.
 
 14. **The tang was sized against stress, and the binding constraint was geometry.** The
@@ -245,7 +246,7 @@ that silently recurs:
 
 13. **The tube passed by three orders of magnitude, and the one number that did not is the
    one nobody was worried about.** `check_hinge_stack()` had emitted *"check the tube, not
-   just the hinge"* since the hinge stack went in and nothing had. Four ⌀7.975 bores at one
+   just the hinge"* since the hinge stack went in and nothing had. Four ⌀8 bores at one
    station remove 13.2% of a 79.4 × 2.3 tube's circumference; net section runs at **256×**,
    torsion 348×, shell buckling 434×. The airframe was never the risk.
 

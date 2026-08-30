@@ -92,7 +92,7 @@ the ⌀5.000-on-⌀5.000 wall pass-through and the spline's 0.185 mm of reach �
 closing them exposed a solid-on-solid clash the sweep had not been asked about: the ⌀5
 shaft ran 7.785 mm into the servo case and 3.015 mm into its spline. The servo has moved
 4.000 mm inboard, the shaft is a ⌀6 sleeve that stops at its output face, and the wall bore
-is a ⌀7.975 bearing seat carrying its own dimension. Full argument and margins under "The
+is a bearing seat carrying its own dimension (⌀7.975 as first built, **⌀8 H7** now). Full argument and margins under "The
 hinge stack" below; model in `design/hinge.py`. **The two items that left open — how the
 sleeve meets the panel, and what four bores do to the tube — are closed too**; see "The
 root joint" and "The tube at the hinge station".
@@ -174,8 +174,8 @@ The decision, and it is one decision rather than three:
 | | |
 |---|---|
 | Servo | moves **4.000 mm inboard**, output face R 37.185 → **R 33.185** |
-| Canard shaft | ⌀5 solid rod → **⌀6 sleeve, R 33.485 → 40.200**, with a ⌀4.4 × 3.2 deep 15T spline socket at its inboard end |
-| Wall bore | ⌀5.000 → **⌀7.975**, on its own dimension, seating a ⌀6/⌀8 × 6.0 plain bearing |
+| Canard shaft | ⌀5 solid rod → **⌀6 sleeve, R 33.485 → 40.200**, with a ⌀4.4 × 3.2 deep 15T spline socket at its inboard end. **The socket is superseded** — buy a splined servo horn instead, see "How this actually gets built" |
+| Wall bore | ⌀5.000 → **⌀7.975**, on its own dimension, seating a ⌀6/⌀8 × 6.0 plain bearing. **⌀7.975 is superseded by ⌀8 H7**, same reason: it is not a reamer that exists |
 | Bearing | new. 6.000 long, 2.300 of it in the wall, **3.700 needing a housing collar off the printed bay** |
 
 Why the servo and not the panel. Something had to move: a plain bearing that can carry a
@@ -191,7 +191,7 @@ spare before they meet on the axis.
 
 **The number that was missing was the panel normal force.** The hinge moment is 0.0599 N·m,
 which is why a 9 g servo is enough — the hinge sits 2.4 mm from the panel CP. The same
-panel makes **25.4 N** at a bearing 29 mm away, which is **0.734 N·m** of bending where the
+panel makes **25.3 N** at a bearing 29 mm away, which is **0.718 N·m** of bending where the
 shaft leaves the tube. Reading only the hinge moment is how a hinge ends up with no bearing
 in it.
 
@@ -241,7 +241,8 @@ anything.
 
 **Two things the model still does not carry, deliberately:**
 
-- The ⌀4.4 spline socket is **not cut** in the Part Studio; the shaft is modelled as its
+- The ⌀4.4 spline socket is **not cut** in the Part Studio, and is now superseded by a
+  bought servo horn anyway; the shaft is modelled as its
   ⌀6 envelope. Cutting it needs a boolean scope that reaches the four patterned shaft
   bodies without also drilling the four obsolete servo blocks, which is not worth the
   risk to a working tree for a feature that changes no mass and no clearance. The socket
@@ -270,7 +271,7 @@ real parts. Against the envelope-block figures the CoM moved 0.95 mm aft and rol
 fell 2.2% (626.268 → 612.442), because the real servo's mass sits off its own body centre
 and hangs 16.8 mm inboard rather than 8. `design/control.py` carries the new tensor.
 
-Re-measured after the hinge rebuild below: the ⌀6 sleeve, the ⌀7.975 bearing seat and
+Re-measured after the hinge rebuild below: the ⌀6 sleeve, the bearing seat and
 the 4 mm servo move together cost 1.21 g and took roll inertia down 1.3% (612.442 →
 604.584). Neither moved a control conclusion, which is the point of measuring rather than
 assuming. The previous figures — 0.259864 kg, Z 75.090, 585.266 / 612.442 — are kept in
@@ -304,7 +305,7 @@ and none is free:
 - **Thickness 1.8** sets the skins at 0.6 mm each. Thicker tang, stronger tang, weaker
   skin — and the skin's stress goes as 1/t², so the trade is sharp. This is the one number
   that did *not* move when the leading-edge constraint turned up, which is why the panel is
-  still a 0.6/1.8/0.6 laminate.
+  still a laminate.
 - **Width 11.9** is paid for twice. Wider carries more (σ goes as 1/w) but its skin spans
   further, so skin stress *rises* with width — and it pushes the tang's forward corner
   towards the leading edge.
@@ -429,10 +430,11 @@ anyone's judgement:
   Blend it. Do not shoulder it.
 - **THE PANEL STOPS BEING A PLATE.** A 1.8 mm slot 25.5 mm deep into the edge of a solid
   plate is a **13:1 blind cut**, which is not a thing you machine without a slitting saw. The panel is built as a
-  **0.6 / 1.8 / 0.6 mm bonded G10 laminate** with the core cut away where the tang goes.
-  Same thickness, same planform, same mass, same aerodynamics — a manufacturing change, not
-  a design one, and the real answer to "how does the shaft meet the panel" turned out to be
-  "the panel is made differently."
+  **0.6 / 2.0 / 0.6 mm bonded G10 laminate** with the core cut away where the tang goes.
+  Same planform and the same aerodynamics; the thickness goes 3.0 → 3.2 because a laminate
+  can only be a sum of sheets that are sold, and that is priced in "The panel is a laminate
+  of two stocked sheets" above. The real answer to "how does the shaft meet the panel"
+  turned out to be "the panel is made differently."
 
 The check is exercised against the obvious joint too — the ⌀6 sleeve simply entering the
 panel — where it fails on *there is no panel left*. Same principle as `as_built`: a check
