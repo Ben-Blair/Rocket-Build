@@ -92,7 +92,10 @@ the ⌀5.000-on-⌀5.000 wall pass-through and the spline's 0.185 mm of reach �
 closing them exposed a solid-on-solid clash the sweep had not been asked about: the ⌀5
 shaft ran 7.785 mm into the servo case and 3.015 mm into its spline. The servo has moved
 4.000 mm inboard, the shaft is a ⌀6 sleeve that stops at its output face, and the wall bore
-is a bearing seat carrying its own dimension (⌀7.975 as first built, **⌀8 H7** now). Full argument and margins under "The
+is a bearing seat carrying its own dimension (⌀7.975 as first built, **⌀8 H7** in the CAD
+since Aug 2026 — `make_hinge_stack.py --bore` corrects it in place rather than skipping it,
+because a step that silently declines to apply a design change is how the CAD and the
+analysis drift apart). Full argument and margins under "The
 hinge stack" below; model in `design/hinge.py`. **The two items that left open — how the
 sleeve meets the panel, and what four bores do to the tube — are closed too**; see "The
 root joint" and "The tube at the hinge station".
@@ -123,10 +126,10 @@ hardware"; the bracket turned out not to be needed — see docs/04 on why the co
 frames were dropped — and the bay is printable now. **It is the last open item in the hinge
 load path and it has a number on it**: the housing collar carries 3.700 mm of the 6.0 mm
 bearing, worth **3.2× → 21.3×** on the bearing seat. See "How this actually gets built".
-Forward wiring pass-through and aft gas seal are still open. **The four revolute hinge
-mates in `Assembly 1` are not in.** The mate connectors they need exist, in pairs on each
-hinge axis (`canardHingeConnectors`), and the rigid groups either side of each hinge exist;
-and **the mates are now in too** — see above. `scripts/make_module_assembly.py` still
+Forward wiring pass-through and aft gas seal are still open. The mate connectors the hinges
+need exist in pairs on each hinge axis (`canardHingeConnectors`), the rigid groups either
+side of each hinge exist, and **the mates are in** — see above.
+`scripts/make_module_assembly.py` still
 builds everything up to that point; its `revolute()` remains the record of what the API
 would not do.
 
@@ -649,6 +652,15 @@ DXF R12, millimetres. In Onshape: **Insert → DXF/DWG** into a sketch, or impor
 the document and derive it. Layers come through, so you can delete `HINGE` and `PANEL_CP`
 once you have used them for reference.
 
+Onshape elements, and which script owns each:
+
+| Element | Built by |
+|---|---|
+| `Part Studio 1` — tube, 4 panels, 4 shafts | `scripts/make_hinge_stack.py`, `cad/canard_articulation.fs` |
+| `KST X08 Plus` — case, spline, cable boss | `scripts/make_servo_cad.py` |
+| `Hinge bearing (⌀6/8 × 6 plain)` | `scripts/make_bearing_cad.py` |
+| `Assembly 1` — 25 instances, 5 rigid groups, 4 revolute hinges | `scripts/make_module_assembly.py`, `scripts/place_bearings.py`; **the 4 mates were placed by hand** |
+
 ## Dimensions
 
 ### Module
@@ -695,9 +707,15 @@ retype. Radii from the rocket axis.
 | Spline socket in the sleeve | ⌀4.4 × 3.2 deep from the inboard end; 2.900 mm engaged, 91% |
 | Bearing | R 33.700 → 39.700, ⌀6 ID / ⌀8 OD, 6.000 long, plain, polymer |
 | Housing collar (printed bay) | R 33.700 → 37.400, ⌀12 OD × 3.700 — **a requirement, not a detail** |
-| Wall bore | **⌀7.975 H7** through the 2.3 mm wall, −0.025 mm on the bearing OD |
+| Wall bore | **⌀8.000 H7** through the 2.3 mm wall — a standard reamer. The 0.030 mm press interference comes from the bushing being supplied oversize, not from undersizing the hole |
 | Running clearance | +0.030 mm diametral, journal in bearing |
 | Panel root face | R 40.200 |
+
+The bearing and the wall bore are both **⌀8 nominal in the CAD**. The supplied oversize is a
+fit allowance, not geometry — model it and the bearing reads as an interference against its
+own seat in every clash check. Ream the wall and the printed collar **in one pass after the
+bay is bonded in**, so concentricity is a property of the operation rather than a tolerance
+held across two parts.
 
 
 ### Servos — KST X08 Plus V6.0, 4 off

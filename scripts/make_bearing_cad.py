@@ -2,9 +2,13 @@
 
 Run:  python scripts/make_bearing_cad.py [--rebuild]
 
-WHY THIS EXISTS. The hinge stack put a dia 7.975 bearing SEAT in the airframe wall in
-August 2026 and stopped there, so the model has held a correctly-sized hole with nothing
-in it ever since. That is not a cosmetic gap. The bearing is the part that keeps the
+WHY THIS EXISTS. The hinge stack put a bearing SEAT in the airframe wall in August 2026
+and stopped there, so the model held a correctly-sized hole with nothing in it. (That seat
+was first cut dia 7.975 and corrected to dia 8.000 H7 when this part was built, because
+7.975 is not a reamer anyone sells -- the press interference comes from the bushing being
+supplied 0.030 mm oversize, not from undersizing the hole. See design/hinge.py.)
+
+An unmodelled bearing is not a cosmetic gap. This is the part that keeps the
 panel's 0.734 N m of bending out of the servo's output shaft -- it is the whole reason the
 servo moved 4 mm inboard and the shaft became a sleeve -- and a part that is not modelled
 cannot collide with anything. This Part Studio has already hidden one hard clash for weeks
@@ -22,11 +26,25 @@ face is flush with the tube OD, so in the module assembly the bearing's origin l
 R 39.700 exactly -- a number that can be read off the status bar and checked, rather than
 an offset that has to be computed.
 
-Every dimension is imported from design.hinge.selected(). None is typed here.
+Every dimension is imported from design.hinge.selected(). None is typed here. The part is
+modelled at NOMINAL dia 8.000 OD -- the 0.030 mm supplied oversize is a fit allowance, not
+geometry, and modelling it would make the bearing read as an interference against its own
+seat in every clash check.
+
+STATUS, Aug 2026: built. Part Studio "Hinge bearing (dia 6/8 x 6 plain)", one part, volume
+131.947 mm^3 against the analytic annulus to within 0.001 mm^3 -- which is the proof the
+bore actually cut, since a solid slug would read 301.593. Name and iglidur G material were
+set through POST /metadata/.../p/{partId}, not by hand.
+
+CAUTION: --rebuild CANNOT WORK with a read-only-flagged API key. It DELETEs the element
+first, and DELETE /elements returns 403 "Invalid API key state" even though POST creates
+elements happily. To rebuild, delete the Part Studio in the browser and re-run without the
+flag.
 """
 
 from __future__ import annotations
 
+import math
 import sys
 from pathlib import Path
 
@@ -41,6 +59,7 @@ from design.packaging import SERVO_GEOMETRY
 DOC = "a8abe36ef209825f56ac7a88"
 WS = "30c982b22d7f0010281e2c54"
 ELEMENT_NAME = "Hinge bearing (dia 6/8 x 6 plain)"
+PART_NAME = "Hinge bearing (iglidur G, 6/8 x 6 plain)"
 
 # igus iglidur G, the class the 80 MPa allowable in design/materials.py is taken from.
 # Quoted 1.45 g/cm^3. The bearing is 0.19 g, so this changes nothing in the mass budget --
@@ -93,6 +112,45 @@ def build(element: str, s: hinge.HingeStack) -> None:
                    start_offset_mm=over, start_offset_opposite=False,
                    operation="REMOVE"), element)
 
+    name_and_material(element)
+
+
+# Onshape part metadata property ids. These are global constants, identical in every
+# document -- they are not ids allocated to this part -- so they can be hard-coded.
+PROP_NAME = "57f3fb8efa3416c06701d60d"
+PROP_MATERIAL = "57f3fb8efa3416c06701d615"
+
+
+def name_and_material(element: str) -> None:
+    """Name the part and give it a density, as part of the BUILD.
+
+    Not a printed instruction to go and do it by hand. A part with no material weighs
+    0.0000 g and still answers every mass query with a number, which is how this document
+    once reported 175 g for a 260 g module. Anything that has to be remembered after the
+    script finishes will eventually not be.
+    """
+    part_id = get(f"/parts/d/{DOC}/w/{WS}/e/{element}")[0]["partId"]
+    r = post(f"/metadata/d/{DOC}/w/{WS}/e/{element}/p/{part_id}", {
+        "jsonType": "metadata-part",
+        "properties": [
+            {"propertyId": PROP_NAME, "value": PART_NAME},
+            {"propertyId": PROP_MATERIAL, "value": {
+                "id": "CustomMaterial", "displayName": "iglidur G", "libraryName": "",
+                "properties": [{
+                    "name": "DENS", "value": f"{IGLIDUR_G_DENSITY:.0f}", "type": "",
+                    "displayName": "Density", "units": "kg/m^3",
+                    "category": "", "description": ""}]}},
+        ]})
+    # NOTHING_TO_UPDATE is a SUCCESS, not a failure: it means the property already held
+    # this exact value. Re-running the script must not look like a broken write. (Only the
+    # name dedupes this way -- re-writing an identical material still reports SUCCEEDED,
+    # so you cannot use the status to tell whether anything actually changed.)
+    ok = {"SUCCEEDED", "NOTHING_TO_UPDATE"}
+    failed = [q for q in r.get("properties", []) if q.get("status") not in ok]
+    if r.get("status") not in ok or failed:
+        raise SystemExit(f"metadata write did not take: {r}")
+    print(f"  named '{PART_NAME}', iglidur G at {IGLIDUR_G_DENSITY:.0f} kg/m^3")
+
 
 def main() -> None:
     s = stack()
@@ -122,10 +180,15 @@ def main() -> None:
     print(f"\nexpected: X and Y +/-{s.bearing_od * MM / 2:.3f}, "
           f"Z {-s.bearing_length * MM:.3f} .. 0.000")
 
-    import math
     v = math.pi * ((s.bearing_od / 2) ** 2 - (s.journal_dia / 2) ** 2) * s.bearing_length
-    print(f"\nvolume should be {v * 1e9:.3f} mm^3; assign iglidur G at "
-          f"{IGLIDUR_G_DENSITY:.0f} kg/m^3 -> {v * IGLIDUR_G_DENSITY * 1000:.3f} g each")
+    mp = get(f"/partstudios/d/{DOC}/w/{WS}/e/{element}/massproperties")["bodies"]["-all-"]
+    solid = math.pi * (s.bearing_od / 2) ** 2 * s.bearing_length
+    print(f"\nvolume {mp['volume'][0] * 1e9:.3f} mm^3 against analytic {v * 1e9:.3f}; "
+          f"a solid slug would be {solid * 1e9:.3f}")
+    if abs(mp["volume"][0] - v) > 1e-12:
+        raise SystemExit("volume does not match the annulus -- the bore did not cut.")
+    print(f"mass {mp['mass'][0] * 1000:.4f} g each, "
+          f"{mp['mass'][0] * 4000:.4f} g for four")
     print(f"\nIn the module assembly, place four of these with the origin on each hinge")
     print(f"axis at R {s.bearing_outboard * MM:.3f} mm, +Z radially outward. The bearing")
     print(f"then spans R {s.bearing_inboard * MM:.3f} -> {s.bearing_outboard * MM:.3f}, of which")

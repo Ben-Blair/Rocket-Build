@@ -52,8 +52,16 @@ Read this first if you are picking the project back up.
   `design/tube_section.py` and `design/materials.py` are new; `design/hinge.py` carries the
   joint; `scripts/hinge_report.py` prints both and `scripts/baseline.py` carries both
   verdicts so neither can silently regress. **The one open item in the whole hinge is the
-  housing collar**, still blocked on bracket hardware, now worth a measured 6.7× on the
-  bearing seat.
+  housing collar** — no longer blocked (correction 16 removed the bracket it was waiting
+  on), and worth a measured 3.2× → 21.3× on the bearing seat.
+- **The bearing is geometry now, not a dimension.** It was the last part of the hinge that
+  existed only as a number, and an unmodelled part cannot collide with anything — the same
+  trap that hid a hard servo clash for weeks when the servo was a bounding box. Part Studio
+  `Hinge bearing (⌀6/8 × 6 plain)` holds it, and all four are instanced in `Assembly 1` on
+  their hinge axes at R 39.700, in the airframe rigid group because a pressed race does not
+  rotate with the panel. `scripts/make_bearing_cad.py` builds it, `scripts/place_bearings.py`
+  places it, both are safe to re-run. **This is what the printed bay's collar now gets drawn
+  against.**
 
 - **Step 4 is next**: avionics. Decisions D7 (flight computer) and D8 (state estimation)
   are open and drive the largest, least specified line in the budget.
@@ -300,6 +308,32 @@ that silently recurs:
    wall and the collar in one pass**, so concentricity is a property of the operation rather
    than a tolerance held across two parts. A pinched bearing is a mechanism failure, and no
    margin in these documents protects against it.
+
+18. **The bearing got built, and building it found a laminate that could not be ordered.**
+   The Onshape `/features` quota came back and the queued work went in: the bearing Part
+   Studio (volume checked against the analytic annulus to 0.001 mm³, which is the only proof
+   the bore actually cut — a solid slug reads 301.593 instead of 131.947), the ⌀7.975 → **⌀8
+   H7** seat correction from correction 16 finally applied to the CAD, and four instances
+   placed in `Assembly 1`. Module mass 276.239 → 276.999 g, roll inertia +0.15%. **Nothing
+   in the flight model notices, and that is the correct result** — the bearing was never a
+   mass part, it is a load-path part.
+
+   Two things worth keeping from it:
+   - **`scripts/hinge_report.py` printed the panel as a `0.6/1.8/0.6` laminate**, which sums
+     to 3.0 mm against a 3.2 mm panel. It was printing the **tang** as the middle layer
+     instead of the **slot** — they differ by the two 0.1 mm bond lines. `design/hinge.py`'s
+     own docstring said the same. The docs here were right and the code was wrong, which is
+     the opposite of this project's usual rule, and it only matters because these three
+     numbers are *sheets you buy*: acting on the printout would have ordered a 1.8 mm sheet
+     that is not sold, to build a panel 0.2 mm too thin. Both fixed; the report now names
+     the slot and the tang separately and states that the layers must sum to the panel.
+   - **A mass guard that trips on an intended change is doing its job.** `make_hinge_stack.py`
+     refused the bore correction because Part Studio mass read 276.227 g against a
+     `MASS_BEFORE_G` of 259.856 — a stale constant from before the tang and the 3.2 mm
+     panel. The geometry was fine. The constant now carries its own history in a comment and
+     the tolerance stays tight deliberately: a guard loose enough never to trip is a guard
+     that will not catch the circular pattern dropping materials, which is the failure it
+     exists for. **A rise is as suspect as a fall until you can name the geometry.**
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.

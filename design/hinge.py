@@ -930,7 +930,14 @@ def selected_root_joint(stack: HingeStack, canards) -> RootJoint:
       * THICKNESS 1.8 mm sets the skins at 0.6 mm each. Thicker tang, stronger tang,
         weaker skin -- and the skin's stress goes as 1/t^2, so the trade is sharp. This is
         the one number that did NOT move when the leading-edge constraint arrived, which
-        is why the panel is still a 0.6/1.8/0.6 laminate.
+        is why the panel is still a 0.6/2.0/0.6 laminate.
+
+        Those three numbers are SHEETS TO BUY and they must sum to the 3.2 mm panel. The
+        middle one is the SLOT (2.0 mm, stocked), not the tang (1.8 mm): the tang sits in
+        it with a 0.1 mm bond line on each face. Quoting the tang as the middle layer gives
+        0.6/1.8/0.6 = 3.0 mm, which is a 0.2 mm hole in the panel and the wrong order at
+        the supplier. Both this docstring and scripts/hinge_report.py said exactly that
+        until Aug 2026.
 
       * WIDTH 11.5 mm. A wider tang carries more (sigma goes as 1/w) but its skin spans
         further, and skin stress rises with width overall. It also pushes the tang's

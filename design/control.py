@@ -87,12 +87,17 @@ class MeasuredComponent:
 # Read over the REST API, not off a screenshot, which is also how the hinge-station defect
 # behind the previous numbers was found. See docs/05.
 #
-# WHAT THIS DOES NOT INCLUDE, and it matters: the servo frames, outboard bearings and the
-# printed bay are not modelled yet, so the CAD module is 0.260 kg against roughly 0.565 kg
-# in the mass budget. The missing ~0.3 kg stays in the crude bulk term below, which smears
-# it over the whole airframe instead of concentrating it here. That UNDERSTATES the pitch
-# inertia, because the real hardware sits 324 mm forward of the CG where the parallel-axis
-# term is large. Re-measure once the printed bay exists.
+# WHAT THIS DOES NOT INCLUDE, and it matters: the PRINTED BAY is not modelled, so the CAD
+# module is 0.277 kg against roughly 0.565 kg in the mass budget. The missing ~0.29 kg stays
+# in the crude bulk term below, which smears it over the whole airframe instead of
+# concentrating it here. That UNDERSTATES the pitch inertia, because the real hardware sits
+# 324 mm forward of the CG where the parallel-axis term is large. Re-measure once the
+# printed bay exists -- it is now the ONLY thing left out.
+#
+# The outboard bearings were on that not-modelled list until Aug 2026 and are now in, all
+# four of them, on their hinge axes and in the airframe rigid group. They contribute
+# 0.765 g, which is nothing; what they contribute that matters is a body the printed bay's
+# housing collar can be checked against. See scripts/place_bearings.py.
 # Measured off the ASSEMBLY, not the Part Studio, because the servos are no longer part
 # of it: the 23.5 x 8 x 16.8 envelope block has been replaced by real KST X08 Plus
 # geometry in its own Part Studio, and the two only share a frame once assembled.
@@ -105,14 +110,23 @@ class MeasuredComponent:
 # kg*mm^2. Roll is down 2.2%, which nudges roll acceleration the other way from the 6.5%
 # the CAD tensor bought in the first place.
 CANARD_MODULE_CAD = MeasuredComponent(
-    name="canard module (CAD assembly, real servos, hinge stack, root tang, 3.2 mm panels)",
-    mass=0.276239,
-    station_from_module_face=0.074941,
-    i_transverse=613.818e-6,
-    i_roll=664.908e-6,
+    name="canard module (CAD assembly, real servos, hinge stack, root tang, 3.2 mm panels, "
+         "four hinge bearings)",
+    mass=0.276999,
+    station_from_module_face=0.074923,
+    i_transverse=614.371e-6,
+    i_roll=665.938e-6,
     source="Onshape canard-control module, Assembly 1, Aug 2026, after the root tang of "
-           "design/hinge.py and the 3.2 mm laminate panel of design/configure.py",
+           "design/hinge.py, the 3.2 mm laminate panel of design/configure.py, and the "
+           "four dia 6/8 x 6 plain bearings placed by scripts/place_bearings.py",
 )
+# The four bearings are the smallest move this tensor has ever made and are recorded only
+# so the number keeps matching the CAD: 0.191 g each, 0.765 g total, mass 276.239 ->
+# 276.999 g, roll 664.908 -> 665.938 kg mm^2 (+0.15%), transverse +0.09%. Nothing in the
+# flight model notices. That is the expected result and it is worth stating plainly --
+# the bearing was never a mass problem, it is a LOAD-PATH part, and its whole job is to
+# keep 0.734 N m of panel bending out of a servo output shaft rated for a fraction of it.
+# The reason to model it is interference with the printed bay, not inertia.
 # The root tang and the 3.2 mm panel together are the largest single move this tensor has
 # made: mass 258.650 -> 276.239 g, ROLL inertia 604.584 -> 664.908 kg mm^2, up 10.0%, and
 # transverse 581.280 -> 613.818, up 5.6%. Roll is the axis GV-3 flies and the canard module

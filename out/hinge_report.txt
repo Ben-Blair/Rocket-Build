@@ -47,30 +47,30 @@ AS BUILT  --  the Onshape model before this analysis
 ============================================================================================
 SELECTED  --  servo 4.000 mm inboard, dia 6 sleeve, bearing seat in the wall
 ============================================================================================
-Three changes, and they are one decision, not three:
+    Three changes, and they are one decision, not three:
 
-  - The servo moves 4.000 mm inboard. Nothing else creates room. Between the servo's
-    output face and the panel root there were 3.015 mm, the airframe wall took 2.300
-    of them, and a plain bearing that can carry this load needs about 4.5 mm of
-    length -- the peak pressure under an overhung load goes as 1/L^2, so a 2.3 mm
-    bushing is not a worse answer than a 6 mm one, it is 7x worse. Moving the PANEL
-    outboard would also work and would change frozen aerodynamics. Moving the servo
-    spends central void, which is a budget line, not a frozen one.
+      - The servo moves 4.000 mm inboard. Nothing else creates room. Between the servo's
+        output face and the panel root there were 3.015 mm, the airframe wall took 2.300
+        of them, and a plain bearing that can carry this load needs about 4.5 mm of
+        length -- the peak pressure under an overhung load goes as 1/L^2, so a 2.3 mm
+        bushing is not a worse answer than a 6 mm one, it is 7x worse. Moving the PANEL
+        outboard would also work and would change frozen aerodynamics. Moving the servo
+        spends central void, which is a budget line, not a frozen one.
 
-  - The shaft becomes a dia 6 sleeve rather than a dia 5 rod. Not for strength; dia 5
-    is strong enough. It is so that a dia 4 spline socket leaves 0.8 mm of wall to cut
-    teeth into instead of 0.3 mm.
+      - The shaft becomes a dia 6 sleeve rather than a dia 5 rod. Not for strength; dia 5
+        is strong enough. It is so that a dia 4 spline socket leaves 0.8 mm of wall to cut
+        teeth into instead of 0.3 mm.
 
-  - The wall bore stops being a copy of the shaft's sketch and becomes a bearing seat,
-    dimensioned off the bearing OD with a press fit. The shaft then turns in the
-    bearing, with a real running clearance, instead of in the airframe.
+      - The wall bore stops being a copy of the shaft's sketch and becomes a bearing seat,
+        dimensioned off the bearing OD with a press fit. The shaft then turns in the
+        bearing, with a real running clearance, instead of in the airframe.
 
-4.000 mm is the largest move the four servo cable bosses allow with a millimetre to
-spare before they meet on the rocket axis. It costs 8.0 mm of central void everywhere:
-the constricted band where the cable bosses sit goes dia 20.17 -> dia 12.17 over 8.2 mm
-of length, and the wider band alongside the servo cases goes dia 40.77 -> dia 32.77
-over 29.5 mm. Both are 8 mm smaller, because the whole servo moved, and the wiring has
-to fit the smaller of them.
+    4.000 mm is the largest move the four servo cable bosses allow with a millimetre to
+    spare before they meet on the rocket axis. It costs 8.0 mm of central void everywhere:
+    the constricted band where the cable bosses sit goes dia 20.17 -> dia 12.17 over 8.2 mm
+    of length, and the wider band alongside the servo cases goes dia 40.77 -> dia 32.77
+    over 29.5 mm. Both are 8 mm smaller, because the whole servo moved, and the wiring has
+    to fit the smaller of them.
 
   radial stations, selected (mm from the rocket axis)
     servo cable boss, inner end        R    6.085
@@ -104,41 +104,48 @@ to fit the smaller of them.
 ============================================================================================
 THE SLEEVE-TO-PANEL JOINT  --  the last link, and the hardest
 ============================================================================================
-How the three numbers were picked, because they are coupled and none is free:
+    How the three numbers were picked, because they are coupled and none is free:
 
-  * THICKNESS 1.8 mm sets the skins at 0.6 mm each. Thicker tang, stronger tang,
-    weaker skin -- and the skin's stress goes as 1/t^2, so the trade is sharp. This is
-    the one number that did NOT move when the leading-edge constraint arrived, which
-    is why the panel is still a 0.6/1.8/0.6 laminate.
+      * THICKNESS 1.8 mm sets the skins at 0.6 mm each. Thicker tang, stronger tang,
+        weaker skin -- and the skin's stress goes as 1/t^2, so the trade is sharp. This is
+        the one number that did NOT move when the leading-edge constraint arrived, which
+        is why the panel is still a 0.6/2.0/0.6 laminate.
 
-  * WIDTH 11.5 mm. A wider tang carries more (sigma goes as 1/w) but its skin spans
-    further, and skin stress rises with width overall. It also pushes the tang's
-    forward corner towards the leading edge. So width is paid for twice.
+        Those three numbers are SHEETS TO BUY and they must sum to the 3.2 mm panel. The
+        middle one is the SLOT (2.0 mm, stocked), not the tang (1.8 mm): the tang sits in
+        it with a 0.1 mm bond line on each face. Quoting the tang as the middle layer gives
+        0.6/1.8/0.6 = 3.0 mm, which is a 0.2 mm hole in the panel and the wrong order at
+        the supplier. Both this docstring and scripts/hinge_report.py said exactly that
+        until Aug 2026.
 
-  * ENGAGEMENT 25.0 mm, and THIS IS THE ONE THAT WAS WRONG TWICE. The first version of this
-    module put it at 30 mm and called depth "bought cheaply -- it improves everything
-    at once and is not paid for anywhere", reasoning that slot pressure goes as 1/L^2.
-    That is true and it is not the constraint. **The panel is swept 35.4 degrees**, so
-    its leading edge runs aft 0.71 mm for every mm of span while the tang stays in a
-    fixed axial band about the hinge. Depth is paid for in leading-edge material, at
-    better than half a millimetre per millimetre. 30 mm left 2.26 mm of panel ahead of
-    the tang; the depth rule that was supposed to catch this allowed 40.5 mm, where the
-    tang stands 5.18 mm PROUD of the leading edge and the part cannot be made at all.
+      * WIDTH 11.5 mm. A wider tang carries more (sigma goes as 1/w) but its skin spans
+        further, and skin stress rises with width overall. It also pushes the tang's
+        forward corner towards the leading edge. So width is paid for twice.
 
-So the shape of the trade is the opposite of what it first looked like: depth is the
-EXPENSIVE axis, not the free one.
+      * ENGAGEMENT 25.0 mm, and THIS IS THE ONE THAT WAS WRONG TWICE. The first version of this
+        module put it at 30 mm and called depth "bought cheaply -- it improves everything
+        at once and is not paid for anywhere", reasoning that slot pressure goes as 1/L^2.
+        That is true and it is not the constraint. **The panel is swept 35.4 degrees**, so
+        its leading edge runs aft 0.71 mm for every mm of span while the tang stays in a
+        fixed axial band about the hinge. Depth is paid for in leading-edge material, at
+        better than half a millimetre per millimetre. 30 mm left 2.26 mm of panel ahead of
+        the tang; the depth rule that was supposed to catch this allowed 40.5 mm, where the
+        tang stands 5.18 mm PROUD of the leading edge and the part cannot be made at all.
 
-Wrong the second time by 0.36 mm, and only the CAD caught it. `engagement` is measured
-from the PANEL ROOT FACE at R 40.200; the planform's sweep and semispan are measured
-from the THEORETICAL root at the tube surface, R 39.700. Feeding one into the other
-over-read the leading-edge clearance by the 0.500 mm standoff times the 0.71 sweep
-gradient. The model agreed with itself and disagreed with the model in Onshape, where
-panel 0 runs R 40.20 to 107.19 -- and 107.19 is 39.700 + 67.490, not 40.200 + 67.490.
-Everything on this joint is now indexed by RADIUS, which is what `HingeStack` already
-said to do and what this class had not been doing.
+    So the shape of the trade is the opposite of what it first looked like: depth is the
+    EXPENSIVE axis, not the free one.
 
-25.0 mm delivers 6.71 mm of leading edge against a 5.0 mm requirement, at 2.5x on the
-skin and 2.4x on the tang against a 2.0x requirement.
+    Wrong the second time by 0.36 mm, and only the CAD caught it. `engagement` is measured
+    from the PANEL ROOT FACE at R 40.200; the planform's sweep and semispan are measured
+    from the THEORETICAL root at the tube surface, R 39.700. Feeding one into the other
+    over-read the leading-edge clearance by the 0.500 mm standoff times the 0.71 sweep
+    gradient. The model agreed with itself and disagreed with the model in Onshape, where
+    panel 0 runs R 40.20 to 107.19 -- and 107.19 is 39.700 + 67.490, not 40.200 + 67.490.
+    Everything on this joint is now indexed by RADIUS, which is what `HingeStack` already
+    said to do and what this class had not been doing.
+
+    25.0 mm delivers 6.71 mm of leading edge against a 5.0 mm requirement, at 2.5x on the
+    skin and 2.4x on the tang against a 2.0x requirement.
 
   THE OBVIOUS JOINT  --  the dia 6 sleeve simply entering the panel
     tang              6.00 x 6.00 mm, 6.0 mm engaged, skins -1.50 mm
@@ -233,11 +240,13 @@ WHAT THIS COSTS, AND WHAT IT DOES NOT
                           servo moved instead of the panel.
   servo torque margin     UNCHANGED at 1:1 direct drive; the coupling is a spline
                           socket, not a gear.
-  the panel               CHANGES. The tang joint needs a 1.8 mm slot 26 mm into
-                          the root, which is a 14:1 blind cut in a 3.2 mm plate and is not
-                          machinable. The panel becomes a 0.6/1.8/0.6 bonded
-                          laminate. Same thickness, same planform, same mass --
-                          a manufacturing change, not a design one.
+  the panel               CHANGES. The tang joint needs a 2.0 mm slot 26 mm into
+                          the root, which is a 13:1 blind cut in a 3.2 mm plate and is not
+                          machinable. The panel becomes a 0.6/2.0/0.6 bonded
+                          laminate -- three STOCKED G10 sheets summing to 3.2 mm. The middle
+                          sheet is the slot; the 1.8 mm tang goes into it with a 0.1 mm
+                          bond line each face. Same thickness, same planform,
+                          same mass -- a manufacturing change, not a design one.
   the tube                UNCHANGED and not close: worst margin at the hinge
                           station is the bearing seat, and only because the
                           housing collar has not been built yet.

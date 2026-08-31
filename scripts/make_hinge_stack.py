@@ -53,9 +53,23 @@ PART_STUDIO = "dfb730308a9933e911684b5c"
 ASSEMBLY = "ff7e2e472d6694342f892f9c"
 
 EXPECTED_PARTS = 13
-# Part Studio 1 total, measured before any of this ran. The pattern's dropped-material bug
-# takes this to about 175 g, so a large fall means the materials went, not the geometry.
-MASS_BEFORE_G = 259.85646
+# Part Studio 1 total. The pattern's dropped-material bug takes this to about 175 g, so a
+# large FALL means the materials went, not the geometry -- that is the failure this guard
+# is really watching for.
+#
+# It is a floor-and-ceiling check, not a constant of nature, so it has to be re-measured
+# whenever the design deliberately changes mass. It has moved once:
+#
+#   259.856 g  original, before any of this script ran
+#   276.227 g  Aug 2026, after two intended changes -- canard panels 3.0 -> 3.2 mm (the
+#              laminate has to sum stocked G10 sheet, see design/configure.py) and the
+#              root tang union (cad/canard_articulation.fs). +16.4 g, all of it real.
+#
+# The 3.0 g tolerance is deliberately tight enough that an intended change trips it. That
+# is the point: it forces the number to be re-derived and the reason written down here,
+# rather than drifting. If this raises, CHECK WHAT MOVED before widening it -- a rise is
+# as suspect as a fall until you can name the geometry that caused it.
+MASS_BEFORE_G = 276.2265
 MASS_TOLERANCE_G = 3.0
 
 MM = 1000.0

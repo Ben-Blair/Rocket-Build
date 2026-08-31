@@ -293,13 +293,17 @@ def main() -> None:
     say("  servo torque margin     UNCHANGED at 1:1 direct drive; the coupling is a spline")
     say("                          socket, not a gear.")
     say(f"  the panel               CHANGES. The tang joint needs a "
-        f"{joint.tang_thickness * MM:.1f} mm slot {joint.engagement * MM:.0f} mm into")
-    say(f"                          the root, which is a {joint.engagement / joint.tang_thickness:.0f}:1 blind cut in a "
+        f"{joint.slot_thickness * MM:.1f} mm slot {joint.engagement * MM:.0f} mm into")
+    say(f"                          the root, which is a {joint.engagement / joint.slot_thickness:.0f}:1 blind cut in a "
         f"{c.thickness * MM:.1f} mm plate and is not")
     say(f"                          machinable. The panel becomes a {joint.skin_thickness * MM:.1f}/"
-        f"{joint.tang_thickness * MM:.1f}/{joint.skin_thickness * MM:.1f} bonded")
-    say("                          laminate. Same thickness, same planform, same mass --")
-    say("                          a manufacturing change, not a design one.")
+        f"{joint.slot_thickness * MM:.1f}/{joint.skin_thickness * MM:.1f} bonded")
+    say(f"                          laminate -- three STOCKED G10 sheets summing to "
+        f"{c.thickness * MM:.1f} mm. The middle")
+    say(f"                          sheet is the slot; the {joint.tang_thickness * MM:.1f} mm tang goes into it with a "
+        f"{joint.bond_line * MM:.1f} mm")
+    say("                          bond line each face. Same thickness, same planform,")
+    say("                          same mass -- a manufacturing change, not a design one.")
     say("  the tube                UNCHANGED and not close: worst margin at the hinge")
     say("                          station is the bearing seat, and only because the")
     say("                          housing collar has not been built yet.")
