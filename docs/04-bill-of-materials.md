@@ -61,7 +61,7 @@ Requires **Level 2 certification**. Budget 5 reloads for the GV-1…GV-5 campaig
 | Canard shafts, bushings, hardware | The lines above plus fasteners and epoxy | 4 | 0.240 kg | ~$40 | |
 | **G10 sheet, 0.6 mm** | Panel skins. 8 skins, 2 per panel | ~0.3 m² | in canards | ~$25 | |
 | **G10 sheet, 2.0 mm** | Panel cores. The tang slot is a gap cut in this sheet, not a slot machined later | ~0.15 m² | in canards | ~$20 | |
-| Printed canard bay | PETG / ASA / CF-nylon — **not PLA**, heat-set inserts. **Must carry the bearing housing collar**, 3.700 mm of ⌀8 bore per hinge — that collar is worth 3.2× → 21.3× on the bearing seat | 1 | in structure | ~$10 | |
+| Printed canard bay | **PETG-CF** (plain PETG passes too, at 10.0× instead of 14.5×) — **not PLA**, 8× M2 heat-set inserts. **Carries the bearing housing collar**, 3.700 mm of ⌀8 bore per hinge, worth 3.4× → 14.5× on the bearing seat. 39 g, one print. Design in `design/bay.py`, CAD by `scripts/make_bay_cad.py` | 1 | in structure | ~$10 | ✅ |
 | Printed panel bonding jig | Not a flight part. Holds skin/core/skin and the tang in alignment while the epoxy cures, 4× | 1 | — | ~$3 | |
 
 **Two lines here are load path, not hardware, and buying the wrong thing quietly deletes
@@ -70,7 +70,7 @@ them.** The panel makes 0.0599 N·m about the hinge — that is what sizes the s
 that moment is carried by a 2.3 mm fibreglass hole and then by the servo's own output shaft:
 175 MPa against an 80 MPa allowable, 0.46× where 2.0× is required. The **housing collar in
 the printed bay** is the second: it holds 3.700 mm of the 6.0 mm bearing, and without it the
-bearing seat runs at 3.2× instead of 21.3×.
+bearing seat runs at 3.4× instead of 14.5×.
 
 **Why the servo frame was dropped.** This line used to read "carries the panel bending
 moment off the servo spline", and that was an assumption nobody had checked. The commercial

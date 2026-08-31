@@ -121,11 +121,16 @@ Revolute. Tick Limits and enter −8 deg, **Tab**, 8 deg — clicking between th
 fields lands on the units autocomplete instead, and `Ctrl/Cmd+A` in that dialog clears the
 mate connector selection rather than the text.
 
-**Printed bay**: NO LONGER BLOCKED (Aug 2026). It was held on "picking real bracket
+**Printed bay**: BUILT (Aug 2026) — see "The printed bay" below. It was previously recorded
+as blocked, then as unblocked; it is now geometry. What follows is the note from when it was
+unblocked, kept because the collar argument in it is still the reason the part exists.
+
+ It was held on "picking real bracket
 hardware"; the bracket turned out not to be needed — see docs/04 on why the commercial servo
 frames were dropped — and the bay is printable now. **It is the last open item in the hinge
 load path and it has a number on it**: the housing collar carries 3.700 mm of the 6.0 mm
-bearing, worth **3.2× → 21.3×** on the bearing seat. See "How this actually gets built".
+bearing, worth **3.4× → 14.5×** on the bearing seat. See "How this actually gets built"
+and "The printed bay".
 Forward wiring pass-through and aft gas seal are still open. The mate connectors the hinges
 need exist in pairs on each hinge axis (`canardHingeConnectors`), the rigid groups either
 side of each hinge exist, and **the mates are in** — see above.
@@ -549,11 +554,108 @@ locates the tang on the hinge axis at the correct chordwise station costs an hou
 time and removes the only real risk in the approach. Keep epoxy off the ⌀6 journal; that
 surface has to turn in the bearing.
 
-**Still unmodelled, deliberately:** the printed bay itself, the collar, the jig, and the
-bought servo horn. They are requirements here and in docs/04, not geometry, and the bay is
-step 6. When the bay is drawn, the collar has to be checked against the bearing — and that
-check needs both of them to exist as solids, which is why `make_bearing_cad.py` builds the
-bearing as a real part rather than leaving it a dimension.
+**Still unmodelled, deliberately:** the panel bonding jig and the aft gas seal. The bay and
+its collar were on this list until Aug 2026 and are now real geometry — see "The printed
+bay" below. The bought servo horn is off the list for a different reason: it does not fit.
+
+That last paragraph used to end "when the bay is drawn, the collar has to be checked against
+the bearing". It was drawn, the check was run, and it found a **servo-flange clash** that no
+amount of reading the numbers would have shown. Modelling the bearing as a solid rather than
+a dimension is what made that check possible.
+
+## The printed bay
+
+Added August 2026. Model in `design/bay.py`, argument in `out/bay_report.txt` (regenerate
+with `python scripts/bay_report.py`), geometry in `cad/canard_bay.fs`, built by
+`python scripts/make_bay_cad.py --apply --assemble`. **One printed part, PETG-CF, 39 g**,
+plus eight small retainer bars.
+
+It does two jobs. It puts each servo's output spline on its hinge axis, and it carries the
+inboard **3.700 mm** of each bearing — the half of the seat the 2.3 mm airframe wall cannot
+reach.
+
+### The collar is worth 3.4× → 14.5×, and the number it replaces was 21.3×
+
+The bearing seat is **two materials**: 2.300 mm of G10 wall outboard, 3.700 mm of printed
+polymer inboard. Every document in this project priced the collar by putting the whole
+6.0 mm into `p = 6M/(dL²) + N/(dL)`, which is the formula for one material.
+
+A rigid pin in an elastic housing shares its couple out **by stiffness, not by length**. G10
+is 18 GPa; PETG is 1.7. Make the collar soft and it moves aside — the load walks back into
+the G10 and the effective seat shortens toward the bare wall. Length is necessary and it is
+not sufficient.
+
+| collar | E, GPa | peak in the collar | peak in the wall | wall margin | effective seat |
+|---|---|---|---|---|---|
+| none | — | — | 109.0 MPa | 3.4× | 2.37 mm |
+| PETG | 1.7 | 9.7 MPa | 37.1 MPa | 10.0× | 4.08 mm |
+| ASA | 2.0 | 10.1 MPa | 34.6 MPa | 10.7× | 4.22 mm |
+| **PETG-CF** | **4.5** | **11.9 MPa** | **25.5 MPa** | **14.5×** | **4.93 mm** |
+| PA6-CF | 6.0 | 12.6 MPa | 23.3 MPa | 15.9× | 5.17 mm |
+| *as stiff as G10* | *18.0* | *16.3 MPa* | *17.3 MPa* | *21.4×* | *6.00 mm* |
+
+`design/bay.py` models this as a Winkler foundation with a piecewise modulus and asserts
+that it reduces to the single-material formula when both materials match. **Build the
+collar** — 3.4× → 14.5× is still the largest margin improvement anywhere in this hinge — but
+choose the filament on **stiffness**. Every candidate is strong enough; they differ in how
+much of the collar's benefit they deliver. Plain PETG passes if there is no hardened nozzle.
+
+### Layout
+
+| | |
+|---|---|
+| Shell | ⌀74.500 × 2.400 wall, Z 53.129 → 94.629 (41.5 long). 0.150 mm radial epoxy gap to the ⌀74.8 tube ID |
+| Collars, 4 off | ⌀12 boss on each hinge axis, standing 1.150 mm proud of the shell bore, bore printed **⌀7.5** |
+| Servo trays, 4 off | flange face R 27.935, back face R 31.935, 15.0 wide, Z 59.129 → 88.629 |
+| Servo window | 24.100 × 8.600 through the tray — clears the **case** |
+| Flange relief | 8.600 wide over the full 29.5 lug envelope, R 26.935 → 27.935 — clears the **flange** |
+| Clamp inserts | 8 × M2 heat-set, ⌀3.2 × 4.0, at Y ±6.0 on two rows per servo |
+| Retainer bars | 15.0 × 6.4 × 1.5, two per servo, 2× M2 each |
+
+The frame is the module Part Studio's own — origin on the rocket axis, Z 0 at the tube's
+forward face — so the bay drops into `Assembly 1` at **identity**. No transform to compute
+and none to get wrong.
+
+### The servo is clamped, not screwed through its flange
+
+The obvious mounting is the servo's own four M1.4 screws. The geometry rules it out: the lug
+holes sit 1.5 mm beyond the ends of the case, the window has to clear the case, and what is
+left between a lug screw and the window edge is a **0.62 mm ligament** — a perimeter and a
+half, which a slicer may simply not fill. The servo's reaction torque does not go through
+that ligament (it pushes along Y, into 5 mm of tray), so this is a printability problem, not
+a strength one. But "there may or may not be material there" is not a thing to build on.
+
+So the flange is clamped by a printed bar at each end, 2× M2 into heat-set inserts at
+Y ±6.0, well clear of the 8 mm case. Three things come free: the marginal feature stops
+existing, the fastener becomes a size that is buyable and takes an insert, and **a servo can
+be changed after the bay is bonded in** — which matters, because the bay never comes out.
+
+The servo's two ⌀2.0 flange holes are left empty. Their function is not labelled on the KST
+drawing (see `design/packaging.py`), so nothing here depends on a guess about them.
+
+### The clash the CAD found
+
+The clamp bosses and the servo's own flange both wanted R 26.935 → 27.935. Invisible in an
+end-on view, because the tray hides it. Fixed by relieving the flange over the full lug
+envelope; `design/bay.py` now prints a clearance table on every run so it cannot come back:
+
+| | |
+|---|---|
+| servo case vs window | +0.300 each side, +0.300 each end |
+| servo flange vs relief | +0.300 each side |
+| servo top face vs collar | +0.515 radial |
+| servo top face vs shell bore | +1.665 radial |
+| spline tip vs shell OD | +0.865 radial, inside the collar bore |
+| shaft vs printed collar bore | +0.750 radial, before reaming |
+
+### What is still open
+
+**The coupling.** There is 0.515 mm between the servo's output face and the bearing, and
+outboard of that the hole is the ⌀6 bearing bore. No bought 15T ⌀4 horn hub is under
+⌀7.4 × 4 mm. **No bay geometry fixes this** — see docs/01 correction 19.
+
+**The aft gas seal.** A bulkhead between this module and the recovery bay, sealing a bore
+this part deliberately leaves open for wiring. Never sized.
 
 ## Drawing 1 — the Step 3 dimensioned drawing
 
@@ -659,7 +761,8 @@ Onshape elements, and which script owns each:
 | `Part Studio 1` — tube, 4 panels, 4 shafts | `scripts/make_hinge_stack.py`, `cad/canard_articulation.fs` |
 | `KST X08 Plus` — case, spline, cable boss | `scripts/make_servo_cad.py` |
 | `Hinge bearing (⌀6/8 × 6 plain)` | `scripts/make_bearing_cad.py` |
-| `Assembly 1` — 25 instances, 5 rigid groups, 4 revolute hinges | `scripts/make_module_assembly.py`, `scripts/place_bearings.py`; **the 4 mates were placed by hand** |
+| `Canard bay (printed)` — bay + retainer bar | `scripts/make_bay_cad.py`, `cad/canard_bay.fs` |
+| `Assembly 1` — 34 instances, 5 rigid groups, 4 revolute hinges | `scripts/make_module_assembly.py`, `scripts/place_bearings.py`, `scripts/make_bay_cad.py --assemble`; **the 4 mates were placed by hand** |
 
 ## Dimensions
 

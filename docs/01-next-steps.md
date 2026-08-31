@@ -53,7 +53,8 @@ Read this first if you are picking the project back up.
   joint; `scripts/hinge_report.py` prints both and `scripts/baseline.py` carries both
   verdicts so neither can silently regress. **The one open item in the whole hinge is the
   housing collar** — no longer blocked (correction 16 removed the bracket it was waiting
-  on), and worth a measured 3.2× → 21.3× on the bearing seat.
+  on), and worth a measured **3.4× → 14.5×** on the bearing seat — see correction 19,
+  which is where the 21.3× this document used to quote went.
 - **The bearing is geometry now, not a dimension.** It was the last part of the hinge that
   existed only as a number, and an unmodelled part cannot collide with anything — the same
   trap that hid a hard servo clash for weeks when the servo was a bounding box. Part Studio
@@ -63,6 +64,13 @@ Read this first if you are picking the project back up.
   places it, both are safe to re-run. **This is what the printed bay's collar now gets drawn
   against.**
 
+- **The printed bay is built** (correction 19). `design/bay.py` models it, `cad/canard_bay.fs`
+  and `scripts/make_bay_cad.py` build it, `scripts/bay_report.py` prints the argument, and
+  `Assembly 1` holds it at identity along with eight retainer bars. One PETG-CF print, 39 g.
+  **The hinge load path is now geometry end to end**, tube to panel, with nothing left as a
+  dimension. Two things it turned up are open and neither is a bay problem: **the coupling**
+  (no bought servo horn fits in 0.515 mm — correction 19) and **the aft gas seal**, which is
+  a bulkhead and has never been sized.
 - **Step 4 is next**: avionics. Decisions D7 (flight computer) and D8 (state estimation)
   are open and drive the largest, least specified line in the budget.
 
@@ -260,7 +268,9 @@ that silently recurs:
 
    **The bearing seat is, at 3.2×** — and only because the housing collar does not exist.
    3.700 mm of the 6.0 mm bearing sits inboard of the tube ID, so with no collar the 2.3 mm
-   wall holds it alone at 116.2 MPa; with the collar, 17.4 MPa and 21.3×. Peak pressure goes
+   wall holds it alone at 109 MPa; with a PETG-CF collar, 25.5 MPa and 14.5×. (This
+   line read "17.4 MPa and 21.3×" until correction 19 asked what the collar was made
+   of.) Peak pressure goes
    as 1/L², so those are **6.7× apart**. The printed bay was already blocked on bracket
    hardware; it is now blocked on something with a number attached. Two caveats stated
    rather than buried: the allowables are G-10 *sheet* and a filament-wound tube is not
@@ -302,8 +312,9 @@ that silently recurs:
 
 17. **The printed bay is unblocked, and it is the best-value part in the module.** It was
    held on "picking real bracket hardware", and correction 16 removed the bracket. The
-   collar on it carries 3.700 mm of the 6.0 mm bearing — worth **3.2× → 21.3×** on the
-   bearing seat, because peak pressure goes as 1/L². The build order is the part to get
+   collar on it carries 3.700 mm of the 6.0 mm bearing — worth **3.4× → 14.5×** on the
+   bearing seat, because peak pressure goes as 1/L² *and* because load goes where the
+   stiffness is (correction 19). The build order is the part to get
    right: print the collar bore undersize, bond the bay in, then ream **⌀8 H7 through the
    wall and the collar in one pass**, so concentricity is a property of the operation rather
    than a tolerance held across two parts. A pinched bearing is a mechanism failure, and no
@@ -334,6 +345,67 @@ that silently recurs:
      the tolerance stays tight deliberately: a guard loose enough never to trip is a guard
      that will not catch the circular pattern dropping materials, which is the failure it
      exists for. **A rise is as suspect as a fall until you can name the geometry.**
+
+19. **The printed bay is built, and building it corrected the number that justified it.**
+   `design/bay.py`, `scripts/bay_report.py`, `cad/canard_bay.fs`, `scripts/make_bay_cad.py`.
+   One printed part, **PETG-CF, 39 g, 41.5 mm long**, holding four servos and four bearing
+   collars; plus eight small retainer bars. It is in `Assembly 1` at identity, because it
+   was drawn in the module's own frame.
+
+   **The collar is worth 3.4× → 14.5×, not 3.2× → 21.3×.** Every document here priced it by
+   putting the whole 6.0 mm bearing length into `p = 6M/(dL²) + N/(dL)` — a formula for ONE
+   material. The seat is 2.300 mm of G10 and 3.700 mm of printed plastic, and **a rigid pin
+   shares its couple out by stiffness, not by length**. A soft collar simply moves aside and
+   the load walks back into the G10. `design/bay.py` models it as a Winkler foundation with
+   a piecewise modulus, and it reduces exactly to the old formula when both materials match
+   — there is a regression assertion for that, because a generalisation that cannot recover
+   the case it generalises is not worth trusting.
+
+   | collar | E, GPa | peak in wall | wall margin | effective seat |
+   |---|---|---|---|---|
+   | none | — | 109.0 MPa | 3.4× | 2.37 mm |
+   | PETG | 1.7 | 37.1 MPa | 10.0× | 4.08 mm |
+   | **PETG-CF** | **4.5** | **25.5 MPa** | **14.5×** | **4.93 mm** |
+   | PA6-CF | 6.0 | 23.3 MPa | 15.9× | 5.17 mm |
+   | *as stiff as G10* | *18.0* | *17.3 MPa* | *21.4×* | *6.00 mm* |
+
+   **Build it anyway** — 3.4× → 14.5× is still the largest margin improvement anywhere in
+   this hinge. But the bay is chosen on STIFFNESS, not strength: every candidate is strong
+   enough, and they differ only in how much of the collar's benefit they actually deliver.
+   Plain PETG passes everything if there is no hardened nozzle.
+
+   Three more things came out of drawing it:
+   - **No bought servo horn fits, and correction 16 says to buy one.** There is
+     **0.515 mm** between the servo's output face and the bearing; outboard of that the hole
+     is the ⌀6 bearing bore. The thinnest 15T ⌀4 horn hub is ~⌀7.4 × 4 mm. Nothing is
+     mis-analysed — `design/hinge.py` never adopted the horn and still models and checks the
+     broached ⌀4.4 × 2.9 socket at 29.9 MPa — but a builder following these documents would
+     find out with four servos in hand. **The coupling is unresolved and it is not a bay
+     problem**: no bay geometry fixes it. Either the shaft's spline gets broached or EDM'd
+     with the rest of the part (it is already the one custom-machined piece), or the servo
+     moves further inboard, and only ~2 mm of that is available before the four cable
+     bosses collide.
+   - **The servo is clamped, not screwed through its own flange.** Its lug holes sit 1.5 mm
+     beyond the case ends and the tray window has to clear the case, which leaves a
+     **0.62 mm ligament** — a perimeter and a half, which a slicer may not fill. The load
+     does not go through it, so this is printability rather than strength, but "there may or
+     may not be material there" is not a thing to build on. A printed bar clamps each end of
+     the flange with 2× M2 into heat-set inserts, which also means a servo can be changed
+     after the bay is bonded in — and the bay never comes out again.
+   - **The bay would have clashed with the servo's own flange**, bosses and flange both
+     wanting R 26.935→27.935. Found in CAD, not in the model, and invisible in an end-on
+     view because the tray hides it. Fixed with a flange relief; `design/bay.py` now carries
+     a clearance table so it cannot come back.
+
+20. **The mass budget carries 240 g where the CAD now measures 63 g, and that is yours to
+   decide.** `design/mass.py` has `canard shafts/bearings/sled = 4 × 0.030 + 0.120`, a
+   placeholder from before any of it existed. Measured: 4 shafts 23.5 g, 4 bearings 0.8 g,
+   bay and bars 38.6 g — **62.8 g**. The 177 g of difference sits at station 0.507 m, which
+   is *forward* of the 0.800 m CG, so deleting it moves the CG aft and **reduces** static
+   margin from 2.03–2.53 cal. That is probably a good thing (less weathercocking, more
+   crossrange) but it is a vehicle-level change to every number in §1, so **nothing has been
+   changed**. What the placeholder still legitimately covers is wiring, connectors,
+   fasteners, epoxy and the aft gas seal — call that 40 g, not 177 g.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.

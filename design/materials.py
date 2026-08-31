@@ -35,6 +35,53 @@ DATASHEET_CONFIDENCE_MARGIN = 4.0
 # 6061-T6 works but 303 stainless is the sensible part to buy for a 7 mm long journal.
 SHAFT_YIELD = {"6061-T6": 276.0e6, "303 stainless": 240.0e6, "4140 steel": 655.0e6}
 
+# --- FDM print materials, for the canard bay ---------------------------------------------
+# THE SAME CAVEAT AS THE FIBERGLASS, ONLY WORSE. A printed part is not a moulded coupon:
+# published figures are injection-moulded test bars, and an FDM part typically reaches
+# 50-80% of them IN PLANE and far less ACROSS the layers. The numbers below are already
+# knocked down toward what a well-tuned printer produces at 100% infill with the load in
+# the layer plane. They are for choosing BETWEEN materials and for finding out whether a
+# margin is 2x or 20x; they are not for quoting a third digit.
+#
+# THE LOAD DIRECTION IS THE WHOLE REASON THIS IS USABLE. The bay is printed with the rocket
+# axis vertical, so the layers lie in planes normal to that axis. The canard panel's normal
+# force is CIRCUMFERENTIAL (the panel is a plate in the axis-radius plane, so deflecting it
+# throws lift sideways), which means the couple it hands the collar presses on the bore
+# IN THE LAYER PLANE. Print it any other way and the governing property becomes interlayer
+# strength, which is roughly half of these and much less repeatable.
+#
+# PLA is deliberately absent: ~55 C heat deflection is below what a dark airframe reaches
+# sitting on a pad, and this part holds the hinge alignment.
+class PrintMaterial:
+    def __init__(self, name: str, modulus: float, compressive: float,
+                 heat_deflection_c: float, note: str = ""):
+        self.name = name
+        self.modulus = modulus            # Pa, in-plane tensile
+        self.compressive = compressive    # Pa, in-plane compressive / bearing
+        self.heat_deflection_c = heat_deflection_c
+        self.note = note
+
+    def __repr__(self) -> str:
+        return f"PrintMaterial({self.name!r})"
+
+
+PRINT_MATERIALS: dict[str, PrintMaterial] = {
+    "PETG": PrintMaterial("PETG", 1.7e9, 50.0e6, 70.0,
+                          "cheapest, prints on anything, lowest stiffness"),
+    "ASA": PrintMaterial("ASA", 2.0e9, 55.0e6, 95.0,
+                         "UV and heat tolerant; wants an enclosure"),
+    "PETG-CF": PrintMaterial("PETG-CF", 4.5e9, 65.0e6, 75.0,
+                             "chopped carbon; needs a hardened nozzle"),
+    "PA6-CF": PrintMaterial("PA6-CF", 6.0e9, 90.0e6, 140.0,
+                            "stiffest and most dimensionally stable, but hygroscopic "
+                            "-- dry it or the bore moves"),
+}
+
+# The bay material the project selects. See design/bay.py for why stiffness, not strength,
+# is the property that decides this: the collar shares a bearing seat with a G10 wall 10x
+# stiffer than PETG, and load goes where the stiffness is.
+BAY_MATERIAL = "PETG-CF"
+
 # --- polymer plain bearing --------------------------------------------------------------
 # Static permissible surface pressure for a polymer plain bearing on a hard shaft.
 # 80 MPa is the igus iglidur G class; iglidur J is 35 MPa and iglidur X is ~150 MPa.
