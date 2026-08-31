@@ -33,21 +33,22 @@ works. Size it for the full charge instead and the pins are guaranteed to be the
 that gives, which is the failure you want. It costs two sheet sizes and about 23 g;
 `scripts/seal_report.py` prints both thicknesses so the claim cannot go stale.
 
-THE VENT PATH, and why the two open items in `docs/05` are one item.
+THE VENT PATH -- AND THIS FILE GOT IT WRONG FIRST, WHICH IS WHY IT IS STILL HERE.
 
-`docs/05` lists the forward wiring pass-through and the aft gas seal as two separate open
-items. They are the same decision seen from both ends. The canard module has to breathe --
-a bay sealed at ground pressure carries about 15 kPa outward at apogee -- and it has exactly
-two faces it could breathe through. It must not be the aft one, because the volume on the
-other side of the aft face is where the ejection charge fires. So the module vents FORWARD,
-through the wiring pass-through, into the nav bay, which is where the altimeter's static
-ports already are.
+The first version of this docstring argued that the canard module has "exactly two faces it
+could breathe through", that it must not be the aft one because that is where the charge
+fires, and that it therefore vents FORWARD into the nav bay -- putting the module inside the
+altimeter's static volume and making a leak past this seal a pressure-sensor fault.
 
-That has a consequence nobody has written down: **the canard module's free volume becomes
-part of the altimeter's static volume.** Two things follow, and both are checked below.
-A leak past the aft seal does not merely put soot in the module; it puts ejection gas into
-the pressure sense volume of the altimeter that fires the charges, mid-deployment. And the
-nav bay's static ports are sized for the nav bay, which is now the wrong volume.
+Every step of that is sound except the premise. **A bay is a cylinder, and the third surface
+is the wall.** The module vents overboard through two dia 2 mm holes in its own wall, like
+every other bay in high-power rocketry, and then none of the rest follows: the sense volume
+is the nav bay alone, the wiring pass-through gets potted SOLID rather than having to pass
+air, and a leak past this seal goes outside instead of into the altimeter.
+
+The framing is what failed, not any number -- "it has two faces and one is disqualified" is
+a complete-sounding argument that silently excluded the answer. See `design/venting.py`,
+which owns this now, and correction 1, which is the same shape.
 
 WHAT THIS MODULE DOES NOT DO.
 
@@ -57,9 +58,11 @@ WHAT THIS MODULE DOES NOT DO.
     the two cases computed here. GROUND TEST IS THE ARBITER, twice, per docs/01 step 5.
   * It does not choose the recovery wiring architecture. It computes what each option costs
     and says which one fits; see `check_seal()`'s notes and docs/05.
-  * It says nothing about the internal bulkhead inside the recovery bay, which is a
-    `BULKHEAD_THICKNESS` allowance in `recovery.py` and nothing more. That part now needs
-    the same treatment this one just got.
+  * It no longer stops at the aft gas seal. `internal_bulkhead_from_evaluation()` applies
+    the same model to the recovery bay's internal bulkhead, which was a `BULKHEAD_THICKNESS`
+    allowance in `recovery.py` and nothing more.
+  * It does not size the booster's forward bulkhead, which closes the drogue compartment's
+    aft end. That one is part of the motor mount structure and belongs with it.
 """
 
 from __future__ import annotations
@@ -256,6 +259,20 @@ def compartment_volumes(inner_diameter: float, packed_volume: float,
     `compartment_length` the tube length `recovery.check_packing` gives them. The free
     volume is what is left, and it is small: the fill limit is on the LENGTH the canopy
     needs, not on how much gas can get around it.
+
+    AND THE FREE FRACTION IS VERY NEARLY NOT A PROPERTY OF THE COMPARTMENT. `check_packing`
+    gives each compartment the length its soft goods need at `FILL_LIMIT`, so free /
+    geometric falls out at 1 - FILL_LIMIT whatever is in it: 0.1476 for the main and 0.1458
+    for the drogue against a nominal 0.1500. Both bulkheads therefore see the same
+    stuck-joint pressure to within about 1%, for a reason that has nothing to do with which
+    parachute is in front of them. The residual 2% is the rigid hardware -- U-bolts and the
+    conduit -- which is added to the length directly rather than through the fill limit.
+
+    **So `recovery.FILL_LIMIT` sets the design pressure of every bulkhead in the rocket.**
+    It was chosen as a packing convenience -- "a bay packed to 100% is a bay that will not
+    close on the launch rail with cold hands" -- and nothing said it was structural. Pack to
+    0.90 instead of 0.85 and every bulkhead load goes up by 50%. That coupling is checked in
+    `check_seal()` rather than left here as a remark.
     """
     area = math.pi * inner_diameter**2 / 4.0
     geometric = area * compartment_length
@@ -416,6 +433,28 @@ class FeedThrough:
     def wire_area(self) -> float:
         return self.n_holes * math.pi * self.hole_diameter**2 / 4.0
 
+    def net_section_factor(self, plate_radius: float) -> float:
+        """Penalty for the material the holes remove from the worst diameter.
+
+        THE FIRST VERSION OF THIS CLASS HAD NO SUCH TERM, and it meant `hole_diameter` was
+        carried, printed, and used by nothing: a 4 mm hole and a 12 mm hole returned the
+        same margin. That is worse than a wrong number, because the field reads as though it
+        has been accounted for.
+
+        The correction is the elementary one -- the section through the holes carries the
+        load on what is left of it -- and it is deliberately crude, because a circular plate
+        in bending with off-centre holes is not a case that has a neat closed form. It is
+        enough to make the model respond to the thing it is named after, and it lands within
+        a few percent for the small holes here. If a hole ever gets past about a quarter of
+        the plate diameter, stop using this and go and find a real solution.
+        """
+        removed = self.n_holes * self.hole_diameter / (2.0 * plate_radius)
+        if removed >= 0.5:
+            raise ValueError(
+                f"{self.n_holes} x dia {self.hole_diameter * 1e3:.1f} mm removes "
+                f"{removed * 100:.0f}% of the diameter; this correction is not valid there")
+        return 1.0 / (1.0 - removed)
+
 
 @dataclass
 class SealCheck:
@@ -428,6 +467,7 @@ class SealCheck:
 class SealResult:
     """Everything the seal report and `baseline.py` need, computed once."""
 
+    name: str
     joint: Joint
     bulkhead: Bulkhead
     feed_through: FeedThrough
@@ -439,6 +479,7 @@ class SealResult:
     shock_infinite_mass: float
     deploy_velocity: float
     descent_mass: float
+    protected_by_pins: bool = True
 
     @property
     def governing_pressure(self) -> float:
@@ -481,7 +522,8 @@ class SealResult:
     @property
     def hole_stress(self) -> float:
         f = self.feed_through
-        return f.kt * self.bulkhead.hole_field(self.governing_pressure, f.radius_in_plate)
+        return (f.kt * f.net_section_factor(self.bulkhead.radius)
+                * self.bulkhead.hole_field(self.governing_pressure, f.radius_in_plate))
 
     @property
     def hole_margin(self) -> float:
@@ -492,7 +534,7 @@ class SealResult:
         return "the feed-through hole" if self.hole_margin < self.plate_margin else "the disc"
 
 
-def size_bulkhead(bore_diameter: float, pressure: float,
+def size_bulkhead(bore_diameter: float, pressure: float, feed: FeedThrough,
                   thicknesses: list[float] | None = None) -> float:
     """Thinnest STOCKED G-10 sheet that carries `pressure` with margin, m.
 
@@ -508,7 +550,8 @@ def size_bulkhead(bore_diameter: float, pressure: float,
         hole_r = plate.quiet_radius()
         plate_margin = plate.flexural_allowable / plate.stress(pressure)
         hole_margin = plate.flexural_allowable / (
-            KT_HOLE_BENDING * plate.hole_field(pressure, hole_r)
+            feed.kt * feed.net_section_factor(plate.radius)
+            * plate.hole_field(pressure, hole_r)
         )
         if min(plate_margin, hole_margin) >= PLATE_MARGIN_REQUIRED:
             return t
@@ -518,12 +561,18 @@ def size_bulkhead(bore_diameter: float, pressure: float,
 def build(inner_diameter: float, packed_volume: float, compartment_length: float,
           descent_mass: float, deploy_velocity: float, main_cd_a: float,
           air_density: float, n_pins: int = 3, thickness: float | None = None,
+          name: str = "aft gas seal", hole_diameter: float = 0.004, n_holes: int = 2,
+          protected_by_pins: bool = True,
           ) -> SealResult:
-    """Assemble the whole case for the aft gas seal from the vehicle's own numbers.
+    """Assemble the whole case for one bulkhead from the vehicle's own numbers.
 
     Every argument comes from somewhere else in the project -- the compartment from
     `recovery.check_packing`, the descent numbers from `recovery.simulate_descent`. Nothing
     about the recovery bay is restated here, for the reason `configure.py` gives.
+
+    Used for BOTH bulkheads. The aft gas seal and the recovery bay's internal bulkhead are
+    the same part solving the same problem at two stations, and writing the second one as a
+    copy of the first is how six scripts once ended up each carrying their own baseline.
     """
     joint = Joint(bore_diameter=inner_diameter, n_pins=n_pins)
     geometric, free = compartment_volumes(inner_diameter, packed_volume, compartment_length)
@@ -532,25 +581,29 @@ def build(inner_diameter: float, packed_volume: float, compartment_length: float
     design = EjectionCase("design, joint releases", charge, geometric, joint.area)
     stuck = EjectionCase("stuck joint, packed volume", charge, free, joint.area)
 
-    t = thickness if thickness is not None else size_bulkhead(inner_diameter, stuck.pressure)
+    # The hole has to exist before the thickness can be chosen, because the hole is what
+    # chooses it. Sized against a trial plate's quiet radius, which does not depend on
+    # thickness -- `quiet_radius()` is a ratio.
+    trial = Bulkhead(inner_diameter, G10_SHEET_THICKNESS[0])
+    feed = FeedThrough(hole_diameter=hole_diameter, radius_in_plate=trial.quiet_radius(),
+                       n_holes=n_holes)
+
+    t = thickness if thickness is not None else size_bulkhead(
+        inner_diameter, stuck.pressure, feed)
     # The glue line is the disc edge plus a fillet either side. 6 mm total is a fillet a
     # person can actually lay with a gloved finger through a 74.8 mm tube; claiming more
     # than that is claiming access that does not exist.
     plate = Bulkhead(inner_diameter, t, bond_length=t + 0.006)
 
-    # Two holes: one firing circuit terminates on this disc, one continues aft to the
-    # drogue. Placed at the clamped plate's quiet radius -- computed, not typed, because
-    # it moves with Poisson's ratio and a hardcoded 0.6 would not.
-    feed = FeedThrough(hole_diameter=0.004, radius_in_plate=plate.quiet_radius(), n_holes=2)
-
     shock = opening_shock(descent_mass, deploy_velocity, main_cd_a, air_density, 1.0)
     shock_inf = opening_shock(descent_mass, deploy_velocity, main_cd_a, air_density, 1.7)
 
     return SealResult(
+        name=name,
         joint=joint, bulkhead=plate, feed_through=feed, design=design, stuck=stuck,
         geometric_volume=geometric, free_volume=free, shock=shock,
         shock_infinite_mass=shock_inf, deploy_velocity=deploy_velocity,
-        descent_mass=descent_mass,
+        descent_mass=descent_mass, protected_by_pins=protected_by_pins,
     )
 
 
@@ -584,15 +637,50 @@ def check_seal(r: SealResult) -> SealCheck:
         v.append(
             "the stuck-joint pressure is below the pin release pressure, which means the "
             "charge cannot open the joint at all")
-    else:
+    elif r.protected_by_pins:
         notes.append(
             f"pins release at {pin_pressure / 1e3:.0f} kPa and the disc holds to "
             f"{r.pressure_capacity / 1e3:.0f} kPa, so the pins are "
             f"{r.pressure_capacity / pin_pressure:.0f}x the weaker link. That ratio is the "
             f"design intent, not a coincidence")
+    else:
+        notes.append(
+            "NO FUSE PROTECTS THIS ONE. It is bonded into the tube at both ends of its load "
+            "path, so a joint that sticks does not blow a pin here -- it simply hands the "
+            "disc the whole charge. For this part the stuck case is not a contingency, it "
+            "is the only case")
+
+    # --- the packing convenience that turned out to be structural --------------------
+    from .recovery import BULKHEAD_THICKNESS, FILL_LIMIT
+    tighter = 0.90
+    scaled = r.governing_pressure * (1.0 - FILL_LIMIT) / (1.0 - tighter)
+    notes.append(
+        f"recovery.FILL_LIMIT = {FILL_LIMIT:.2f} SETS THIS PRESSURE. The free volume a "
+        f"charge fires into is what the packing leaves over, so packing to {tighter:.2f} "
+        f"instead would take {r.governing_pressure / 1e3:.0f} kPa to {scaled / 1e3:.0f} kPa "
+        f"-- a number chosen so a bay would close with cold hands is loading every bulkhead "
+        f"in the rocket")
+
+    # --- the length allowance nobody had checked --------------------------------------
+    stack = stack_length(r)
+    if stack > BULKHEAD_THICKNESS:
+        v.append(
+            f"the assembled bulkhead is {stack * 1000:.1f} mm against the "
+            f"{BULKHEAD_THICKNESS * 1000:.1f} mm that recovery.BULKHEAD_THICKNESS budgets "
+            f"for it, so the recovery bay is {(stack - BULKHEAD_THICKNESS) * 1000:.1f} mm "
+            f"short per internal division")
+    else:
+        notes.append(
+            f"assembled stack {stack * 1000:.1f} mm (disc + a 3 mm fillet each face) inside "
+            f"the {BULKHEAD_THICKNESS * 1000:.1f} mm recovery.BULKHEAD_THICKNESS allowance, "
+            f"which until now was a typed number nothing had checked")
 
     # --- the charge has to be able to open the joint ---------------------------------
-    if r.design.force < SEPARATION_FACTOR * r.joint.release_force:
+    # The 1e-9 is not slop. The charge is sized FROM this requirement, so the two sides are
+    # the same number arriving by different arithmetic, and a bare `<` trips on the last
+    # bit. The check still earns its place: it bites the moment anyone overrides the charge
+    # or the pin count without re-sizing.
+    if r.design.force < SEPARATION_FACTOR * r.joint.release_force * (1.0 - 1e-9):
         v.append(
             f"charge makes {r.design.force:.0f} N against {r.joint.release_force:.0f} N of "
             f"pins and friction; that is {r.design.force / r.joint.release_force:.1f}x, "
@@ -638,11 +726,13 @@ def check_seal(r: SealResult) -> SealCheck:
         f"{BP_FLAME_TEMPERATURE:.0f} K; the disc is the heat shield, so the sealant belongs "
         f"behind it. Potting the exposed face is the version of this part that works on the "
         f"bench and sooties the nav bay in flight")
-    notes.append(
-        "THE MODULE VENTS FORWARD, never aft: the volume aft of this disc is where the "
-        "charge fires. That makes the canard module part of the altimeter's static volume, "
-        "so the nav bay's static ports have to be sized for both bays together, and a leak "
-        "past this seal reaches the pressure sensor that fires the charges")
+    if r.protected_by_pins:
+        notes.append(
+            "THE MODULE VENTS THROUGH ITS OWN WALL, not through this disc and not forward "
+            "into the nav bay -- see design/venting.py, which corrects the argument this "
+            "file was first written on. The consequence is that the wiring pass-through is "
+            "POTTED SOLID and the module is not in the altimeter's sense volume, so a leak "
+            "past this seal goes overboard instead of into the sensor that fires the charges")
 
     if min(r.plate_margin, r.shock_margin, r.bond_margin) < DATASHEET_CONFIDENCE_MARGIN:
         notes.append(
@@ -654,7 +744,7 @@ def check_seal(r: SealResult) -> SealCheck:
 
 
 def from_evaluation(ev, main_deploy_altitude: float = 200.0) -> SealResult:
-    """Build the seal case straight from `configure.evaluate()`.
+    """The AFT GAS SEAL case, straight from `configure.evaluate()`.
 
     One constructor, used by `scripts/seal_report.py` and by `scripts/baseline.py`, so the
     two cannot end up describing different bulkheads. Six scripts once carried their own
@@ -676,6 +766,7 @@ def from_evaluation(ev, main_deploy_altitude: float = 200.0) -> SealResult:
     drogue = recovery.Canopy("drogue", 0.457, 1.5)  # 18 in, per scripts/recovery_study.py
 
     return build(
+        name="aft gas seal",
         inner_diameter=tube.inner_diameter,
         packed_volume=packed_volume,
         compartment_length=comp_length,
@@ -684,3 +775,76 @@ def from_evaluation(ev, main_deploy_altitude: float = 200.0) -> SealResult:
         main_cd_a=main.cd_a,
         air_density=atmosphere.density(main_deploy_altitude),
     )
+
+
+def internal_bulkhead_from_evaluation(ev, main_deploy_altitude: float = 200.0) -> SealResult:
+    """The RECOVERY BAY'S INTERNAL BULKHEAD, the part that was a 12 mm length allowance.
+
+    `recovery.BULKHEAD_THICKNESS = 0.012` is the only statement this project has ever made
+    about it, and that is a LENGTH, not a design. The part it stands for divides the two
+    compartments, has a charge on BOTH faces, and anchors both harnesses.
+
+    THREE THINGS MAKE IT THE HARDER OF THE TWO BULKHEADS, and none of them made it thicker:
+
+      * **It has no fuse.** The aft gas seal is protected by shear pins that go first
+        (`check_seal`'s fuse note). Nothing protects this one -- it is bonded into the tube
+        at both ends of its load path, so if a joint sticks, it simply holds the pressure.
+        The stuck case is not a contingency here, it is the only case.
+      * **It is loaded from both sides, at different times.** The main's charge presses it
+        aft at 200 m; the drogue's presses it forward at apogee. Never both at once, so the
+        governing pressure is the larger, not the sum -- but the U-bolt, the fillet and the
+        potting have to exist on both faces, which is what actually costs length.
+      * **The conduit crosses it.** A dia 6 hole rather than the seal's two dia 4, because
+        the drogue's firing circuit runs in a conduit through the main compartment
+        (`recovery.add_conduit`) and this is where it lands.
+
+    And the two pressures come out equal to within 1.3%, for the reason
+    `compartment_volumes()` explains: both compartments are packed to the same fill limit,
+    so both leave the same free fraction. That is worth knowing before anyone reasons that
+    the smaller compartment must be the gentler one -- it holds a quarter of the volume and
+    it is 1% worse.
+    """
+    from . import atmosphere, recovery
+
+    tube = next(t for t in ev.rocket.tubes if t.name == "recovery bay")
+    descent_mass = ev.masses.dry_mass
+
+    # Take the worse of the two compartments rather than assuming which one it is.
+    cases = []
+    for _, packed_volume, comp_length in ev.packing.compartments:
+        geometric, free = compartment_volumes(
+            tube.inner_diameter, packed_volume, comp_length)
+        cases.append((free / geometric, packed_volume, comp_length))
+    _, packed_volume, comp_length = min(cases)  # smallest free fraction = worst pressure
+
+    main = recovery.Canopy("main", recovery.size_for_descent_rate(descent_mass, 5.0), 2.2)
+    drogue = recovery.Canopy("drogue", 0.457, 1.5)
+
+    return build(
+        name="internal bulkhead",
+        inner_diameter=tube.inner_diameter,
+        packed_volume=packed_volume,
+        compartment_length=comp_length,
+        descent_mass=descent_mass,
+        # The main's opening shock reaches BOTH ends of the main harness, and this is the
+        # aft end. It is the larger of the two shocks this part sees by a wide margin: the
+        # drogue opens at apogee, where the vehicle is barely moving.
+        deploy_velocity=drogue.descent_rate(descent_mass, main_deploy_altitude),
+        main_cd_a=main.cd_a,
+        air_density=atmosphere.density(main_deploy_altitude),
+        hole_diameter=recovery.CONDUIT_OUTER_DIAMETER + 0.001,
+        n_holes=1,
+        protected_by_pins=False,
+    )
+
+
+def stack_length(r: SealResult, fillet: float = 0.003) -> float:
+    """Axial length this bulkhead assembly actually consumes, m.
+
+    The disc, a fillet on each face, and that is it -- the U-bolt standing proud of it is
+    counted as displaced PACKING volume in `recovery.Compartment.hardware`, not as length,
+    because the canopy packs around it rather than behind it. Compared against
+    `recovery.BULKHEAD_THICKNESS` by `check_seal()`, since that allowance was typed before
+    any of this existed and correction 5 is what happens when a typed number goes unchecked.
+    """
+    return r.bulkhead.thickness + 2.0 * fillet

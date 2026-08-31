@@ -15,10 +15,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from design import recovery, seal
+from design import avionics, recovery, seal, venting
 from design.configure import baseline, evaluate
 
 MM = 1000.0
+
+# Free air in the canard module: the tube's own volume less the servos, the printed bay, the
+# shafts and the bearings, from their CAD masses and densities. An estimate, and it only has
+# to be good enough to size a vent hole that convention already oversizes by 300x.
+CANARD_MODULE_FREE_VOLUME = 570e-6  # m^3
 OUT = Path(__file__).resolve().parents[1] / "out" / "seal_report.txt"
 
 lines: list[str] = []
@@ -179,25 +184,102 @@ def main() -> None:
     for n in chk.notes:
         say(f"    note  {n}")
 
-    rule("WHAT IS STILL OPEN, AND IT IS NOT THIS PART")
+    rule("THE SECOND BULKHEAD -- the one that was a 12 mm length allowance")
     say()
-    say("  1. THE DROGUE'S FIRING CIRCUIT HAS NOWHERE TO RUN. This disc closes the FORWARD")
-    say("     compartment, so the main's charge terminates on its aft face -- a terminal")
-    say("     block and a charge well, millimetres from where the wires come through. The")
-    say("     drogue's charge is on the far side of the internal bulkhead, and the only")
-    say("     path to it is straight through a compartment packed with the main.")
+    ib = seal.internal_bulkhead_from_evaluation(evaluate(baseline()))
+    ibchk = seal.check_seal(ib)
+    say("  `recovery.BULKHEAD_THICKNESS = 0.012` was the only statement this project had")
+    say("  ever made about the part that divides the two compartments. That is a LENGTH.")
+    say("  The part it stands for has a charge on BOTH faces and anchors both harnesses.")
     say()
-    say("     A thin-wall conduit bonded along the tube wall through the main compartment,")
-    say("     sealed where it crosses both bulkheads, is the standard answer. Priced:")
-    _conduit(r)
+    say(f"  {'':28s} {'aft gas seal':>16s} {'internal bulkhead':>18s}")
+    say("  " + "-" * 66)
+    rows = [
+        ("governing pressure, kPa", lambda x: f"{x.governing_pressure / 1e3:.0f}"),
+        ("free fraction of compartment", lambda x: f"{x.free_volume / x.geometric_volume:.4f}"),
+        ("thickness, mm", lambda x: f"{x.bulkhead.thickness * MM:.1f}"),
+        ("mass, g", lambda x: f"{x.bulkhead.mass * 1e3:.0f}"),
+        ("plate margin", lambda x: f"{x.plate_margin:.2f}x"),
+        ("feed-through", lambda x: f"{x.feed_through.n_holes} x d{x.feed_through.hole_diameter * MM:.0f}"),
+        ("feed-through margin", lambda x: f"{x.hole_margin:.2f}x"),
+        ("protected by shear pins", lambda x: "yes" if x.protected_by_pins else "NO"),
+        ("assembled stack, mm", lambda x: f"{seal.stack_length(x) * MM:.1f}"),
+    ]
+    for label, fn in rows:
+        say(f"  {label:28s} {fn(r):>16s} {fn(ib):>18s}")
     say()
-    say("  2. THE INTERNAL BULKHEAD is a 12.0 mm length allowance in recovery.py and nothing")
-    say("     else. It is a pressure boundary with charges on BOTH faces and it has had")
-    say("     none of the treatment this disc just got.")
+    say("  THE TWO PRESSURES ARE THE SAME AND THAT IS NOT A COINCIDENCE. check_packing gives")
+    say("  every compartment the length its contents need at FILL_LIMIT, so every compartment")
+    say("  leaves the same free fraction, whatever is in it. The drogue compartment holds a")
+    say("  quarter of the volume and is 1% worse. **recovery.FILL_LIMIT, chosen so a bay would")
+    say("  close with cold hands, sets the design pressure of every bulkhead in the rocket.**")
     say()
-    say("  3. THE NAV BAY STATIC PORTS are sized for the nav bay, and the canard module now")
-    say("     vents into it. That is one bay's worth of volume unaccounted for in a")
-    say("     calculation nobody has done yet. It belongs with D7.")
+    say(f"  internal bulkhead check  {'OK' if ibchk.ok else 'VIOLATIONS'}")
+    for v in ibchk.violations:
+        say(f"    VIOLATION  {v}")
+    say(f"    note  {ibchk.notes[0]}")
+    say()
+    say(f"  Assembled stack {seal.stack_length(ib) * MM:.1f} mm against the "
+        f"{recovery.BULKHEAD_THICKNESS * MM:.1f} mm allowance -- it fits, and")
+    say("  that allowance had never been checked against a part before.")
+
+    rule("VENTING -- which volumes the altimeter is allowed to sense")
+    say()
+    ev = evaluate(baseline())
+    nav = next(t for t in ev.rocket.tubes if t.name == "nav bay")
+    module = next(t for t in ev.rocket.tubes if t.name == "canard module")
+    nav_free = avionics.free_volume(nav.inner_diameter, nav.length)
+    mod_free = CANARD_MODULE_FREE_VOLUME
+    nav_bay = venting.VentedBay("nav bay", nav_free,
+                                venting.CONVENTIONAL_PORT_COUNT,
+                                venting.CONVENTIONAL_PORT_DIAMETER)
+    mod_bay = venting.VentedBay("canard module", mod_free, 2, 0.002)
+    vchk = venting.check_venting(nav_bay, mod_bay,
+                                 altitude=285.0, climb_rate=177.0,
+                                 apogee=ev.flight.apogee,
+                                 module_wall_area=mod_bay.area)
+    say("  THIS CORRECTS WHAT design/seal.py FIRST ARGUED. That file reasoned the canard")
+    say("  module has two faces it could breathe through, that the aft one is disqualified")
+    say("  because the charge fires there, and that it therefore vents FORWARD into the nav")
+    say("  bay -- which would put the module inside the altimeter's sense volume.")
+    say()
+    say("  A bay is a cylinder. The third surface is the wall, and this one already has four")
+    say("  dia 8 mm bores through it. Two dia 2 mm vents cost nothing and the rest goes away.")
+    say()
+    say(f"  {'bay':16s} {'free vol':>10s} {'ports':>14s} {'area':>9s} {'lag up':>9s} {'lag down':>10s}")
+    say("  " + "-" * 74)
+    for b, up, down in ((nav_bay, 177.0, 19.0), (mod_bay, 177.0, 19.0)):
+        say(f"  {b.name:16s} {b.volume * 1e6:7.0f} cm3 "
+            f"{b.n_ports} x d{b.port_diameter * MM:.1f} mm "
+            f"{b.area * 1e6:6.1f} mm2 "
+            f"{b.lag_altitude(285.0, up):7.3f} m {b.lag_altitude(200.0, down):8.4f} m")
+    say()
+    say(f"  The lag model asks for {venting.port_area_for_lag(nav_free, 285.0, 177.0) * 1e6:.2f} mm2 "
+        f"and convention drills {nav_bay.area * 1e6:.1f}. **The requirement everybody")
+    say("  gives for these holes -- the bay must breathe fast enough -- is not what sizes")
+    say("  them, by a factor of about 300.** What sizes them is blockage tolerance, the")
+    say("  ejection transient and what a person can drill by hand, none of which is modelled")
+    say("  here. That is a check that CONFIRMED a choice, which is its own kind of result.")
+    say()
+    say(f"  venting check       {'OK' if vchk.ok else 'VIOLATIONS'}")
+    for v in vchk.violations:
+        say(f"    VIOLATION  {v}")
+    for n in vchk.notes:
+        say(f"    note  {n}")
+
+    rule("WHAT THE PACKING NOW COSTS")
+    say()
+    pk = ev.packing
+    say(pk.report(caliber=0.0794))
+    say()
+    say("  The conduit and four U-bolts are RIGID -- the canopy packs around them rather")
+    say("  than compressing with them -- so they are added to the required length directly")
+    say("  instead of through the fill limit. Putting them through it would inflate them by")
+    say("  1/0.85 and manufacture a shortfall, which is precisely correction 5.")
+    say()
+    say(f"  margin was +13.0 mm before any of this hardware was counted; it is now "
+        f"{pk.margin * MM:+.1f} mm.")
+    say("  The U-bolts cost more than the conduit does: 4 x 6 cm3 of envelope against 4.7.")
 
     text = "\n".join(lines)
     print(text)
@@ -205,22 +287,6 @@ def main() -> None:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(text + "\n")
         print(f"\nwritten to {OUT}")
-
-
-def _conduit(r: seal.SealResult, outer_dia: float = 0.005) -> None:
-    """What a wiring conduit through the packed compartment costs, in bay length."""
-    import math
-
-    area = math.pi * r.bulkhead.bore_diameter**2 / 4.0
-    length = r.geometric_volume / area
-    displaced = math.pi * outer_dia**2 / 4.0 * length
-    # It displaces packing volume, so the compartment has to grow by that volume at the
-    # same fill limit the packing check uses.
-    extra = displaced / (area * recovery.FILL_LIMIT)
-    say(f"     dia {outer_dia * MM:.0f} mm conduit, {length * MM:.0f} mm long, displaces "
-        f"{displaced * 1e6:.1f} cm3")
-    say(f"     -> the recovery bay needs {extra * MM:.1f} mm more length, out of the "
-        f"{13.0:.1f} mm it has spare.")
 
 
 if __name__ == "__main__":

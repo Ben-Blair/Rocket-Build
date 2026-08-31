@@ -124,7 +124,7 @@ Values marked *(computed)* are outputs of `scripts/sweep.py` and
 | R5 | Max Mach | ≤ 0.8 | Keeps you subsonic. Transonic aero invalidates Barrowman, makes the controller design far harder, and adds no value to a controls project |
 | R6 | Apogee | ≤ 1600 m (5250 ft) AGL | **Neither a waiver limit nor a field-size limit** — both are unbounded at this site (C5, C5a). The cap is retained on the three grounds that survive: keeping max Mach under 0.8 with real margin (R5), keeping the manoeuvre visible and filmable from the pad, and holding search time and cost per flight low enough to fly five or six times *with the data intact*. An unbounded field removes the risk of landing off the property; it does not make a rocket easier to find. See `scripts/recovery_study.py` |
 | R7 | Internal diameter for actuator bay | Not binding — 4 servos need 79 mm of arc against 188 mm available, 45 mm central void (see §4) | **Superseded.** Diameter is set by the 54 mm motor mount and recovery packing volume, not by the actuators |
-| R8 | Commanded lateral acceleration authority early in coast | ≥ 0.5 g | Enough for a measurable, visible correction. Baseline achieves 1.96 g at 8°, for 424 m of crossrange |
+| R8 | Commanded lateral acceleration authority early in coast | ≥ 0.5 g | Enough for a measurable, visible correction. Baseline achieves **1.82 g** at 8°, for **393 m** of crossrange |
 | R9 | Roll authority | Net Cl_delta must retain correct sign at all conditions, with ≥ 50% of canard-only authority surviving interference | See §5 |
 | R10 | Control loop rate | ≥ 100 Hz | Baseline pitch mode is 4.3 Hz, so 100 Hz gives ~23x margin. `baseline.py` derives a ≥87 Hz floor from it |
 | R11 | Recovery | Dual deploy: 18 in drogue at apogee, **56 in** main at 200 m (650 ft). 5.0 m/s landing, 50 ft·lbf, 100 s descent | Sized by `design/recovery.py`, drogue fixed at 18 in and main solved for the landing rate. Landing energy is inside the ~75 ft·lbf guidance; confirm the current figure with your prefect |
@@ -271,7 +271,7 @@ reports the deflection/geometry region where the net roll moment changes sign.
 | D5 | Aft fin count and size | 3 / 4, semispan 0.95–1.85 cal | **4 panels, semispan 1.55 cal.** Set jointly with the canards (D11) by the margin robustness study (§7), not by nominal stability. Larger fins raise static margin but cost authority and push toward roll reversal (§5) | RESOLVED |
 | D11 | Canard size | semispan 0.70–1.00 cal | **0.85 cal semispan**, 0.70 cal root, 0.70 taper. Sized jointly with the aft fins (D5) under the probabilistic margin constraint — see §7. Sizing the two sets independently was the original mistake | RESOLVED |
 | D10 | Nose ballast provision | none / fixed / adjustable | **Adjustable** threaded rod + washers in the nose shoulder. Lets you set margin after weighing the real vehicle (§7) | RESOLVED |
-| D6 | Motor | 102 available 54 mm J/K motors | **Cesaroni Pro54 J449 Blue Streak** (`1261J449-15A`). ~2.7× the crossrange of the J430 while staying at Mach 0.531 and 8.4 g. Ranks 9th on crossrange alone; chosen on peak g, Mach margin and cost per flight. See `02-motor-selection.md` | RESOLVED |
+| D6 | Motor | 102 available 54 mm J/K motors | **Cesaroni Pro54 J449 Blue Streak** (`1261J449-15A`). ~2.7× the crossrange of the J430 while staying at Mach 0.524 and 8.3 g. Ranks **11th** on crossrange alone; chosen on peak g, Mach margin and cost per flight. See `02-motor-selection.md` | RESOLVED |
 | D7 | Flight computer | COTS + custom controller board / full custom | TBD | TBD |
 | D8 | State estimation | IMU-only / IMU+baro / IMU+baro+GNSS | IMU+baro+GNSS for L3 | TBD |
 | D9 | Airframe material | cardboard / Blue Tube / fiberglass | fiberglass, at minimum for the canard module | TBD |
@@ -287,12 +287,12 @@ On the selected Cesaroni J449 Blue Streak:
 | Bays, nose to tail | nav 127 mm, canard module 143 mm, recovery 357 mm, booster 416 mm |
 | Canards | 4 panels, 67.5 root / 27.0 tip / **67.5 mm semispan**, **35.4° LE sweep** matching the aft fins, 45° interdigitated |
 | Aft fins | 4 panels, 151 root / 68 tip / **123.1 mm semispan**, 87 mm sweep |
-| Mass | 5.48 kg dry, 6.10 kg wet (includes 100 g nose ballast) |
-| Static margin | 2.03 cal at rail exit, 2.52 cal in coast |
-| Flight | apogee 1379 m (4525 ft), max Mach 0.531, max q 19.4 kPa, 8.4 g peak, T/W 7.4 |
-| Control | 1.96 g lateral at 8° deflection, 424 m crossrange over an 11.4 s window |
+| Mass | **5.55 kg dry, 6.18 kg wet** (includes 100 g nose ballast) |
+| Static margin | **2.10 cal at rail exit, 2.58 cal in coast** |
+| Flight | apogee **1358 m (4457 ft)**, max Mach **0.524**, max q 18.9 kPa, 8.3 g peak, T/W 7.3 |
+| Control | **1.82 g** lateral at 8° deflection, **393 m** crossrange over an 11.3 s window |
 | Roll | Cl_delta +5.66 /rad canards vs −0.95 /rad aft fins interdigitated (16.8% cancellation) |
-| Actuator | KST X08 Plus V6.0, 3.60× torque margin, 79 mm of arc needed against 188 mm (§4.2) |
+| Actuator | KST X08 Plus V6.0, 3.6× torque margin, 79 mm of arc needed against 188 mm (§4.2) |
 | Hinge | 0.0577 N·m per panel, hinge at 0.20c of MAC — forward of the 0.25c panel CP, so restoring at any sweep |
 | Fin flutter | aft fins 1.97× margin, canards 4.46× — the 0.40 taper's longer root chord costs the canards 5.42 → 4.46 (see §8) |
 | Recovery | 100 s descent, ~0.93 km walk at 15 mph wind, 56 in main. Bay 4.5 cal, verified against vendor pack volumes with +13 mm (§4.3) |
@@ -328,6 +328,14 @@ canard area buys authority but costs margin, aft area buys margin but costs auth
 Searched *jointly* under the probabilistic margin constraint plus the flutter and servo
 torque limits, the answer is to grow **both**, which beats the original airframe on
 crossrange and on safety at the same time instead of trading one against the other:
+
+> **The absolute figures in this section and the next predate August 2026**, when the
+> dual-deploy altimeter went into `design/mass.py` (docs/01 correction 26). The selected
+> point now reads **1.82 g and 393 m**, and `scripts/robustness.py` now picks canard 1.15 /
+> aft 1.85 cal rather than 1.00 / 1.70. **The comparisons and the conclusions hold** — every
+> row moved the same way — but regenerate with `python scripts/robustness.py` before quoting
+> any single number.
+
 
 | Canard semispan | Aft semispan | Nominal SM | P(SM<1.0) | Lateral g | Crossrange | Flutter | Torque | Verdict |
 |---|---|---|---|---|---|---|---|---|

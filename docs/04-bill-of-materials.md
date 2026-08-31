@@ -176,24 +176,35 @@ Step 4 scope — listed for budget completeness, not yet specified (D7, D8 open)
 **Separate the servo supply from the IMU supply.** Four servos slewing on a shared bus next
 to a MEMS gyro is a known way to corrupt attitude data.
 
-**This table and `design/mass.py` disagree by 60 g, and it is the altimeter** (docs/01
-correction 26). The nine lines here total 620 g; `DEFAULT_AVIONICS_BUDGET` totals 560 g and
-has no altimeter line. Every other line agrees to the gram. The altimeter is not optional —
-it is the independent commercial part that fires the ejection charges, and it is what the
-aft gas seal's feed-through is wired to (docs/05). Nothing has been changed yet: 60 g at
-station 0.381 m is forward of the CG so it moves static margin *up*, but it is a
-vehicle-level change and belongs with D7.
+**This table and `design/mass.py` used to disagree by 60 g, and it was the altimeter**
+(docs/01 correction 26). Fixed Aug 2026 by adding `deployment_altimeter` to
+`DEFAULT_AVIONICS_BUDGET`; both now total 620 g. It cost 18 m of apogee and 26 m of
+crossrange and it *improved* static margin, because the altimeter lands forward of the CG.
 
 **Where all of this physically goes: the nav bay**, 127 mm of 74.8 mm ID at station
-318–445 mm, forward of the canard module and behind the nose cone. That is deliberate —
-`configure.py` puts it there for GNSS sky view and to keep the antenna away from the servo
-power wiring. Two consequences that are easy to miss:
+318–445 mm, forward of the canard module and behind the nose cone. `configure.py` puts it
+there for GNSS sky view and to keep the antenna away from the servo power wiring.
 
-- **The nav bay has never had a packing check.** The recovery bay got one and it is the
-  reason correction 5 exists. 560–620 g of sled in 558 cm³ is about 1000 kg/m³ average
-  density, which is dense for electronics and worth verifying before the sled is cut.
+**AND IT DOES NOT CURRENTLY FIT.** `design/avionics.py` is the packing check the nav bay
+never had; `python scripts/avionics_report.py` is the argument. It wants **152 mm of sled
+against 103 mm available** — 117 mm with the tracker and radio moved to the nose.
+
+Every envelope in that check is an estimate for a part nobody has chosen, so this is a
+**warning and not a violation**, and correction 5 is why: an estimate-driven shortfall was
+once acted on here and turned out not to be in the hardware. **Close D7 and measure before
+concluding anything.** What the check is sure of is the shape of the problem: a flat sled in
+a round tube can only use the rectangle inscribed in the circle, so the binding quantity is
+footprint on two faces, not volume — the bay looks two-thirds empty by volume and is not.
+
+Three more things about this bay:
+
+- **Two of these parts have somewhere else to go.** The independent GPS tracker belongs in
+  the nose cone with its own battery — its job is to still be working when nothing else is —
+  and the telemetry radio can follow it. Worth 35 mm, and it touches no frozen geometry.
 - **The firing circuits leave this bay going aft**, cross the canard module, and cross the
-  aft gas seal — because there is no room for an av-bay next to the charges. See docs/05.
+  aft gas seal, because there is no room for an av-bay next to the charges. See docs/05.
+- **The static ports go here and only here**, 3 × ⌀3.2 mm. The canard module vents through
+  its own wall so that it is *not* part of this bay's sensed volume — docs/01 correction 28.
 
 ## 6. Recovery
 
@@ -212,7 +223,8 @@ Sized Aug 2026; `design/seal.py`, argument in `out/seal_report.txt`, docs/05.
 | Item | Spec | Qty | Mass | Price | |
 |---|---|---|---|---|---|
 | Aft gas seal disc | **G-10 sheet, 4.8 mm**, cut to 74.8 mm | 1 | 0.039 kg | ~$15 | thickness set by the wire hole, not the plate |
-| Harness U-bolt + backing plate | M5 stainless, with a backing plate — the plate is structure | 1 | 0.030 kg | ~$8 | |
+| Internal bulkhead disc | **G-10 sheet, 4.8 mm**, 1 × ⌀6 mm conduit feed-through | 1 | 0.039 kg | ~$15 | no shear pins protect this one |
+| Harness U-bolt + backing plate | M5 stainless, with a backing plate — the plate is structure | 4 | 0.120 kg | ~$32 | 4 cm³ each of envelope out of the packing volume |
 | Charge well + 2-pole terminal block | Bulkhead-mount, aft face | 2 | — | ~$10 | in `ejection_hardware_charges` |
 | Shear pins | **3 × 2-56 nylon** per separation joint | pack | — | ~$6 | the intended fuse; buy spares, they are consumed |
 | High-temp RTV, potting | 315 °C service, **forward face only** | 1 | — | ~$10 | |
@@ -262,7 +274,7 @@ avionics, and it is the least specified — expect it to move once D7 and D8 clo
 
 ## Mass reconciliation
 
-Model dry mass 5.476 kg, wet 6.100 kg including 100 g ballast and 0.498 kg of contingency
+Model dry mass **5.553 kg**, wet **6.177 kg** including 100 g ballast and 0.505 kg of contingency
 (10%, carried deliberately — every real build comes out heavy). Weigh each part as it
 arrives, replace the estimate in `design/mass.py`, and rerun `scripts/robustness.py`. Every
 guess retired shrinks the static margin distribution, and the ballast is what you adjust in

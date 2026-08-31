@@ -128,6 +128,16 @@ vehicle off the property. The walk column is now a launch-day time and search-ri
 not a hard limit. The decision below was re-examined against that and stands — see the
 note after the reasoning bullets:
 
+> **Numbers in this section predate August 2026.** The dual-deploy altimeter that `docs/04`
+> had always listed was missing from `design/mass.py` (docs/01 correction 26); adding its
+> 60 g moved every absolute figure below — the J449 now reads **1358 m, Mach 0.524, 8.3 g,
+> 393 m of crossrange**, and it ranks **11th** on crossrange among motors passing every
+> constraint rather than 9th. **The selection does not change**, because it was never made
+> on crossrange rank: the four reasons below are about peak g, Mach margin, cost per flight
+> and assembly risk, and none of them moved. Regenerate the table with
+> `python scripts/motor_trade.py`.
+
+
 | Motor | Apogee | Mach | Peak g | Crossrange | Descent | Main | Walk @ 15 mph |
 |---|---|---|---|---|---|---|---|
 | J430 White Thunder | 790 m | 0.38 | 8.4 | 132 m | 71 s | 55" | 626 m |

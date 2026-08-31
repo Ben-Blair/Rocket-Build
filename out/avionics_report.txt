@@ -1,0 +1,96 @@
+
+============================================================================================
+THE NAV BAY -- where the boards go, and whether they go
+============================================================================================
+
+  station               318 -> 445 mm from the nose tip
+  bay length            127.0 mm (1.60 cal)
+  bore                  74.8 mm
+  sled width            59.8 mm (80% of the bore)
+  usable height         44.9 mm, NOT 74.8
+
+  THE LAST LINE IS THE WHOLE MODELLING POINT. A flat sled in a round tube can only
+  use the rectangle inscribed in the circle, and nothing goes in the corners it
+  cannot reach. Add the component volumes up and the bay looks half empty --
+  150 cm3 of boards in 558 cm3 of tube. The binding quantity is FOOTPRINT ON
+  TWO FACES, and the bay's length is what that footprint has to fit into.
+
+============================================================================================
+THE STACK
+============================================================================================
+
+  component                       mass       L x W x H mm     cm2  note
+  ------------------------------------------------------------------------------------------
+  flight computer PCB             60 g    70 x  40 x  15    28.0  custom board; D7 sets this
+  deployment altimeter            60 g    45 x  18 x  10     8.1  commercial, independent of the PCB -- fires the charges
+  GNSS receiver + antenna         30 g    35 x  35 x  10    12.3  wants sky view; forward end of the sled
+  IMU daughterboard               20 g    25 x  20 x   8     5.0  isolate from servo noise
+  battery, 2S 1500 mAh            90 g    70 x  35 x  15    24.5  
+  servo power BEC                 25 g    30 x  20 x  10     6.0  
+  telemetry radio                 45 g    45 x  25 x  12    11.2  relocatable
+  GPS tracker, independent        60 g    60 x  30 x  15    18.0  relocatable -- conventionally lives in the nose
+  wiring loom                     80 g     along one edge    14.0
+  ------------------------------------------------------------------------------------------
+  TOTAL FOOTPRINT                                           127.1 cm2
+
+============================================================================================
+THE VERDICT, ON ESTIMATED ENVELOPES
+============================================================================================
+
+  NO FIT nav bay          need 151.7 mm, have 103.0 mm ( -48.7 mm)  short by 49 mm
+  NO FIT nav bay          need 116.8 mm, have 103.0 mm ( -13.8 mm)  short by 14 mm      with the tracker and radio moved out
+
+  available = 127 mm of bay less two 12 mm end closures = 103 mm of sled
+
+  SO THE NAV BAY IS SHORT, AND THIS IS NOT YET A REASON TO CHANGE ANYTHING.
+
+  Correction 5 is the precedent and it is exact: the recovery bay was declared
+  11 mm short on a number built from two multiplied estimates, the airframe was
+  lengthened on the strength of it, and the shortfall turned out not to exist. Every
+  envelope above is that same kind of estimate -- no part here has been chosen.
+
+  What would settle it, in order of how much it costs:
+
+  1. CLOSE D7 AND MEASURE. Nine datasheets replace nine guesses. This is ten
+     minutes of work per part and it is the only thing that turns the verdict into
+     a fact. Do this before anything else on this list.
+  2. MOVE THE TRACKER AND RADIO TO THE NOSE CONE. Worth 35 mm, and it changes
+     no frozen geometry. It is also where a tracker belongs: its job is to still be
+     working when nothing else is, which argues for its own battery in its own
+     compartment, as far from the servo bus as the airframe allows.
+  3. ONE END CLOSURE, NOT TWO. The bay's aft face is shared with the canard
+     module's forward face, and the forward one is the nose shoulder. If either is
+     structure that already exists, that is 12 mm back.
+  4. LENGTHEN THE NAV BAY. 1.6 -> 2.0 cal is +32 mm and it is the answer that
+     touches every number in the vehicle. It is last for that reason, not first.
+
+============================================================================================
+WHAT THE STACK MEANS FOR VENTING
+============================================================================================
+
+  free air in the bay   303 cm3 (geometric less the boards)
+  static ports          3 x dia 3.2 mm, 24.1 mm2
+  lag, 177 m/s up       0.009 m
+  lag, 19 m/s down      0.0001 m
+
+  This is the ONLY volume the altimeter senses. The canard module vents through
+  its own wall and the wiring pass-through between them is potted solid -- see
+  design/venting.py, and note that seal.py argued the opposite first.
+
+============================================================================================
+STILL A GUESS
+============================================================================================
+
+  8 of 8 envelopes are estimates:
+    flight computer PCB
+    deployment altimeter
+    GNSS receiver + antenna
+    IMU daughterboard
+    battery, 2S 1500 mAh
+    servo power BEC
+    telemetry radio
+    GPS tracker, independent
+
+  Replace each with a datasheet as D7 closes and set `measured=True`. When that
+  list is empty this report stops needing its caveat, which is exactly what
+  happened to the recovery bay when the vendor pack volumes went in.

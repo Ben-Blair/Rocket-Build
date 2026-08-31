@@ -12,11 +12,11 @@ antenna wants to sit under the (thin, non-conductive) nose shoulder region.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
 
-from . import aero, control, mass as mass_mod, recovery, trajectory
+from . import aero, avionics, control, mass as mass_mod, recovery, trajectory
 from .geometry import BodyTube, FinSet, NoseCone, Rocket
 from .motors import GENERIC, Motor, load_eng
 from .packaging import SERVOS
@@ -229,6 +229,7 @@ class Evaluation:
     sm_without_canards: float
     packing: recovery.PackingResult
     violations: list[str]
+    warnings: list[str] = field(default_factory=list)
 
     @property
     def feasible(self) -> bool:
@@ -295,6 +296,31 @@ def evaluate(
             f"({packing.required_length / p.outer_diameter:.2f} cal)"
         )
 
+    # WARNINGS, not violations, and the distinction is deliberate.
+    #
+    # A violation says the vehicle as specified cannot fly. A warning says something is
+    # wrong with the vehicle as ESTIMATED, and the two are not the same claim. The nav bay
+    # check below is built entirely from component envelopes for parts nobody has chosen
+    # yet -- D7 and D8 are open -- and correction 5 is what happens when an estimate-driven
+    # shortfall is treated as a fact: the recovery bay was declared 11 mm short, the frozen
+    # airframe was lengthened, and the shortfall was not in the hardware.
+    #
+    # So it does not flip `feasible`. It also does not get to be silent, because a check
+    # that cannot fail is not evidence of anything.
+    warnings: list[str] = []
+    nav_tube = next(t for t in rocket.tubes if t.name == "nav bay")
+    nav_pack = avionics.check_packing(nav_tube.inner_diameter, nav_tube.length)
+    if not nav_pack.fits:
+        relocated = avionics.check_packing(
+            nav_tube.inner_diameter, nav_tube.length, avionics.relocatable())
+        warnings.append(
+            f"nav bay {nav_tube.length * 1000:.0f} mm needs "
+            f"{nav_pack.required_length * 1000:.0f} mm of sled on estimated envelopes "
+            f"({relocated.required_length * 1000:.0f} mm with the tracker and radio moved "
+            f"to the nose); {len(nav_pack.estimated)} of {len(nav_pack.components)} parts "
+            f"are guesses until D7 closes. See scripts/avionics_report.py"
+        )
+
     # Control assessment at the highest-q point after burnout, where authority is best.
     coast = [pt for pt in flight.points if pt.t >= flight.burnout_time]
     pitch = roll_a = roll_i = None
@@ -334,4 +360,5 @@ def evaluate(
         sm_without_canards=sm_bare,
         packing=packing,
         violations=violations,
+        warnings=warnings,
     )

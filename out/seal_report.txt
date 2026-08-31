@@ -9,7 +9,7 @@ THE AFT GAS SEAL -- what it actually carries
 
   bore                       74.8 mm     the disc is the full ID
   piston area              4394.3 mm2
-  forward compartment      1041.5 cm3    geometric
+  forward compartment      1058.2 cm3    geometric
   free volume               156.2 cm3    15% of it -- the rest is parachute
 
 ============================================================================================
@@ -21,7 +21,7 @@ THE FUSE -- shear pins, and the charge that has to break them
   release force                    541 N
   release pressure               123.1 kPa    (17.9 psi)
   design pressure                246.2 kPa    at a 2.0x separation factor
-  BLACK POWDER CHARGE             1.17 g
+  BLACK POWDER CHARGE             1.19 g
 
   Sized on the compartment's GEOMETRIC volume, which is what every published rule
   of thumb does and what a ground test measures. Then note where it actually goes:
@@ -32,8 +32,8 @@ THE TWO PRESSURE CASES
 
   case                                 volume     pressure   on the disc
   ----------------------------------------------------------------------
-  design, joint releases             1041.5 cm3       246 kPa       1082 N
-  stuck joint, packed volume          156.2 cm3      1642 kPa       7213 N
+  design, joint releases             1058.2 cm3       246 kPa       1082 N
+  stuck joint, packed volume          156.2 cm3      1668 kPa       7329 N
 
   The same charge, a factor of 7 apart, and BOTH are true. In the
   nominal flight the pins let go almost immediately and the volume grows faster
@@ -50,15 +50,15 @@ THE DISC
 
   material                 G-10 sheet, 4.8 mm     thinnest STOCKED size that passes
   mass                         39.0 g
-  governing pressure           1642 kPa
-  bending stress                118 MPa   simply supported, centre
-    same, edge clamped           75 MPa   the best case, reported not used
-  margin                       4.08x    against 2.0x required
-  centre deflection            1.32 mm    at the stuck pressure
+  governing pressure           1668 kPa
+  bending stress                120 MPa   simply supported, centre
+    same, edge clamped           76 MPa   the best case, reported not used
+  margin                       4.01x    against 2.0x required
+  centre deflection            1.35 mm    at the stuck pressure
     at design pressure         0.20 mm
   disc holds to                6693 kPa   = 54x the pin release pressure
   glue line                    10.8 mm    disc edge + a fillet either side
-  bond shear                   2.84 MPa   margin 12.3x
+  bond shear                   2.89 MPa   margin 12.1x
 
   Both plate formulae are here on purpose. A disc bonded in with a fillet is
   between simply supported and clamped, and the two differ by 1.6x. Assuming the
@@ -68,12 +68,12 @@ THE DISC
 THE MAIN'S OPENING SHOCK -- the load that arrives through the U-bolt
 ============================================================================================
 
-  main                         56.1 in     deployed at 200 m
-  descent mass                5.487 kg
-  velocity at deploy           19.1 m/s    under the drogue
-  steady drag at that speed     768 N      14x vehicle weight
-  infinite-mass bound          1306 N      opening coefficient 1.7, used for the check
-  stress under the U-bolt        84 MPa   6 mm footprint, margin 5.7x
+  main                         56.5 in     deployed at 200 m
+  descent mass                5.553 kg
+  velocity at deploy           19.2 m/s    under the drogue
+  steady drag at that speed     787 N      14x vehicle weight
+  infinite-mass bound          1338 N      opening coefficient 1.7, used for the check
+  stress under the U-bolt        86 MPa   6 mm footprint, margin 5.6x
 
   This is a plate under a POINT load, not a pressure. The stress goes as the log
   of (plate radius / footprint radius), so the backing washer under the U-bolt is
@@ -85,11 +85,11 @@ THE MAIN'S OPENING SHOCK -- the load that arrives through the U-bolt
 THE HOLE THAT MAKES IT A FEED-THROUGH
 ============================================================================================
 
-  2 x dia 4.0 mm at R 22.6 mm, Kt 2.0 -> 196 MPa, margin 2.45x
+  2 x dia 4.0 mm at R 22.6 mm, Kt 2.0 -> 223 MPa, margin 2.15x
 
   AND THE HOLE IS WHAT SETS THE THICKNESS. This disc is governed by the feed-through hole:
-  the plate itself passes at 4.08x and the hole at 2.45x. Size the plate alone and
-  the answer is 4.0 mm, where the feed-through runs at 1.70x.
+  the plate itself passes at 4.01x and the hole at 2.15x. Size the plate alone and
+  the answer is 4.0 mm, where the feed-through runs at 1.67x.
   A bulkhead sized as though it were a bulkhead is not a sized feed-through.
 
   WHY THERE IS A HOLE AT ALL. The altimeter that fires these charges is in the NAV
@@ -113,30 +113,93 @@ VERDICT
 
   aft gas seal        OK
     note  pins release at 123 kPa and the disc holds to 6693 kPa, so the pins are 54x the weaker link. That ratio is the design intent, not a coincidence
-    note  main opens at 19.1 m/s -- 14x the vehicle's weight at a shock factor of 1.0 and 24x at 1.7. The U-bolt needs a backing plate; the log term in point_load_stress() is the reason
-    note  2 x dia 4.0 mm at R 22.6 mm runs 2.45x, against the disc's own 4.08x -- THE HOLE GOVERNS, and sizing the plate without it lands one sheet size thin
+    note  recovery.FILL_LIMIT = 0.85 SETS THIS PRESSURE. The free volume a charge fires into is what the packing leaves over, so packing to 0.90 instead would take 1668 kPa to 2502 kPa -- a number chosen so a bay would close with cold hands is loading every bulkhead in the rocket
+    note  assembled stack 10.8 mm (disc + a 3 mm fillet each face) inside the 12.0 mm recovery.BULKHEAD_THICKNESS allowance, which until now was a typed number nothing had checked
+    note  main opens at 19.2 m/s -- 14x the vehicle's weight at a shock factor of 1.0 and 25x at 1.7. The U-bolt needs a backing plate; the log term in point_load_stress() is the reason
+    note  2 x dia 4.0 mm at R 22.6 mm runs 2.15x, against the disc's own 4.01x -- THE HOLE GOVERNS, and sizing the plate without it lands one sheet size thin
     note  POT THE FEED-THROUGH ON THE FORWARD FACE. RTV is good to 315 C and the gas leaves the charge at 1837 K; the disc is the heat shield, so the sealant belongs behind it. Potting the exposed face is the version of this part that works on the bench and sooties the nav bay in flight
-    note  THE MODULE VENTS FORWARD, never aft: the volume aft of this disc is where the charge fires. That makes the canard module part of the altimeter's static volume, so the nav bay's static ports have to be sized for both bays together, and a leak past this seal reaches the pressure sensor that fires the charges
+    note  THE MODULE VENTS THROUGH ITS OWN WALL, not through this disc and not forward into the nav bay -- see design/venting.py, which corrects the argument this file was first written on. The consequence is that the wiring pass-through is POTTED SOLID and the module is not in the altimeter's sense volume, so a leak past this seal goes overboard instead of into the sensor that fires the charges
 
 ============================================================================================
-WHAT IS STILL OPEN, AND IT IS NOT THIS PART
+THE SECOND BULKHEAD -- the one that was a 12 mm length allowance
 ============================================================================================
 
-  1. THE DROGUE'S FIRING CIRCUIT HAS NOWHERE TO RUN. This disc closes the FORWARD
-     compartment, so the main's charge terminates on its aft face -- a terminal
-     block and a charge well, millimetres from where the wires come through. The
-     drogue's charge is on the far side of the internal bulkhead, and the only
-     path to it is straight through a compartment packed with the main.
+  `recovery.BULKHEAD_THICKNESS = 0.012` was the only statement this project had
+  ever made about the part that divides the two compartments. That is a LENGTH.
+  The part it stands for has a charge on BOTH faces and anchors both harnesses.
 
-     A thin-wall conduit bonded along the tube wall through the main compartment,
-     sealed where it crosses both bulkheads, is the standard answer. Priced:
-     dia 5 mm conduit, 237 mm long, displaces 4.7 cm3
-     -> the recovery bay needs 1.2 mm more length, out of the 13.0 mm it has spare.
+                                   aft gas seal  internal bulkhead
+  ------------------------------------------------------------------
+  governing pressure, kPa                  1668               1689
+  free fraction of compartment           0.1476             0.1458
+  thickness, mm                             4.8                4.8
+  mass, g                                    39                 39
+  plate margin                            4.01x              3.96x
+  feed-through                           2 x d4             1 x d6
+  feed-through margin                     2.15x              2.19x
+  protected by shear pins                   yes                 NO
+  assembled stack, mm                      10.8               10.8
 
-  2. THE INTERNAL BULKHEAD is a 12.0 mm length allowance in recovery.py and nothing
-     else. It is a pressure boundary with charges on BOTH faces and it has had
-     none of the treatment this disc just got.
+  THE TWO PRESSURES ARE THE SAME AND THAT IS NOT A COINCIDENCE. check_packing gives
+  every compartment the length its contents need at FILL_LIMIT, so every compartment
+  leaves the same free fraction, whatever is in it. The drogue compartment holds a
+  quarter of the volume and is 1% worse. **recovery.FILL_LIMIT, chosen so a bay would
+  close with cold hands, sets the design pressure of every bulkhead in the rocket.**
 
-  3. THE NAV BAY STATIC PORTS are sized for the nav bay, and the canard module now
-     vents into it. That is one bay's worth of volume unaccounted for in a
-     calculation nobody has done yet. It belongs with D7.
+  internal bulkhead check  OK
+    note  NO FUSE PROTECTS THIS ONE. It is bonded into the tube at both ends of its load path, so a joint that sticks does not blow a pin here -- it simply hands the disc the whole charge. For this part the stuck case is not a contingency, it is the only case
+
+  Assembled stack 10.8 mm against the 12.0 mm allowance -- it fits, and
+  that allowance had never been checked against a part before.
+
+============================================================================================
+VENTING -- which volumes the altimeter is allowed to sense
+============================================================================================
+
+  THIS CORRECTS WHAT design/seal.py FIRST ARGUED. That file reasoned the canard
+  module has two faces it could breathe through, that the aft one is disqualified
+  because the charge fires there, and that it therefore vents FORWARD into the nav
+  bay -- which would put the module inside the altimeter's sense volume.
+
+  A bay is a cylinder. The third surface is the wall, and this one already has four
+  dia 8 mm bores through it. Two dia 2 mm vents cost nothing and the rest goes away.
+
+  bay                free vol          ports      area    lag up   lag down
+  --------------------------------------------------------------------------
+  nav bay              303 cm3 3 x d3.2 mm   24.1 mm2   0.009 m   0.0001 m
+  canard module        570 cm3 2 x d2.0 mm    6.3 mm2   0.487 m   0.0056 m
+
+  The lag model asks for 1.35 mm2 and convention drills 24.1. **The requirement everybody
+  gives for these holes -- the bay must breathe fast enough -- is not what sizes
+  them, by a factor of about 300.** What sizes them is blockage tolerance, the
+  ejection transient and what a person can drill by hand, none of which is modelled
+  here. That is a check that CONFIRMED a choice, which is its own kind of result.
+
+  venting check       OK
+    note  nav bay lags 0.01 m at 177 m/s and 0.00 m descending at 30 m/s under drogue, which is the case that actually matters: lag on the way DOWN fires the main low, and there is no room below 200 m
+    note  nav bay port area 24.1 mm2 sits between the 1.3 mm2 the lag model needs and the 24.1 mm2 convention uses -- the model is the floor, convention is the ceiling, and both are satisfied
+    note  the canard module vents through its OWN WALL (6.3 mm2), so the sense volume is 303 cm3 and not 873 cm3. Sharing them would take the nav bay's lag 0.01 -> 0.08 m and put ejection gas one leak away from the sensor that fires the charges
+    note  SO POT THE WIRING PASS-THROUGH SOLID. It is a wire route, not an air route -- and it is only allowed to be solid because the module vents overboard instead
+    note  a bay sealed at the pad carries 15.3 kPa at 1358 m, which is 67 N on a bulkhead -- small, and not what sizes anything, but it is why every sealed volume in the vehicle gets a hole
+
+============================================================================================
+WHAT THE PACKING NOW COSTS
+============================================================================================
+
+  inner diameter           74.8 mm
+  contents:
+    main                    902 cm3 -> 240.8 mm of tube
+    drogue                  367 cm3 ->  97.7 mm of tube
+  required length         350.5 mm (4.41 cal)
+  available length        357.3 mm (4.50 cal)
+  margin                   +6.8 mm
+  fill fraction              81 % of geometric volume  (limit 85 %)
+  NOTE: canopies use vendor pack volumes; still estimated from bulk density: main harness, main protector, links/swivel, drogue harness, drogue protector, links/swivel
+
+  The conduit and four U-bolts are RIGID -- the canopy packs around them rather
+  than compressing with them -- so they are added to the required length directly
+  instead of through the fill limit. Putting them through it would inflate them by
+  1/0.85 and manufacture a shortfall, which is precisely correction 5.
+
+  margin was +13.0 mm before any of this hardware was counted; it is now +6.8 mm.
+  The U-bolts cost more than the conduit does: 4 x 6 cm3 of envelope against 4.7.

@@ -17,6 +17,17 @@ from .motors import Motor
 # Editable subsystem budget, kg. These are estimates, not measurements.
 DEFAULT_AVIONICS_BUDGET: dict[str, float] = {
     "flight_computer": 0.060,
+    # ADDED Aug 2026, and it had been missing since this dict was written. docs/04 section 5
+    # lists nine avionics lines totalling 620 g including a commercial dual-deploy altimeter;
+    # this dict listed nine lines totalling 560 g and the altimeter was the one it did not
+    # have. Every other line agreed to the gram, which is why nobody saw it -- a total is a
+    # bad place to look for an error (correction 22).
+    #
+    # It is not an optional part. It is the independent commercial altimeter that fires the
+    # ejection charges, it is what design/seal.py's feed-through is wired to, and flying
+    # deployment off the custom PCB alone is a different safety argument than the one these
+    # documents make. Found by asking where the boards physically go, not by any check.
+    "deployment_altimeter": 0.060,
     "gnss_receiver_antenna": 0.030,
     "imu_daughterboard": 0.020,
     "battery_lipo_2s_1500mah": 0.090,

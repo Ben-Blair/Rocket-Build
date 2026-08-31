@@ -12,7 +12,7 @@ footprint is a first-class design constraint, not an afterthought.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from . import atmosphere
 
@@ -169,6 +169,30 @@ BULKHEAD_THICKNESS = 0.012  # m
 # would otherwise be counted as if it were fabric.
 HARNESS_HARDWARE_KG = 0.050
 
+# THE DROGUE'S FIRING CIRCUIT HAS TO CROSS THE MAIN'S COMPARTMENT.
+#
+# The altimeter is in the nav bay -- configure.py puts it there for GNSS sky view -- so both
+# firing circuits start forward of the whole recovery section. The main's charge terminates
+# on the aft gas seal, millimetres from where its wires come through (design/seal.py). The
+# drogue's charge is on the far side of the internal bulkhead, and the only path to it runs
+# straight through a compartment packed with the main canopy.
+#
+# Wires loose in a packed compartment abrade, snag on the canopy going out, and are the kind
+# of thing that works on the bench every time. So they go in a thin-wall conduit bonded along
+# the tube wall, sealed where it passes through both bulkheads.
+#
+# THE ALTERNATIVE, PRICED, because it is the standard high-power layout and it is worth
+# knowing why this vehicle cannot have it: an av-bay between the two compartments, with the
+# altimeter and its own static ports sitting next to the charges, needs roughly 60 mm of tube
+# and two further bulkheads. The bay has 13 mm of margin. The conduit costs 1.2 mm of it.
+CONDUIT_OUTER_DIAMETER = 0.005  # m, thin-wall tube, carries 2 x 24 AWG with room to pull
+CONDUIT_DENSITY = 1400.0  # kg/m^3, thin-wall PETG or glass tube -- a few grams either way
+
+# A U-bolt standing proud of a bulkhead is rigid and the canopy packs AROUND it, so it takes
+# its own volume out of the compartment rather than compressing with the fabric. Measured off
+# an M5 U-bolt: about 25 x 20 x 12 mm of swept envelope including the harness loop.
+UBOLT_ENVELOPE_VOLUME = 6.0e-6  # m^3
+
 # VENDOR PACK VOLUMES -- these replace the density estimate for the two canopies, which is
 # the single biggest source of uncertainty in this whole calculation. Published figures,
 # not measurements of your own hardware, and both are quoted by the vendor as assuming a
@@ -229,14 +253,29 @@ class Compartment:
 
     name: str
     contents: list[SoftGood]
+    hardware: list[SoftGood] = field(default_factory=list)
 
     @property
     def volume(self) -> float:
+        """Soft goods only -- the part that gets packed at `FILL_LIMIT`."""
         return sum(item.volume for item in self.contents)
 
     @property
+    def rigid_volume(self) -> float:
+        """Rigid things that stand in the packing space, m^3.
+
+        A conduit or a U-bolt does not pack. It occupies exactly its own volume and the
+        canopy has to go round it, so it is added to the required length DIRECTLY rather
+        than through the fill limit -- putting it through the fill limit would inflate it by
+        1/0.85 and claim a bay shortfall that is not in the hardware. Correction 5 is the
+        precedent: two estimates multiplied together once manufactured an 11 mm shortfall
+        and nearly lengthened a frozen airframe.
+        """
+        return sum(item.volume for item in self.hardware)
+
+    @property
     def any_estimated(self) -> bool:
-        return any(item.estimated for item in self.contents)
+        return any(item.estimated for item in self.contents + self.hardware)
 
 
 @dataclass
@@ -287,8 +326,41 @@ class PackingResult:
         return "\n".join(lines)
 
 
+def conduit_volume(length: float, outer_diameter: float = CONDUIT_OUTER_DIAMETER) -> float:
+    """Volume a wiring conduit of this length stands in, m^3."""
+    return math.pi * outer_diameter**2 / 4.0 * length
+
+
+def add_conduit(comp: Compartment, inner_diameter: float,
+                outer_diameter: float = CONDUIT_OUTER_DIAMETER,
+                fill_limit: float = FILL_LIMIT) -> Compartment:
+    """Return `comp` with the drogue firing conduit added to its rigid hardware.
+
+    THE LENGTH IS A FIXED POINT: the conduit spans the compartment, and the compartment's
+    length depends on what is in it, which now includes the conduit. Two passes converge to
+    well under a tenth of a millimetre here because the conduit is 0.5% of the volume, and
+    the alternative -- solving it properly -- would be precision this model does not have.
+    """
+    area = math.pi * inner_diameter**2 / 4.0
+    length = comp.volume / (area * fill_limit) + comp.rigid_volume / area
+    for _ in range(2):
+        vol = conduit_volume(length, outer_diameter)
+        length = (comp.volume / (area * fill_limit)
+                  + (comp.rigid_volume + vol) / area)
+    return Compartment(
+        comp.name,
+        comp.contents,
+        hardware=comp.hardware + [
+            SoftGood(f"drogue conduit, {length * 1000:.0f} mm",
+                     conduit_volume(length, outer_diameter) * CONDUIT_DENSITY * 0.4,
+                     measured_volume=conduit_volume(length, outer_diameter)),
+        ],
+    )
+
+
 def default_soft_goods(
     recovery_budget: dict[str, float] | None = None,
+    inner_diameter: float = 0.0748,
 ) -> list[Compartment]:
     """The two compartments, built from the recovery mass budget in `design.mass`.
 
@@ -309,28 +381,39 @@ def default_soft_goods(
     webbing = max(budget["shock_cord_and_links"] - HARNESS_HARDWARE_KG, 0.0)
     protector_each = budget["nomex_protectors"] / 2.0
 
-    return [
-        Compartment(
-            "main",
-            [
-                SoftGood("main canopy", budget["main_chute"],
-                         measured_volume=MAIN_PACK_VOLUME),
-                SoftGood("main harness", webbing * 0.60, WEBBING_BULK_DENSITY),
-                SoftGood("main protector", protector_each, PROTECTOR_BULK_DENSITY),
-                SoftGood("links/swivel", HARNESS_HARDWARE_KG * 0.60, STEEL_DENSITY),
-            ],
-        ),
-        Compartment(
-            "drogue",
-            [
-                SoftGood("drogue canopy", budget["drogue_chute"],
-                         measured_volume=DROGUE_PACK_VOLUME),
-                SoftGood("drogue harness", webbing * 0.40, WEBBING_BULK_DENSITY),
-                SoftGood("drogue protector", protector_each, PROTECTOR_BULK_DENSITY),
-                SoftGood("links/swivel", HARNESS_HARDWARE_KG * 0.40, STEEL_DENSITY),
-            ],
-        ),
-    ]
+    # The conduit runs the length of the MAIN compartment only: it starts at the aft gas
+    # seal and ends at the internal bulkhead, where the drogue's charge is. Its length is
+    # not known until the packing is solved, so it is priced here from the compartment's
+    # own packed length -- see `conduit_for()` below, which the caller applies.
+    main = Compartment(
+        "main",
+        [
+            SoftGood("main canopy", budget["main_chute"],
+                     measured_volume=MAIN_PACK_VOLUME),
+            SoftGood("main harness", webbing * 0.60, WEBBING_BULK_DENSITY),
+            SoftGood("main protector", protector_each, PROTECTOR_BULK_DENSITY),
+            SoftGood("links/swivel", HARNESS_HARDWARE_KG * 0.60, STEEL_DENSITY),
+        ],
+        hardware=[
+            # Two U-bolts stand in this compartment: one on the aft gas seal's aft face,
+            # one on the internal bulkhead's forward face. Both ends of the main harness.
+            SoftGood("2 x U-bolt", 0.030, measured_volume=2 * UBOLT_ENVELOPE_VOLUME),
+        ],
+    )
+    drogue = Compartment(
+        "drogue",
+        [
+            SoftGood("drogue canopy", budget["drogue_chute"],
+                     measured_volume=DROGUE_PACK_VOLUME),
+            SoftGood("drogue harness", webbing * 0.40, WEBBING_BULK_DENSITY),
+            SoftGood("drogue protector", protector_each, PROTECTOR_BULK_DENSITY),
+            SoftGood("links/swivel", HARNESS_HARDWARE_KG * 0.40, STEEL_DENSITY),
+        ],
+        hardware=[
+            SoftGood("2 x U-bolt", 0.030, measured_volume=2 * UBOLT_ENVELOPE_VOLUME),
+        ],
+    )
+    return [add_conduit(main, inner_diameter), drogue]
 
 
 def check_packing(
@@ -351,14 +434,16 @@ def check_packing(
     detail: list[tuple[str, float, float]] = []
     packed_length = 0.0
     for comp in comps:
-        length = comp.volume / (area * fill_limit)
+        # Soft goods pack at the fill limit; rigid hardware standing in the same space
+        # (a wiring conduit, a U-bolt) takes exactly its own volume and no more.
+        length = comp.volume / (area * fill_limit) + comp.rigid_volume / area
         packed_length += length
-        detail.append((comp.name, comp.volume, length))
+        detail.append((comp.name, comp.volume + comp.rigid_volume, length))
 
     n_internal_bulkheads = max(len(comps) - 1, 0)
     required = packed_length + n_internal_bulkheads * bulkhead_thickness
 
-    total_volume = sum(c.volume for c in comps)
+    total_volume = sum(c.volume + c.rigid_volume for c in comps)
     fill_fraction = total_volume / (area * bay_length) if bay_length > 0 else float("inf")
 
     fits = required <= bay_length

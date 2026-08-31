@@ -672,9 +672,10 @@ socket. See docs/01 correction 21 and `design/hinge.py`. Cut in the CAD.
 verdict in `scripts/baseline.py`. See "The aft gas seal" below. It is a **G-10 disc, 4.8 mm,
 39 g**, and it is not the part this heading described.
 
-**The forward wiring pass-through.** Still open as *geometry* — no hole is drawn — but it is
-no longer an open *decision*: it is also the canard module's vent, and it has to be, because
-the only other face vents into the volume the ejection charge fires in. See below.
+**The forward wiring pass-through — DECIDED, Aug 2026.** Still open as *geometry* (no hole
+is drawn) but no longer an open decision: it is a wire route and is **potted solid**. It is
+not the module's vent — the module vents through its own wall, 2 × ⌀2 mm. See "The vent path"
+below, which corrects what this document said first.
 
 ## The aft gas seal
 
@@ -748,36 +749,55 @@ comfortable way:
   it. Potting the exposed face gives you a part that passes on the bench and sooties the
   nav bay in flight.
 
-### The vent path — why the two open items were one item
+### The vent path — and the first version of this section was wrong
 
-This document listed "forward wiring pass-through" and "aft gas seal" as two open items.
-They are one decision seen from both ends. The module has to breathe — sealed at ground
-pressure it carries about 15 kPa outward at apogee — and it has two faces it could breathe
-through. **It must not be the aft one**, because the volume on the other side of that face
-is where the charge fires. So the module vents **forward**, through the wiring pass-through,
-into the nav bay.
+This section used to argue that the module has two faces it could breathe through, that the
+aft one is disqualified because the ejection charge fires on the other side of it, and that
+the module therefore vents **forward** through the wiring pass-through into the nav bay —
+which would put the module inside the altimeter's static volume and make a leak past this
+seal a pressure-sensor fault.
 
-That has a consequence nobody had written down: **the canard module's free volume becomes
-part of the altimeter's static volume.** A leak past this seal does not merely put soot in
-the module — it puts ejection gas into the pressure sense volume of the altimeter that fires
-the charges, while it is firing them. And the nav bay's static ports, when somebody sizes
-them, have to be sized for two bays.
+Every step of that follows from its premise, and **the premise is false. A bay is a
+cylinder, and the third surface is the wall** — which on this module already has four ⌀8 mm
+bores through it.
 
-### Three things this opened, none of them this part
+**The module vents overboard: 2 × ⌀2 mm through its own wall.** Then none of the rest
+follows. The altimeter's sense volume is the nav bay alone; the wiring pass-through is
+**potted solid** around the wires, which is a better seal than one that has to pass air; and
+a leak past this disc goes outside instead of into the sensor that fires the charges.
 
-1. **The drogue's firing circuit has nowhere to run.** This disc closes the *forward*
-   compartment, so the main's charge terminates on its aft face, millimetres from where the
-   wires come through. The drogue's charge is on the far side of the internal bulkhead, and
-   the only path to it is through a compartment packed with the main. The standard high-power
-   answer — an av-bay between the two compartments — needs ~60 mm of tube and two more
-   bulkheads against **13.0 mm** of recovery-bay margin, so it does not fit, which is also
-   *why* the altimeter is in the nav bay and why this hole is not optional. A ⌀5 mm conduit
-   bonded along the tube wall costs **1.2 mm** of that 13.0 mm. That is the recommendation.
-2. **The internal bulkhead is a 12.0 mm length allowance in `recovery.py` and nothing else.**
-   It is a pressure boundary with a charge on *both* faces and it has had none of the
-   treatment this disc just got.
-3. **The nav bay has never had a packing check**, and the recovery bay's is what found an
-   11 mm error in itself (correction 5). See docs/04 §5.
+See `design/venting.py` and docs/01 correction 28. The framing failed, not any number, and
+"it has two faces and one is disqualified" is the kind of complete-sounding argument nothing
+inside it will ever catch.
+
+### Three things this opened — all closed, Aug 2026
+
+1. **The drogue's firing circuit.** This disc closes the *forward* compartment, so the
+   main's charge terminates on its aft face, millimetres from where the wires come through.
+   The drogue's charge is on the far side of the internal bulkhead, and the only path to it
+   is through a compartment packed with the main. The standard high-power answer — an av-bay
+   between the two compartments — needs ~60 mm of tube and two more bulkheads against 13.0 mm
+   of recovery-bay margin, so it does not fit, which is *why* the altimeter is in the nav bay
+   and why this hole is not optional. **Answer: a ⌀5 mm thin-wall conduit bonded along the
+   tube wall**, sealed where it crosses both bulkheads. `recovery.add_conduit()` prices it.
+
+   Counting it turned up something bigger. A conduit and a U-bolt are **rigid** — the canopy
+   packs *around* them, it does not compress with them — so they take their own volume out of
+   the compartment rather than going through the fill limit. `Compartment.hardware` is that
+   distinction, and once the conduit and the four U-bolts are in it the recovery bay's margin
+   goes **+13.0 → +6.8 mm**. The U-bolts cost more than the conduit: 24 cm³ of envelope
+   against 4.7. Still fits.
+2. **The internal bulkhead** is now the same model applied a second time —
+   `seal.internal_bulkhead_from_evaluation()`. **G-10 4.8 mm, 39 g**, 1 × ⌀6 mm feed-through
+   for the conduit, plate 4.0× and feed-through 2.2×. Two things it is worth knowing: it is
+   the **only pressure boundary in the vehicle with no fuse** (the aft seal has shear pins
+   that go first; this one is bonded at both ends of its load path, so a stuck joint simply
+   hands it the whole charge), and both bulkheads see the **same** pressure for a reason that
+   has nothing to do with either — docs/01 correction 29.
+3. **The nav bay has a packing check now** (`design/avionics.py`) and it does **not** pass:
+   152 mm of sled wanted against 103 mm available, 117 mm with the tracker and radio moved to
+   the nose. On estimated envelopes, so it is an `evaluate()` warning and not a violation —
+   read docs/01 correction 27 and correction 5 before touching geometry.
 
 ## Drawing 1 — the Step 3 dimensioned drawing
 

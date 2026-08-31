@@ -12,8 +12,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from design import aero, control, flutter, hinge, seal, trajectory, tube_section
+from design import (
+    aero, avionics, control, flutter, hinge, seal, trajectory, tube_section, venting,
+)
 from design.configure import baseline, build_vehicle, evaluate
+from design import recovery
 from design.packaging import (
     SERVO_GEOMETRY, SERVOS, check_direct_drive, check_flat_mount, torque_margin,
 )
@@ -27,6 +30,9 @@ MOTOR = BASELINE.motor
 # Servo is part of the frozen design now -- see design/configure.py.
 SERVO_CHOICE = BASELINE.servo
 DEFLECTION_LIMIT_DEG = 8.0
+# Free air in the canard module -- tube volume less the servos, printed bay, shafts and
+# bearings. An estimate; it only has to be good enough to size a vent convention oversizes.
+CANARD_MODULE_FREE_VOLUME = 570e-6  # m^3
 # Roll control needs far less deflection than pitch/yaw, because roll inertia is tiny.
 ROLL_DEFLECTION_DEG = 2.0
 GEAR_RATIO = 1.0
@@ -56,6 +62,8 @@ def main() -> None:
         print("                      ^ PLACEHOLDER motor. Replace with a real .eng curve.")
     print(f"  wet / dry mass      {m.wet_mass:.2f} / {m.dry_mass:.2f} kg")
     print(f"  feasible            {'YES' if ev.feasible else 'NO: ' + '; '.join(ev.violations)}")
+    for w in ev.warnings:
+        print(f"  WARNING             {w}")
 
     rule("GEOMETRY  (stations measured from nose tip)")
     print(f"  nose cone           {r.nose.shape}, {r.nose.length * 1000:.0f} mm "
@@ -309,7 +317,43 @@ def main() -> None:
           f"weight at a 1.0 shock factor")
     print(f"  governed by         {sl.governed_by}")
     print(f"  aft gas seal check  {'OK' if schk.ok else 'VIOLATIONS: ' + '; '.join(schk.violations)}")
+
+    ib = seal.internal_bulkhead_from_evaluation(ev)
+    ibchk = seal.check_seal(ib)
+    print(f"  internal bulkhead   G-10 {ib.bulkhead.thickness * 1000:.1f} mm, "
+          f"{ib.bulkhead.mass * 1e3:.0f} g; plate {ib.plate_margin:.1f}x, "
+          f"feed-through {ib.hole_margin:.1f}x -- NO shear pins protect it")
+    print(f"  bulkhead allowance  {seal.stack_length(ib) * 1000:.1f} mm assembled against "
+          f"recovery.BULKHEAD_THICKNESS {recovery.BULKHEAD_THICKNESS * 1000:.1f} mm")
+    print(f"  internal bhd check  {'OK' if ibchk.ok else 'VIOLATIONS: ' + '; '.join(ibchk.violations)}")
+    print(f"  packing             {ev.packing}")
     print("     Full argument: python scripts/seal_report.py")
+
+    rule("VENTING and the NAV BAY")
+    nav = next(t for t in ev.rocket.tubes if t.name == "nav bay")
+    nav_free = avionics.free_volume(nav.inner_diameter, nav.length)
+    nav_bay = venting.VentedBay("nav bay", nav_free, venting.CONVENTIONAL_PORT_COUNT,
+                                venting.CONVENTIONAL_PORT_DIAMETER)
+    mod_bay = venting.VentedBay("canard module", CANARD_MODULE_FREE_VOLUME, 2, 0.002)
+    vchk = venting.check_venting(nav_bay, mod_bay, altitude=285.0, climb_rate=177.0,
+                                 apogee=ev.flight.apogee, module_wall_area=mod_bay.area)
+    print(f"  static ports        {nav_bay.n_ports} x dia "
+          f"{nav_bay.port_diameter * 1000:.1f} mm in the NAV BAY only "
+          f"({nav_bay.area * 1e6:.1f} mm2, lag {nav_bay.lag_altitude(285.0, 177.0):.3f} m)")
+    print(f"  canard module vent  {mod_bay.n_ports} x dia "
+          f"{mod_bay.port_diameter * 1000:.1f} mm through its OWN WALL -- so the module is "
+          f"not in the sense volume")
+    print(f"  lag model asks for  {venting.port_area_for_lag(nav_free, 285.0, 177.0) * 1e6:.2f} mm2 "
+          f"against the {nav_bay.area * 1e6:.1f} mm2 convention drills. Lag does not size these holes")
+    print(f"  venting check       {'OK' if vchk.ok else 'VIOLATIONS: ' + '; '.join(vchk.violations)}")
+
+    nav_pack = avionics.check_packing(nav.inner_diameter, nav.length)
+    nav_moved = avionics.check_packing(nav.inner_diameter, nav.length, avionics.relocatable())
+    print(f"  nav bay packing     {nav_pack}")
+    print(f"    tracker+radio out {nav_moved}")
+    print(f"  ON ESTIMATED ENVELOPES -- {len(nav_pack.estimated)} of "
+          f"{len(nav_pack.components)} parts are guesses because D7 is open. Read")
+    print("     correction 5 before touching geometry. python scripts/avionics_report.py")
 
     rule("OPENROCKET ENTRY VALUES")
     print(f"""  Nose cone

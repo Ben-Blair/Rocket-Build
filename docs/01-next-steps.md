@@ -78,33 +78,52 @@ Read this first if you are picking the project back up.
 - **The aft gas seal is sized, and it was never a seal** (correction 25). `design/seal.py`,
   `scripts/seal_report.py`, verdict in `scripts/baseline.py`, write-up in `docs/05`. A
   **G-10 disc, 4.8 mm, 39 g** — sized not against gas tightness but against being the piston
-  the ejection charge pushes on (7213 N in the stuck-joint case) and the anchor the main
-  pulls on (1306 N). **The canard module now has no open engineering item**; what is left in
-  it is CAD — the seal's geometry and the forward pass-through's hole — and the Step 3
-  drawing. Three things it opened are recorded below and none of them is this part.
+  the ejection charge pushes on (7329 N in the stuck-joint case) and the anchor the main
+  pulls on (1338 N).
+- **Everything the seal opened is now closed too**, and each one turned out to be a
+  different kind of problem:
+  - **The internal bulkhead**, which was a 12.0 mm length allowance in `recovery.py` and
+    nothing else, is now the same model applied a second time — **4.8 mm, 39 g**, with a
+    charge on both faces and, unlike the seal, **no shear pins protecting it**. Both come
+    out at the same pressure for a reason worth knowing: correction 29.
+  - **The drogue's firing circuit** runs in a ⌀5 mm bonded conduit through the main
+    compartment. Priced in `recovery.py` along with the four U-bolts nobody had counted, and
+    together they take the recovery bay's margin from **+13.0 mm to +6.8 mm**. Still fits.
+  - **The venting** is `design/venting.py`, and it corrects the seal's own argument
+    (correction 28). The canard module vents through **its own wall**, so it is not in the
+    altimeter's sense volume and the wiring pass-through is potted solid.
+  - **The nav bay has a packing check now** (`design/avionics.py`,
+    `scripts/avionics_report.py`) and **it does not pass** — 152 mm of sled wanted against
+    103 mm available, on estimated envelopes. Read correction 27 before doing anything
+    about it; this is correction 5's exact trap and it is now an `evaluate()` **warning**
+    rather than a violation.
+- **The canard module has no open engineering item.** What is left in it is CAD — the
+  seal's geometry, the pass-through hole, the two vent holes — and the Step 3 drawing.
 - **Step 4 is next**: avionics. Decisions D7 (flight computer) and D8 (state estimation)
-  are open and drive the largest, least specified line in the budget. Two things found while
-  sizing the seal belong to it: the **mass budget is missing the dual-deploy altimeter** the
-  BOM lists (correction 26), and the **nav bay has never had a packing check** the way the
-  recovery bay has.
+  are open, drive the largest and least specified line in the budget, and now also decide
+  whether the nav bay is long enough. **Closing D7 is the single highest-value thing left**:
+  nine datasheets replace nine guesses and turn correction 27 from a warning into a fact.
 
 Current vehicle: 79.4 mm OD fiberglass, 1361 mm, canards 0.85 cal / aft fins 1.55 cal
 interdigitated 45°, **both sets swept 35.4°**, Cesaroni J449 Blue Streak, 4× KST X08 Plus
 servos flat-mounted with the hinge at 0.20 of MAC, 100 g nose ballast. Canards 67.5 root /
-27.0 tip (0.40 taper). 6.10 kg wet, apogee 1379 m, Mach 0.531, static margin 2.03–2.52 cal,
-P(SM<1.0) 0.4%, 424 m crossrange. `scripts/baseline.py` regenerates
+27.0 tip (0.40 taper). **6.18 kg wet, apogee 1358 m, Mach 0.524, static margin
+2.10–2.58 cal, P(SM<1.0) 0.3%, 393 m crossrange** — every one of those moved in Aug 2026
+when the missing dual-deploy altimeter went into the mass budget (correction 26). `scripts/baseline.py` regenerates
 all of it; `evaluate()` reports feasible with no violations, and that now includes a check
 that the recovery hardware physically fits in the bay.
 
 **One open decision you should know about before the defence:** §7 used to claim the
 selected fin sizes gave the highest crossrange of any combination that passes every
-constraint. They do not — they rank third. `scripts/robustness.py` picks canard 1.00 / aft
-1.70 cal, which passes everything and buys 16% more crossrange (493 m against 424 m) at the
-cost of flutter margin (1.78 against 1.97) and servo torque (2.3× against 2.8×). 0.85/1.55
-is retained on margin, and because the Onshape module is built to it — but that is a choice,
-and §7 now says so instead of hiding it.
+constraint. They do not. `scripts/robustness.py` now picks **canard 1.15 / aft 1.85 cal**,
+which passes everything and buys **514 m against the selected 393 m** — 31% more. It costs
+flutter margin and servo torque; run the script for the current figures rather than quoting
+these, because they moved once already when the altimeter went into the budget
+(correction 26) and they will move again when parts get weighed. **0.85/1.55 is retained**
+on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
+so instead of hiding it.
 
-Twenty-six corrections are worth knowing about. The first four changed the design; two of the
+Twenty-nine corrections are worth knowing about. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
@@ -549,18 +568,16 @@ that silently recurs:
      *bending*, where the thin-plate value is about 1.8. Being wrongly conservative is not
      free — at 3.0 the disc goes to 6.4 mm to buy a margin against a stress that is not there.
 
-   **And the two open items in `docs/05` were one item.** The module has to breathe, and it
-   has two faces it could breathe through; it must not be the aft one, because that is where
-   the charge fires. So it vents **forward** through the wiring pass-through — which makes
-   **the canard module part of the altimeter's static volume**. A leak past this seal does
-   not put soot in a bay, it puts ejection gas into the pressure sensor that fires the
-   charges, while it is firing them.
+   **This correction also got the vent path wrong, and correction 28 fixes it.** The
+   original argument ran: the module has two faces it could breathe through, it must not be
+   the aft one because that is where the charge fires, so it vents *forward* into the nav
+   bay and therefore joins the altimeter's static volume. Every step is sound and the
+   premise is false — see correction 28. It is left here rather than edited away because
+   the reasoning is the interesting part.
 
-   Three things it opened, none of them this part: the **drogue's firing circuit** has no
-   path except through a packed compartment (a ⌀5 mm bonded conduit costs 1.2 mm of the
-   recovery bay's 13.0 mm margin, and is the recommendation); the **internal bulkhead** is a
-   12.0 mm length allowance in `recovery.py` and nothing else, with a charge on *both* faces;
-   and the **nav bay static ports** now have two bays of volume behind them.
+   Three things it opened, all now closed: the **drogue's firing circuit** (a ⌀5 mm bonded
+   conduit through the main compartment, priced in `recovery.py`), the **internal bulkhead**
+   (correction 29), and the **venting** (correction 28).
 
 26. **The BOM and the mass budget disagree by exactly one dual-deploy altimeter.** Found by
    asking a question that had nothing to do with structures — *where does the custom PCB
@@ -571,15 +588,111 @@ that silently recurs:
    It is not a rounding difference and the altimeter is not optional: it is the independent
    commercial part that fires the charges, it is what the seal in correction 25 is wired to,
    and flying deployment off the custom PCB alone is a different safety argument than the
-   one these documents make. **Nothing has been changed** — 60 g at station 0.381 m is
-   forward of the 0.800 m CG so it moves static margin *up*, but it is still a vehicle-level
-   change to every number in §1, and correction 20 is the precedent for flagging rather than
-   applying. Decide it with D7.
+   one these documents make. **APPLIED Aug 2026** — not treated like correction 20, because
+   that one proposes *deleting* a contingency somebody might want and this one is a required
+   part the vehicle carries whether or not the budget admits it. Leaving it out does not make
+   the rocket lighter.
+
+   | | before | after |
+   |---|---|---|
+   | dry / wet mass | 5.487 / 6.111 kg | **5.553 / 6.177 kg** |
+   | dry CG | 0.800 m | 0.795 m (forward — the altimeter lands ahead of it) |
+   | static margin | 2.04–2.53 cal | **2.10–2.58 cal** |
+   | P(SM < 1.0) | 0.43% | **0.30%** |
+   | apogee | 1376 m | **1358 m** |
+   | max Mach | 0.530 | 0.524 |
+   | one-sided crossrange at 8° | 419 m | **393 m** |
+
+   Still feasible, no violations, and the stability numbers all move the *right* way. The
+   one claim it did break is in `docs/00` §D6 and `docs/02`: **J449BS ranks 11th on
+   crossrange among motors passing every constraint, not 9th.** The selection does not
+   change — it was never made on crossrange rank — but the sentence was, and now says 11th.
 
    The transferable part is where it came from. Nothing in this repo cross-checks
    `docs/04` against `design/mass.py`; they are two lists maintained by hand, which is the
    exact condition that produced correction 4. **A question from outside the analysis found
    it in one minute, and no check inside the analysis would ever have.**
+
+27. **The nav bay has never had a packing check, and the first one says it does not fit.**
+   `nav_bay_cal = 1.6` was typed at the same time as `recovery_bay_cal = 4.5` and by the same
+   hand. The recovery bay got `check_packing()` and an 11 mm scare; the nav bay got nothing,
+   for a year, while it quietly became the answer to "where does the custom PCB go".
+
+   `design/avionics.py` is that check. **152 mm of sled wanted against 103 mm available**;
+   117 mm with the tracker and radio moved to the nose.
+
+   **The modelling point is worth more than the verdict.** The obvious check — add up
+   component volumes, compare against the bay's — gives 150 cm³ in 558 cm³ and says the bay
+   is two-thirds empty. It is the wrong check. Boards mount on the two faces of a flat sled,
+   and a flat sled in a round tube can only use the rectangle inscribed in the circle: at a
+   60 mm sled the usable height is 44.9 mm, not 74.8, and nothing reaches the four corners.
+   **The binding quantity is footprint on two faces, and the volume is real but is not the
+   constraint.** Same class as reading the hinge moment and concluding a 9 g servo is enough.
+
+   **Do not lengthen the bay on the strength of this.** Every envelope in it is an estimate
+   for a part nobody has chosen, which is correction 5's exact configuration — an
+   estimate-driven shortfall, acted on, that turned out not to be in the hardware. So it is
+   an `evaluate()` **warning** and not a violation: `feasible` stays YES, and the warning
+   prints at the top of `scripts/baseline.py` where it cannot be missed. A new field on
+   `Evaluation`, because "the vehicle cannot fly" and "the vehicle as *estimated* has a
+   problem" are different claims and the model had only one channel for them.
+
+   In order of what it costs: **close D7 and measure** (nine datasheets, and the only thing
+   that settles it); **move the tracker and radio to the nose**, worth 35 mm and no frozen
+   geometry — and where a tracker belongs anyway, since its job is to still be working when
+   nothing else is; **one end closure instead of two**, worth 12 mm if the nose shoulder or
+   the canard module's forward face already does the job; **lengthen the nav bay** to 2.0 cal,
+   +32 mm, which touches every number in §1 and is therefore last.
+
+28. **A bay is a cylinder, and the third surface is the wall.** Correction 25 argued that the
+   canard module has "exactly two faces it could breathe through", that the aft one is
+   disqualified because the ejection charge fires there, and that the module therefore vents
+   forward into the nav bay — joining the altimeter's static volume, and making a leak past
+   the aft seal a pressure-sensor fault rather than a soot problem.
+
+   Every step of that follows. The premise does not: the module vents **overboard through
+   its own wall**, like every other bay in high-power rocketry, and that wall already has
+   four ⌀8 mm bores through it. Two ⌀2 mm holes cost nothing and the whole chain goes away —
+   the sense volume is the nav bay alone, the wiring pass-through gets **potted solid**
+   rather than having to pass air, and a leak past the seal goes outside.
+
+   **The framing failed, not any number.** *"It has two faces and one of them is
+   disqualified"* is a complete-sounding argument that silently excluded the answer, and
+   nothing inside it was ever going to catch that. Correction 1 is the same shape: the servo
+   was assumed to point inward and every conclusion after that was sound.
+
+   `design/venting.py` owns this, and it found one more thing by being written. It was built
+   to size the static ports against **lag** — a bay that lags on the way down fires the main
+   below the 200 m it was set for, which is the failure with no margin under it. **Lag does
+   not size these holes, by a factor of about 300.** The model asks for 1.35 mm² and
+   convention drills 24.1. So the ports are set by blockage tolerance, by the ejection
+   transient, and by what a person can drill and deburr by hand — none of which is modelled
+   — and *"the bay must breathe fast enough"*, which is the reason everybody gives for these
+   holes, is not the reason. A check that confirms is its own kind of result.
+
+29. **`recovery.FILL_LIMIT` sets the design pressure of every bulkhead in the rocket.**
+   Sizing the internal bulkhead should have been a second, easier pass of correction 25's
+   model. It was, and it printed something neither part's geometry explains: **both
+   bulkheads see the same stuck-joint pressure**, 1668 and 1689 kPa, though one closes a
+   1042 cm³ compartment and the other a 429 cm³ one.
+
+   `check_packing()` gives every compartment the length its contents need *at the fill
+   limit*, so every compartment leaves the same free fraction — 1 − 0.85 — whatever is in it.
+   The charge scales with the geometric volume and the free volume scales with it too, and
+   the ratio cancels. **The drogue compartment holds a quarter of the volume and is 1%
+   worse.**
+
+   So `FILL_LIMIT = 0.85`, chosen as a packing convenience — *"a bay packed to 100% is a bay
+   that will not close on the launch rail with cold hands"* — is a **structural** parameter
+   and nothing said so. Pack to 0.90 instead and every bulkhead load rises 50%, to 2502 kPa.
+   `check_seal()` prints that sensitivity on every run.
+
+   Two things about the part itself. It is the **only pressure boundary in the vehicle with
+   no fuse**: the aft seal is protected by shear pins that go first by design, while this one
+   is bonded into the tube at both ends of its load path, so a joint that sticks simply hands
+   it the whole charge. For it the stuck case is not a contingency, it is the only case. And
+   its **assembled stack is 10.8 mm against the 12.0 mm `BULKHEAD_THICKNESS` allowance** —
+   which fits, and which was a typed number nothing had ever compared against a part.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.
