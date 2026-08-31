@@ -71,6 +71,11 @@ Read this first if you are picking the project back up.
   dimension. Two things it turned up are open and neither is a bay problem: **the coupling**
   (no bought servo horn fits in 0.515 mm — correction 19) and **the aft gas seal**, which is
   a bulkhead and has never been sized.
+- **The coupling is closed** (correction 21). The shaft's inboard end takes a plain
+  ⌀4.100 × 3.20 drilled socket, bonded onto the servo spline with anaerobic retaining
+  compound that cures into the tooth valleys and becomes the female spline. No broaching, no
+  bought adapter, and it comes apart with heat. Cut in the CAD. **The aft gas seal is now
+  the only open item in the canard module.**
 - **Step 4 is next**: avionics. Decisions D7 (flight computer) and D8 (state estimation)
   are open and drive the largest, least specified line in the budget.
 
@@ -406,6 +411,53 @@ that silently recurs:
    crossrange) but it is a vehicle-level change to every number in §1, so **nothing has been
    changed**. What the placeholder still legitimately covers is wiring, connectors,
    fasteners, epoxy and the aft gas seal — call that 40 g, not 177 g.
+
+21. **The coupling is closed, and correction 16 was wrong about how.** Correction 16 said
+   "do not broach the spline, buy a horn". Correction 19 found that no horn fits. Both were
+   circling the same real constraint: **broaching a 15-tooth socket into a 0.95 mm wall is
+   specialist, and every bought female-spline part is ⌀7 or larger against 0.515 mm of space
+   and a ⌀6 journal.** The way out is neither.
+
+   **Do not cut teeth — cast them.** Drill the shaft's inboard end **⌀4.100 × 3.20**, a
+   plain round hole 0.050 mm on the radius over the spline's crests. Fill it with anaerobic
+   retaining compound and push it onto the spline. The compound cures in the tooth valleys
+   and *becomes* the female spline: fifteen keys formed by the very part they mate with, so
+   they fit by construction. One drilled feature, on a part already being turned.
+
+   | | |
+   |---|---|
+   | adhesive shear | 6.79 MPa against 17 MPa — **2.50×**, computed as if the socket were smooth |
+   | the fifteen cast keys | 29.9 MPa of bearing if they carried it all — **deliberately not counted** |
+   | shaft wall in torsion | 15.7 MPa — 10.2× in 6061-T6 |
+   | reservoir | 0.30 mm past the engagement, so the blind hole does not hydraulic-lock |
+   | serviceable | releases at ~250 °C — the reason for a retaining compound rather than epoxy |
+
+   Allowable **only** because the coupling carries torque and no moment: the bearing sits
+   outboard and takes all 0.806 N·m of panel bending, and this joint sees 0.520 N·m of servo
+   stall. An adhesive in a bending path would be a bad idea. This is not one. Cut in CAD by
+   `scripts/make_spline_socket.py`; `cad/canard_articulation.fs` gained `canardSplineSocket`.
+   **Prime the bore** — 6061 is a passive metal and anaerobics need an activator on it.
+
+22. **The shafts were modelled in stainless steel, and every document said 6061-T6.** The
+   CAD carried "300 Series Stainless Steel" — 7850 against 2700, **5.86 g a shaft instead
+   of 1.90** — while docs/04, docs/05 and an explicit instruction all said aluminium. Only
+   a passing remark in `design/materials.py` agreed with the CAD, and it was never a
+   decision. Settled on **6061-T6**: better margin (8.0× against 7.0× on sleeve bending),
+   15.4 g lighter across four shafts at nearly the module's full radius on the roll axis,
+   and far easier to cut a 1.8 mm tang and a 0.95 mm socket wall into.
+
+   **How it hid for months is the transferable part.** Nothing ever read the density back.
+   The material was set from an Onshape *library* entry, and a library material returns its
+   density as `0` through the metadata API — so an audit that reads part metadata sees
+   nothing wrong. What found it was `scripts/make_spline_socket.py` predicting its own mass
+   change from the model's OWN measured density rather than from a constant, and printing
+   that density in passing. **A safety check that reads what is actually there, instead of
+   asserting what it expects, finds things it was not looking for.** Custom materials are
+   now used throughout for exactly this reason.
+
+   It also very nearly cancelled the printed bay: +38.6 g of bay, −15.4 g of shaft, so the
+   module total moved 276.999 → 299.776 g and looked unremarkable. **A total is a bad place
+   to look for an error.**
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.

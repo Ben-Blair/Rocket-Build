@@ -108,20 +108,30 @@ class MeasuredComponent:
 CANARD_MODULE_CAD = MeasuredComponent(
     name="canard module (CAD assembly, real servos, hinge stack, root tang, 3.2 mm panels, "
          "four hinge bearings, printed bay)",
-    mass=0.315617,
-    station_from_module_face=0.074797,
-    i_transverse=642.847e-6,
-    i_roll=712.518e-6,
+    mass=0.299776,
+    station_from_module_face=0.075142,
+    i_transverse=622.787e-6,
+    i_roll=674.113e-6,
     source="Onshape canard-control module, Assembly 1, Aug 2026, after the root tang of "
            "design/hinge.py, the 3.2 mm laminate panel of design/configure.py, the four "
            "dia 6/8 x 6 plain bearings placed by scripts/place_bearings.py, and the "
            "printed bay of design/bay.py built by scripts/make_bay_cad.py",
 )
-# THE PRINTED BAY IS IN, and this is the last big move this tensor had left to make: mass
-# 276.999 -> 315.617 g, roll 665.938 -> 712.518 kg mm^2 (+7.0%), transverse +4.6%. The bay
-# is 38.6 g of PETG-CF sitting at R 35-37 mm, which is nearly all of the module's outer
-# radius, so it buys roll inertia efficiently -- that is why 12% more mass is 7% more roll
-# inertia rather than 12%.
+# TWO CHANGES IN THIS NUMBER, pulling opposite ways, and they are worth separating.
+#
+#   +38.6 g  THE PRINTED BAY. PETG-CF at R 35-37 mm, nearly the module's full radius, so
+#            it buys roll inertia efficiently.
+#   -15.4 g  THE SHAFTS WERE MODELLED IN STEEL. Every document said dia 6 6061-T6 and the
+#            CAD carried "300 Series Stainless Steel", 7850 against 2700 -- 5.86 g a shaft
+#            instead of 1.90. Nothing had ever read the density back, so nothing caught it.
+#            scripts/make_spline_socket.py did, and only because it predicts its own mass
+#            change from the model's OWN density rather than from a constant. A safety
+#            check that reads what is there instead of what it expects finds things the
+#            check was not looking for.
+#
+# Net: 276.999 -> 299.776 g, roll 665.938 -> 674.113 kg mm^2 (+1.2%), transverse +1.4%.
+# The two changes very nearly cancelled, which is exactly why a total is a bad place to
+# look for an error.
 #
 # WHAT IS LEFT OUT is now small and it is all electrical: wiring, connectors, the servo
 # leads, and whatever holds them. Say 20 g. The module was 0.565 kg in the mass budget

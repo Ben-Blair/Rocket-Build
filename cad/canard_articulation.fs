@@ -339,3 +339,69 @@ export const canardRootTang = defineFeature(function(context is Context, id is I
             });
         }
     });
+
+
+/**
+ * The spline socket in the four canard shafts.
+ *
+ * A plain round blind hole in the inboard end of each sleeve, a few hundredths over the
+ * servo spline's crest diameter. It is NOT a broached spline and it is not meant to be:
+ * the socket is filled with anaerobic retaining compound and pushed onto the spline, and
+ * the compound cures in the tooth valleys and becomes the female spline. Fifteen keys,
+ * cast by the part they mate with. See design/hinge.py, "THE COUPLING".
+ *
+ * docs/05 carried this as "the socket could be cut the same way now; it has not been,
+ * because nothing depends on it". Something does now -- it is the whole coupling.
+ *
+ * WHY THIS NEEDS A CUSTOM FEATURE: the cut has to reach the four shafts and NOT the four
+ * obsolete servo envelope blocks that share this Part Studio. That is a boolean scope, a
+ * scope has to name bodies, and bodies cannot be named by bare deterministic id.
+ */
+annotation { "Feature Type Name" : "Canard spline socket" }
+export const canardSplineSocket = defineFeature(function(context is Context, id is Id, definition is map)
+    precondition
+    {
+        annotation { "Name" : "Hinge station, from module forward face" }
+        isLength(definition.hingeStation, LENGTH_BOUNDS);
+
+        annotation { "Name" : "Sleeve inboard radius" }
+        isLength(definition.sleeveInboard, LENGTH_BOUNDS);
+
+        annotation { "Name" : "Socket diameter" }
+        isLength(definition.socketDia, LENGTH_BOUNDS);
+
+        annotation { "Name" : "Socket depth" }
+        isLength(definition.socketDepth, LENGTH_BOUNDS);
+    }
+    {
+        const found = classifyCanardBodies(context);
+        // Overshoot INBOARD only. The socket is blind by design -- the surplus adhesive
+        // has to have somewhere to go -- so the far end must land exactly on depth and
+        // only the open end is allowed to overshoot.
+        const OVER = 1 * millimeter;
+
+        for (var quadrant in [0, 1, 2, 3])
+        {
+            const a = quadrant * 90 * degree;
+            const u = vector(cos(a), sin(a), 0);
+            const base = vector(0, 0, 1) * definition.hingeStation;
+
+            var before = evaluateQuery(context, qAllSolidBodies());
+            fCylinder(context, id + ("socket" ~ quadrant), {
+                    "bottomCenter" : base + u * (definition.sleeveInboard - OVER),
+                    "topCenter" : base + u * (definition.sleeveInboard + definition.socketDepth),
+                    "radius" : definition.socketDia / 2
+            });
+            // Freeze the capture. qSubtraction(qAllSolidBodies(), ...) is lazy and would
+            // grow to mean every body made since the snapshot by the time the next
+            // quadrant's boolean consumed it.
+            const cutter = qUnion(evaluateQuery(context,
+                    qSubtraction(qAllSolidBodies(), qUnion(before))));
+
+            opBoolean(context, id + ("socketCut" ~ quadrant), {
+                    "tools" : cutter,
+                    "targets" : found.shafts[quadrant],
+                    "operationType" : BooleanOperationType.SUBTRACTION
+            });
+        }
+    });

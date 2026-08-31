@@ -56,6 +56,8 @@ from dataclasses import dataclass
 from .materials import (  # noqa: E402
     BEARING_PRESSURE_LIMIT, SHAFT_YIELD,
     G10_BEARING, G10_FLEXURAL, G10_INTERLAMINAR_SHEAR,
+    RETAINING_COMPOUND_MAX_RADIAL_GAP, RETAINING_COMPOUND_RELEASE_C,
+    RETAINING_COMPOUND_SHEAR, STRUCTURAL_EPOXY_SHEAR,
 )
 
 # Required ratio of allowable to actual. 2.0 to match the servo torque margin requirement
@@ -64,6 +66,10 @@ from .materials import (  # noqa: E402
 BEARING_MARGIN_REQUIRED = 2.0
 
 SHAFT_MARGIN_REQUIRED = 2.0
+
+# Same 2.0, and stated separately so that arguing about an ADHESIVE margin does not
+# silently move the bearing's.
+COUPLING_MARGIN_REQUIRED = 2.0
 
 # Minimum diametral running clearance between a turning shaft and whatever it turns
 # inside. Any positive number would have caught the defect this file exists for -- the
@@ -100,6 +106,41 @@ BEARING_SEAT_INTERFERENCE = BEARING_SUPPLIED_OVERSIZE  # what the press actually
 # the contact pressure in the socket; the sizing case is the servo's own stall torque,
 # which the spline is by definition rated for at FULL engagement.
 SPLINE_TOOTH_HEIGHT = 0.20e-3  # m
+
+# ======================================================================================
+# THE COUPLING, and why it is a plain drilled hole rather than a broached spline
+# ======================================================================================
+# The problem, stated as geometry: there is 0.515 mm between the servo's output face and
+# the bearing's inboard end, and everything OUTBOARD of that has to pass down a dia 6.000
+# bore, because that is the journal that turns in the bearing. Fifteen teeth on a dia 4
+# pitch circle need metal around them, so every female-spline part anyone sells -- horn,
+# hub, adapter -- is dia 7 or larger. None of them fit, in either place. docs/01
+# correction 16 and docs/04 both said "buy a horn instead of broaching"; that instruction
+# is not buildable, and this block is what replaces it.
+#
+# So the coupling lives INSIDE the dia 6 shaft. The obvious way to do that is to broach a
+# 15-tooth socket in a 0.95 mm wall, which is the specialist operation correction 16 was
+# trying to avoid in the first place.
+#
+# THE WAY OUT: DO NOT CUT TEETH. CAST THEM.
+#
+# Drill a plain round socket a few hundredths over the spline's crest diameter, fill it
+# with anaerobic retaining compound, and push it onto the spline. The compound cures in
+# the tooth valleys and BECOMES the female spline -- fifteen adhesive keys, formed by the
+# very part they have to mate with, so they fit perfectly by construction. The shaft needs
+# one drilled hole, on a part that is already being turned.
+#
+# This is only allowed because THE COUPLING CARRIES TORQUE AND NOTHING ELSE. The bearing
+# sits outboard of it and takes every bit of the 0.806 N m of panel bending; the joint
+# sees 0.520 N m of servo stall and no moment at all. An adhesive joint in a bending load
+# path would be a bad idea. This one is not in a bending load path.
+#
+# WHAT SIZES THE SOCKET IS THE GAP, NOT THE STRESS. Retaining compound wants a bond line
+# under about 0.1 mm on the radius; a structural epoxy wants a thicker one. Opening the
+# socket up REDUCES the adhesive shear stress (bigger radius, more area) and would look
+# like an improvement right up until the compound is outside the gap it is specified for.
+# So the socket is a slip fit on the crests and the strength comes from the valleys.
+SPLINE_CREST_CLEARANCE = 0.050e-3   # m, radial, socket bore over spline crest diameter
 
 
 @dataclass(frozen=True)
@@ -335,6 +376,145 @@ def hinge_loads(stack: HingeStack, hinge_moment: float, mean_chord: float,
         spline_torque=stall_torque,
         spline_pressure=spline_p,
     )
+
+
+@dataclass(frozen=True)
+class BondedCoupling:
+    """The shaft-to-spline joint: a drilled socket, an adhesive, and fifteen cast keys."""
+
+    socket_dia: float           # m, the drilled bore
+    spline_dia: float           # m, crest diameter of the servo spline
+    engagement: float           # m, how much of the spline is inside the socket
+    journal_dia: float          # m, the shaft OD around it
+    torque: float               # N m, servo stall -- the sizing case
+    teeth: int
+    adhesive_shear: float       # Pa
+    max_radial_gap: float       # m
+
+    @property
+    def radial_gap(self) -> float:
+        return (self.socket_dia - self.spline_dia) / 2.0
+
+    socket_depth: float = 0.0   # m, drilled depth from the sleeve's inboard face
+
+    @property
+    def socket_wall(self) -> float:
+        return (self.journal_dia - self.socket_dia) / 2.0
+
+    @property
+    def reservoir(self) -> float:
+        """Depth left beyond the spline tip when the joint is home.
+
+        Not slop. A close-fitting plug pushed into a blind hole full of liquid
+        hydraulic-locks and either will not seat or blows the adhesive back out past the
+        seal. This is where the surplus goes, and the spline's own valleys vent it along
+        the axis on the way."""
+        return self.socket_depth - self.engagement
+
+    @property
+    def bond_area(self) -> float:
+        """The cylinder the adhesive is sheared on. Taken at the SOCKET bore, which is the
+        adhesive-to-aluminium interface -- the weaker of the two, and the one that is a
+        real adhesive bond rather than a mechanical key."""
+        return math.pi * self.socket_dia * self.engagement
+
+    @property
+    def bond_shear(self) -> float:
+        return self.torque / (self.bond_area * self.socket_dia / 2.0)
+
+    @property
+    def bond_margin(self) -> float:
+        return self.adhesive_shear / self.bond_shear if self.bond_shear > 0 else math.inf
+
+    @property
+    def key_bearing_area(self) -> float:
+        """The fifteen cast keys, in bearing against the steel spline teeth."""
+        return self.teeth * SPLINE_TOOTH_HEIGHT * self.engagement
+
+    @property
+    def key_pressure(self) -> float:
+        """What the keys carry if they carry everything. Reported, then IGNORED in the
+        verdict: the adhesive shear above is computed as though the socket were smooth and
+        the teeth did not exist, which is the conservative reading of a joint whose
+        mechanical interlock is real but is formed by an adhesive rather than machined."""
+        a = self.key_bearing_area
+        return (self.torque / (self.spline_dia / 2.0)) / a if a > 0 else math.inf
+
+    @property
+    def shaft_torsion(self) -> float:
+        """The shaft wall around the socket, in torsion. The section is an annulus here,
+        not a circle -- that is the whole point of the wall check."""
+        d, di = self.journal_dia, self.socket_dia
+        z = math.pi * (d ** 4 - di ** 4) / (32.0 * (d / 2.0))
+        return self.torque / z
+
+    @property
+    def shaft_torsion_margin(self) -> dict[str, float]:
+        # Shear yield by von Mises, 0.577 of tensile yield.
+        return {k: 0.577 * v / self.shaft_torsion for k, v in SHAFT_YIELD.items()}
+
+
+def bonded_coupling(stack: HingeStack, stall_torque: float, teeth: int = 15,
+                    adhesive_shear: float = RETAINING_COMPOUND_SHEAR,
+                    max_radial_gap: float = RETAINING_COMPOUND_MAX_RADIAL_GAP,
+                    crest_clearance: float = SPLINE_CREST_CLEARANCE) -> BondedCoupling:
+    return BondedCoupling(
+        socket_dia=stack.spline_dia + 2.0 * crest_clearance,
+        spline_dia=stack.spline_dia,
+        engagement=stack.spline_engagement,
+        journal_dia=stack.journal_dia,
+        torque=stall_torque,
+        teeth=teeth,
+        adhesive_shear=adhesive_shear,
+        max_radial_gap=max_radial_gap,
+        # Drill to the spline's full length, not to the engagement: the difference is the
+        # reservoir, and it costs nothing in a sleeve that is 6.715 mm long.
+        socket_depth=stack.spline_length,
+    )
+
+
+def check_coupling(c: BondedCoupling) -> HingeCheck:
+    v: list[str] = []
+    notes: list[str] = []
+
+    if c.bond_margin < COUPLING_MARGIN_REQUIRED:
+        v.append(f"adhesive shear margin is {c.bond_margin:.2f}x, short of "
+                 f"{COUPLING_MARGIN_REQUIRED:.1f}x, at {c.bond_shear / 1e6:.2f} MPa against a "
+                 f"{c.adhesive_shear / 1e6:.0f} MPa allowable")
+    if c.radial_gap > c.max_radial_gap:
+        v.append(f"the socket leaves {c.radial_gap * 1000:.3f} mm of radial gap, over the "
+                 f"{c.max_radial_gap * 1000:.2f} mm a retaining compound is specified for. "
+                 f"A wider socket lowers the STRESS and takes the adhesive outside the gap "
+                 f"it is rated in, which is the trap in this joint")
+    if c.socket_wall < 0.5e-3:
+        v.append(f"socket wall is {c.socket_wall * 1000:.3f} mm; below 0.5 mm there is not "
+                 f"enough section left to drill against")
+    worst_shaft = min(c.shaft_torsion_margin.values())
+    if worst_shaft < COUPLING_MARGIN_REQUIRED:
+        v.append(f"the shaft wall around the socket runs at {c.shaft_torsion / 1e6:.1f} MPa "
+                 f"in torsion, {worst_shaft:.2f}x on the weakest candidate alloy")
+
+    notes.append(f"socket dia {c.socket_dia * 1000:.3f} on a dia {c.spline_dia * 1000:.1f} "
+                 f"spline: {c.radial_gap * 1000:.3f} mm radial, a slip fit on the crests "
+                 f"with the valleys left open for the compound to key into")
+    notes.append(f"socket wall {c.socket_wall * 1000:.3f} mm, shaft torsion "
+                 f"{c.shaft_torsion / 1e6:.1f} MPa "
+                 f"({', '.join(f'{k} {m:.1f}x' for k, m in c.shaft_torsion_margin.items())})")
+    notes.append(f"the fifteen cast keys would carry it at {c.key_pressure / 1e6:.1f} MPa "
+                 f"of bearing if they carried everything -- NOT counted in the verdict, "
+                 f"which treats the socket as smooth")
+    if c.reservoir <= 0.0:
+        v.append(f"the socket is {c.socket_depth * 1000:.2f} mm deep against "
+                 f"{c.engagement * 1000:.2f} mm of engagement, so there is nowhere for "
+                 f"surplus adhesive to go and the joint will hydraulic-lock before it seats")
+    else:
+        notes.append(f"socket drilled {c.socket_depth * 1000:.2f} mm deep against "
+                     f"{c.engagement * 1000:.2f} mm engaged, leaving {c.reservoir * 1000:.2f} mm "
+                     f"of reservoir for surplus compound")
+    notes.append(f"releases at about {RETAINING_COMPOUND_RELEASE_C:.0f} C, which is the "
+                 f"only reason a servo can be changed once its shaft is on")
+
+    return HingeCheck(ok=not v, violations=v, notes=notes)
 
 
 @dataclass

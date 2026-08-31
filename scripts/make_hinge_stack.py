@@ -64,12 +64,16 @@ EXPECTED_PARTS = 13
 #   276.227 g  Aug 2026, after two intended changes -- canard panels 3.0 -> 3.2 mm (the
 #              laminate has to sum stocked G10 sheet, see design/configure.py) and the
 #              root tang union (cad/canard_articulation.fs). +16.4 g, all of it real.
+#   260.385 g  Aug 2026, after the spline sockets (-1.3 g, four dia 4.1 x 3.2 blind holes)
+#              and after the four shafts were corrected from 300-series stainless to the
+#              6061-T6 every document had specified all along (-15.4 g). See
+#              design/control.py for how that one hid.
 #
 # The 3.0 g tolerance is deliberately tight enough that an intended change trips it. That
 # is the point: it forces the number to be re-derived and the reason written down here,
 # rather than drifting. If this raises, CHECK WHAT MOVED before widening it -- a rise is
 # as suspect as a fall until you can name the geometry that caused it.
-MASS_BEFORE_G = 276.2265
+MASS_BEFORE_G = 260.3850
 MASS_TOLERANCE_G = 3.0
 
 MM = 1000.0

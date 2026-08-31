@@ -517,13 +517,20 @@ in a particular order, and the order is the part that is easy to get wrong.
 32.2 mm long, with a 1.8 × 11.9 × 25.5 mm blade milled on one end. Everything else is
 bought or printed. If that goes to a shop, it is one drawing and four identical parts.
 
-**Do not cut the servo spline.** The shaft's inboard end used to carry a ⌀4.4 × 3.2 mm
-15-tooth internal spline socket, which is specialist broaching in a 0.8 mm wall. Buy a
-**⌀4 mm 15T servo horn** instead — the spline arrives already cut, for a few dollars — and
-bond the shaft to it. This is safe because **the coupling carries torque only**: the bearing
-sits outboard of the spline and takes every bit of the bending, so the joint sees 0.520 N·m
-at servo stall and nothing else. See docs/04 for what the commercial servo frames do and do
-not do.
+**Do not cut the servo spline — cast it.** The shaft's inboard end carries a **⌀4.100 ×
+3.20 mm plain drilled socket**, not a broached one. Fill it with anaerobic retaining
+compound and push it onto the servo spline: the compound cures in the tooth valleys and
+*becomes* the female spline. Fifteen keys, formed by the part they mate with.
+
+An earlier revision of this file said to buy a ⌀4 mm 15T horn instead. **That does not
+fit** — there is 0.515 mm between the servo's output face and the bearing, and outboard of
+that everything passes down the ⌀6 journal; every female-spline part sold is ⌀7 or larger.
+See docs/04 "The coupling" and docs/01 correction 21.
+
+Either way the reasoning that made broaching avoidable still holds: **the coupling carries
+torque only**, 0.520 N·m at servo stall, because the bearing sits outboard of it and takes
+every bit of the bending. Prime the bore — 6061 is passive and anaerobics need an activator
+on it, while the steel spline cures on its own.
 
 **Ream the bearing seat AFTER the printed bay is bonded in.** This is the one that will bite
 if it is done in the obvious order. The bearing is 6.0 mm long, the tube wall is 2.3 mm of
@@ -806,8 +813,8 @@ retype. Radii from the rocket axis.
 |---|---|
 | Servo output face | R 33.185 |
 | Spline | R 33.185 → 36.385 (⌀4, 15T) |
-| Shaft sleeve | R 33.485 → 40.200, **⌀6** OD, 6.715 long |
-| Spline socket in the sleeve | ⌀4.4 × 3.2 deep from the inboard end; 2.900 mm engaged, 91% |
+| Shaft sleeve | R 33.485 → 40.200, **⌀6** OD, 6.715 long, **6061-T6** |
+| Spline socket in the sleeve | **⌀4.100 × 3.20 deep** from the inboard end, plain drilled; 2.900 mm engaged, 0.30 mm adhesive reservoir; 0.950 mm wall |
 | Bearing | R 33.700 → 39.700, ⌀6 ID / ⌀8 OD, 6.000 long, plain, polymer |
 | Housing collar (printed bay) | R 33.700 → 37.400, ⌀12 OD × 3.700 — **a requirement, not a detail** |
 | Wall bore | **⌀8.000 H7** through the 2.3 mm wall — a standard reamer. The 0.030 mm press interference comes from the bushing being supplied oversize, not from undersizing the hole |

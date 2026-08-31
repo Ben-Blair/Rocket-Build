@@ -189,6 +189,44 @@ THE SLEEVE-TO-PANEL JOINT  --  the last link, and the hardest
       note  PANEL IS A LAMINATE: 0.6 / 2.0 / 0.6 mm bonded G10, = 3.2 mm, the middle sheet cut away over 12.1 x 25.5 mm at the root. Cutting that slot into a solid plate instead would be a 13:1 deep blind cut needing a slitting saw; as a laminate it is a flat shape cut before bonding. Every thickness here is a stocked sheet -- check that before changing any of them
 
 ============================================================================================
+THE COUPLING  --  fifteen keys, cast rather than cut
+============================================================================================
+  There is 0.515 mm between the servo's output face and the bearing, and outboard
+  of that everything has to pass down the dia 6.000 journal. Fifteen teeth on a
+  dia 4 pitch circle need metal around them, so every female-spline part sold --
+  horn, hub, adapter -- is dia 7 or bigger. None of them fit, in either place.
+
+  So do not cut teeth. CAST them: drill a plain socket a few hundredths over the
+  spline's crests, fill it with anaerobic retaining compound, push it on. The
+  compound cures in the valleys and becomes the female spline -- keys formed by
+  the part they mate with, so they fit by construction. One drilled hole, on a
+  shaft that is already being turned.
+
+  socket            dia 4.100 x 3.20 deep, wall 0.950 mm
+  radial gap        0.050 mm on the crests (compound is specified to 0.10)
+  engagement        2.900 mm, reservoir 0.30 mm
+  sizing case       0.520 N m, the SERVO's stall -- not the air. The
+                    bearing takes all 0.806 N m of bending, so this
+                    joint sees torque and no moment, which is the only reason an
+                    adhesive belongs in it at all.
+
+  adhesive shear     6.79 MPa against 17 MPa   margin 2.50x
+  shaft wall         15.7 MPa in torsion   6061-T6 10.2x, 303 stainless 8.8x, 4140 steel 24.1x
+  cast keys          29.9 MPa of bearing IF they carried it all -- not counted
+
+  VERDICT: buildable
+    note  socket dia 4.100 on a dia 4.0 spline: 0.050 mm radial, a slip fit on the crests with the valleys left open for the compound to key into
+    note  socket wall 0.950 mm, shaft torsion 15.7 MPa (6061-T6 10.2x, 303 stainless 8.8x, 4140 steel 24.1x)
+    note  the fifteen cast keys would carry it at 29.9 MPa of bearing if they carried everything -- NOT counted in the verdict, which treats the socket as smooth
+    note  socket drilled 3.20 mm deep against 2.90 mm engaged, leaving 0.30 mm of reservoir for surplus compound
+    note  releases at about 250 C, which is the only reason a servo can be changed once its shaft is on
+
+  BUILD NOTE: anaerobics cure on contact with active metal ions. The spline is
+  steel and cures fine; the 6061 shaft is PASSIVE and wants an activator/primer.
+  Prime the shaft bore, not the spline. Without primer the joint will feel solid
+  and be weak, which is the worst way for an adhesive to fail.
+
+============================================================================================
 THE TUBE AT THE HINGE STATION  --  four bores at one station
 ============================================================================================
   check_hinge_stack() has emitted 'check the tube, not just the hinge' since the

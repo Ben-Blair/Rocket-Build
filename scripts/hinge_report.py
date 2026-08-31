@@ -204,6 +204,51 @@ def main() -> None:
     chk_joint = joint_report(joint, jloads)
 
     # ==================================================================================
+    rule("THE COUPLING  --  fifteen keys, cast rather than cut")
+    cpl = hinge.bonded_coupling(sel, servo.stall_torque, geom.spline_teeth)
+    say("  There is 0.515 mm between the servo's output face and the bearing, and outboard")
+    say("  of that everything has to pass down the dia 6.000 journal. Fifteen teeth on a")
+    say("  dia 4 pitch circle need metal around them, so every female-spline part sold --")
+    say("  horn, hub, adapter -- is dia 7 or bigger. None of them fit, in either place.")
+    say("")
+    say("  So do not cut teeth. CAST them: drill a plain socket a few hundredths over the")
+    say("  spline's crests, fill it with anaerobic retaining compound, push it on. The")
+    say("  compound cures in the valleys and becomes the female spline -- keys formed by")
+    say("  the part they mate with, so they fit by construction. One drilled hole, on a")
+    say("  shaft that is already being turned.")
+    say("")
+    say(f"  socket            dia {cpl.socket_dia * MM:.3f} x {cpl.socket_depth * MM:.2f} deep, "
+        f"wall {cpl.socket_wall * MM:.3f} mm")
+    say(f"  radial gap        {cpl.radial_gap * MM:.3f} mm on the crests "
+        f"(compound is specified to {cpl.max_radial_gap * MM:.2f})")
+    say(f"  engagement        {cpl.engagement * MM:.3f} mm, reservoir {cpl.reservoir * MM:.2f} mm")
+    say(f"  sizing case       {cpl.torque:.3f} N m, the SERVO's stall -- not the air. The")
+    say(f"                    bearing takes all {abs(loads_sel.moment_at_bearing):.3f} N m of "
+        f"bending, so this")
+    say(f"                    joint sees torque and no moment, which is the only reason an")
+    say(f"                    adhesive belongs in it at all.")
+    say("")
+    say(f"  adhesive shear    {cpl.bond_shear / 1e6:5.2f} MPa against "
+        f"{cpl.adhesive_shear / 1e6:.0f} MPa   margin {cpl.bond_margin:.2f}x")
+    say(f"  shaft wall        {cpl.shaft_torsion / 1e6:5.1f} MPa in torsion   "
+        + ", ".join(f"{k} {m:.1f}x" for k, m in cpl.shaft_torsion_margin.items()))
+    say(f"  cast keys         {cpl.key_pressure / 1e6:5.1f} MPa of bearing IF they carried it "
+        f"all -- not counted")
+    chk_cpl = hinge.check_coupling(cpl)
+    say("")
+    say(f"  VERDICT: {'buildable' if chk_cpl.ok else 'NOT BUILDABLE'}"
+        + ("" if chk_cpl.ok else f" -- {len(chk_cpl.violations)} violation(s)"))
+    for x in chk_cpl.violations:
+        say(f"    FAIL  {x}")
+    for n in chk_cpl.notes:
+        say(f"    note  {n}")
+    say("")
+    say("  BUILD NOTE: anaerobics cure on contact with active metal ions. The spline is")
+    say("  steel and cures fine; the 6061 shaft is PASSIVE and wants an activator/primer.")
+    say("  Prime the shaft bore, not the spline. Without primer the joint will feel solid")
+    say("  and be weak, which is the worst way for an adhesive to fail.")
+
+    # ==================================================================================
     rule("THE TUBE AT THE HINGE STATION  --  four bores at one station")
     say("  check_hinge_stack() has emitted 'check the tube, not just the hinge' since the")
     say("  hinge stack went in, and nothing had. This is that check.")

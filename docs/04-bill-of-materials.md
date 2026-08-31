@@ -55,7 +55,8 @@ Requires **Level 2 certification**. Budget 5 reloads for the GV-1…GV-5 campaig
 | Servo, KST X08 Plus V6.0 | 23.5 × 8.0 × 16.8 mm, 9 g, 5.3 kgf·cm @ 8.4 V | 4 | 0.036 kg | **$43–55 ea** | ✅ |
 | ~~Servo frame with outboard bearing~~ | **INVESTIGATED AND DROPPED, Aug 2026.** See the note below — it does not do what this line used to claim, and it probably does not fit | 0 | — | — | ❌ |
 | Canard hinge shaft | ⌀6 **6061-T6** rod, 32.2 mm long, one end milled to a **1.8 × 11.9 × 25.5 mm blade**. The only custom-machined part in the module | 4 | in shafts | stock rod ~$10 | |
-| Servo horn, ⌀4 mm 15T | **Buy, don't cut.** An internal 15-tooth spline in a 0.8 mm wall is specialist broaching; a horn is a stock part with that spline already on it. Bond the shaft's inboard end to it | 4 | in shafts | ~$3 ea | |
+| ~~Servo horn, ⌀4 mm 15T~~ | **INVESTIGATED AND DROPPED, Aug 2026. It does not fit.** There is 0.515 mm between the servo's output face and the bearing, and outboard of that everything passes down the ⌀6 journal. Every female-spline part sold is ⌀7 or bigger. See the note below | 0 | — | — | ❌ |
+| Anaerobic retaining compound | **Loctite 638 class**, plus the matching activator/primer. This is the coupling: a ⌀4.100 × 3.20 drilled socket in the shaft, filled and pushed onto the spline, so the compound cures in the tooth valleys and *becomes* the female spline. Releases at ~250 °C, which is what makes a servo swappable | 1 bottle | in shafts | ~$20 | ✅ |
 | Canard hinge bearing | **⌀6 / ⌀8 × 6.0 plain sleeve, iglidur G class.** Housing reamed **⌀8 H7** — a standard reamer; the interference comes from the bushing being supplied oversize. This is the part that keeps the panel bending out of the servo | 4 | in shafts | ~$5 ea | |
 | ⌀8 H7 chucking reamer | The one piece of tooling this design actually requires. Reams the tube wall **and the printed collar together, after bonding** — see the build note below | 1 | — | ~$15 | |
 | Canard shafts, bushings, hardware | The lines above plus fasteners and epoxy | 4 | 0.240 kg | ~$40 | |
@@ -84,12 +85,46 @@ problem on its own. Our ⌀6/⌀8 sleeve in the wall already does the job the fr
 imagined to do, and does it in the right place.
 
 **What the search did turn up, and it is the useful half:** those kits all include a
-**splined servo horn** for the X08's ⌀4 mm 15-tooth output. That is the part worth buying.
+**splined servo horn** for the X08's ⌀4 mm 15-tooth output. **That paragraph was wrong and
+is kept below only as the record; the horn does not fit.** See "The coupling" after it.
 Cutting a 15-tooth internal spline into a ⌀6 shaft with a 0.8 mm wall is specialist
 broaching; a horn arrives with the spline already on it for a few dollars. And the coupling
 only has to carry **torque** — 0.520 N·m at servo stall — because the bearing sits outboard
 of it and takes all the bending. So the shaft's inboard end simply bonds to a bought horn,
 and the hardest feature on the part disappears.
+
+### The coupling: fifteen keys, cast rather than cut
+
+The horn does not fit, and neither does anything else with a female spline on it. There is
+**0.515 mm** between the servo's output face and the bearing's inboard end, and everything
+outboard of that has to pass down the **⌀6 journal** that turns in the bearing. Fifteen
+teeth on a ⌀4 pitch circle need metal around them, so every horn, hub and adapter sold is
+⌀7 or larger. Neither space will take one.
+
+What is true in the paragraph above is that **broaching is the thing to avoid**. So don't
+cut teeth — **cast them**:
+
+1. Drill the shaft's inboard end **⌀4.100 × 3.20 deep**. A plain round hole, 0.050 mm on
+   the radius over the spline's crests. One drilled feature on a part already being turned.
+2. Prime the bore (6061 is a *passive* metal; anaerobics need an activator on it — the
+   steel spline cures fine on its own).
+3. Fill with retaining compound and push it onto the spline.
+
+The compound cures in the tooth valleys and **becomes** the female spline — fifteen keys,
+formed by the very part they have to mate with, so they fit by construction. The socket is
+drilled 0.30 mm deeper than the spline engages, and that reservoir is not slop: a close
+plug pushed into a blind hole full of liquid hydraulic-locks and will not seat.
+
+This is only allowable because **the coupling carries torque and no moment**. The bearing
+sits outboard and takes all 0.806 N·m of panel bending; this joint sees 0.520 N·m of servo
+stall. An adhesive joint in a bending path would be a bad idea — this is not one.
+
+| | |
+|---|---|
+| adhesive shear | 6.79 MPa against 17 MPa — **2.50×**, computed as if the socket were smooth |
+| the fifteen cast keys | would carry it at 29.9 MPa of bearing — **not counted** in that margin |
+| shaft wall in torsion | 15.7 MPa — 10.2× on 6061-T6 |
+| serviceable? | yes: releases at ~250 °C, which is the whole reason to use a retaining compound and not epoxy |
 
 **The canard panels are a laminate, not a plate: 0.6 / 2.0 / 0.6 mm G10, bonded, 3.2 mm
 total.** The middle sheet is cut away over 12.1 × 25.5 mm at the root, and that gap IS the

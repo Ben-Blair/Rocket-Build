@@ -31,8 +31,20 @@ G10_MODULUS = 18.0e9        # Pa, in-plane tensile
 DATASHEET_CONFIDENCE_MARGIN = 4.0
 
 # --- metals, for shafts and tangs ------------------------------------------------------
-# Yield strengths. The shaft is small and highly stressed where it leaves the tube;
-# 6061-T6 works but 303 stainless is the sensible part to buy for a 7 mm long journal.
+# Yield strengths. The shaft is small and highly stressed where it leaves the tube.
+#
+# THE PROJECT SELECTS 6061-T6, and this comment used to muse that "303 stainless is the
+# sensible part to buy" -- which was never a decision, but it was the only thing in the
+# repo agreeing with the CAD, where the shafts sat in 300-series stainless for months
+# against docs/04, docs/05 and an explicit instruction saying aluminium. Settled Aug 2026:
+#   * better margin. 34.4 MPa of sleeve bending is 8.0x on 6061-T6 and 7.0x on 303;
+#   * 15.4 g lighter across four shafts, at nearly the module's full radius, on the roll
+#     axis this vehicle actually flies;
+#   * far easier to cut. The shaft has a 1.8 mm tang and a 0.95 mm wall around the spline
+#     socket, and those are not features you want to take in stainless.
+# The one thing stainless would have been better at is the anaerobic retaining compound in
+# that socket: steel is an active metal and cures it, 6061 is passive and needs a primer.
+# That is a bottle of primer, not a material choice. See design/hinge.py "THE COUPLING".
 SHAFT_YIELD = {"6061-T6": 276.0e6, "303 stainless": 240.0e6, "4140 steel": 655.0e6}
 
 # --- FDM print materials, for the canard bay ---------------------------------------------
@@ -81,6 +93,31 @@ PRINT_MATERIALS: dict[str, PrintMaterial] = {
 # is the property that decides this: the collar shares a bearing seat with a G10 wall 10x
 # stiffer than PETG, and load goes where the stiffness is.
 BAY_MATERIAL = "PETG-CF"
+
+# --- adhesives for the shaft-to-spline coupling ------------------------------------------
+# ANAEROBIC RETAINING COMPOUND is the product category designed for exactly this joint: a
+# cylindrical slip fit that has to transmit torque. Loctite 603/638 class. Quoted shear
+# strengths run 17-25 MPa on steel; 17 is taken here because the shaft is aluminium and
+# because a quoted adhesive number and a joint made by a student in a garage are different
+# things.
+#
+# TWO PROPERTIES THAT DECIDE THE DESIGN, neither of them strength:
+#   * it fills a SMALL gap -- best under about 0.1 mm on the radius, and it is a different
+#     product from a structural epoxy, which wants a thicker bond line. That sets the
+#     socket diameter, not the stress.
+#   * it RELEASES at about 250 C. That is the only reason the servo is serviceable at all
+#     once its shaft is bonded on, so it is a requirement and not a footnote.
+#
+# Anaerobics cure by contact with active metal ions. Steel and brass are active; ALUMINIUM
+# IS PASSIVE and cures slowly or not at all without an activator/primer. The servo spline
+# is steel and the shaft is 6061, so this joint has one of each -- use the primer.
+RETAINING_COMPOUND_SHEAR = 17.0e6       # Pa
+RETAINING_COMPOUND_MAX_RADIAL_GAP = 0.10e-3  # m
+RETAINING_COMPOUND_RELEASE_C = 250.0
+
+# The alternative, for a joint made without primer: a two-part structural epoxy. Stronger
+# on paper, wants a thicker bond line, and does NOT come apart again.
+STRUCTURAL_EPOXY_SHEAR = 25.0e6         # Pa
 
 # --- polymer plain bearing --------------------------------------------------------------
 # Static permissible surface pressure for a polymer plain bearing on a hard shaft.
