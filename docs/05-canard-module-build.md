@@ -668,9 +668,13 @@ bought 15T ⌀4 horn hub is under ⌀7.4 × 4 mm. The way out was neither cuttin
 buying one — **cast it**, in anaerobic retaining compound, in a plain ⌀4.100 × 3.20 drilled
 socket. See docs/01 correction 21 and `design/hinge.py`. Cut in the CAD.
 
-**The aft gas seal — SIZED, Aug 2026.** `design/seal.py`, `scripts/seal_report.py`,
+**The aft gas seal — SIZED AND BUILT, Aug 2026.** `design/seal.py`, `scripts/seal_report.py`,
 verdict in `scripts/baseline.py`. See "The aft gas seal" below. It is a **G-10 disc, 4.8 mm,
-39 g**, and it is not the part this heading described.
+38.4 g**, and it is not the part this heading described. Now real geometry:
+`scripts/make_bulkhead_cad.py` builds it, `scripts/place_bulkhead.py` instances it in
+`Assembly 1` at Z = 142.900, and **Check interference reports none across all 35 instances**
+— with the caveat in docs/01 correction 34, because a ⌀74.8 disc in a ⌀74.8 bore could not
+have reported one.
 
 **The forward wiring pass-through — DECIDED, Aug 2026.** Still open as *geometry* (no hole
 is drawn) but no longer an open decision: it is a wire route and is **potted solid**. It is

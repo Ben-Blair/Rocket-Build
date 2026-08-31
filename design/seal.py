@@ -533,6 +533,19 @@ class SealResult:
     def governed_by(self) -> str:
         return "the feed-through hole" if self.hole_margin < self.plate_margin else "the disc"
 
+    @property
+    def drilled_mass(self) -> float:
+        """Mass with the holes taken out, kg.
+
+        `Bulkhead.mass` is the solid disc, which is what a plate model wants. This is what a
+        scale reads, and it is 1.7% lighter -- small, and it still has to agree with the CAD
+        or the two are describing different parts. `scripts/make_bulkhead_cad.py` verifies
+        the Onshape volume against exactly this figure.
+        """
+        holes = sum(math.pi * (h.diameter / 2.0) ** 2 * self.bulkhead.thickness
+                    for h in hole_layout(self))
+        return (self.bulkhead.area * self.bulkhead.thickness - holes) * 1850.0
+
 
 def size_bulkhead(bore_diameter: float, pressure: float, feed: FeedThrough,
                   thicknesses: list[float] | None = None) -> float:
@@ -848,3 +861,112 @@ def stack_length(r: SealResult, fillet: float = 0.003) -> float:
     any of this existed and correction 5 is what happens when a typed number goes unchecked.
     """
     return r.bulkhead.thickness + 2.0 * fillet
+
+
+# ---------------------------------------------------------------------------------------
+# The hole layout -- everything that gets drilled through a bulkhead
+# ---------------------------------------------------------------------------------------
+#
+# HERE SO THAT THE CAD SCRIPT TYPES NOTHING. `scripts/make_bulkhead_cad.py` reads every
+# position and diameter from `hole_layout()`, for the reason `configure.py` gives: six
+# scripts once each carried their own copy of the baseline and reconciling the drift cost a
+# day. A CAD script is the worst possible place for a second copy, because a number typed
+# there becomes geometry and geometry is what everything downstream measures.
+
+# The harness anchor. An M5 U-bolt on a 25 mm leg spacing is the ordinary size for this
+# load -- 1.3 kN through two 5 mm legs is 33 MPa of shear in stainless, which is nothing --
+# and the holes are 5.5 mm so the legs go through without a fight.
+#
+# THE BACKING PLATE IS STRUCTURE, NOT HARDWARE, and that is a real statement about these
+# holes rather than a slogan: `point_load_stress()` goes as log(plate radius / footprint
+# radius), so what is under the nuts decides the stress, not what is in the holes.
+UBOLT_HOLE_DIAMETER = 0.0055  # m
+UBOLT_LEG_SPACING = 0.025  # m, centre to centre
+
+# Minimum metal between any two holes, and between a hole and the disc's edge. 3 mm is a
+# working figure for a 4.8 mm G-10 plate -- enough to drill next to without breaking out.
+MIN_LIGAMENT = 0.003  # m
+
+
+@dataclass(frozen=True)
+class Hole:
+    name: str
+    x: float  # m, in the disc's own plane
+    y: float
+    diameter: float
+
+    @property
+    def radius_in_plate(self) -> float:
+        return math.hypot(self.x, self.y)
+
+
+def hole_layout(r: SealResult) -> list[Hole]:
+    """Every hole in this bulkhead, positioned.
+
+    THE FEED-THROUGHS GO AT THE QUIET RADIUS, which `Bulkhead.quiet_radius()` computes and
+    `check_seal()` already quotes a margin for -- so their radius is not a choice made here,
+    it is the one the stress model made. What IS chosen here is the angular arrangement, and
+    it is chosen so nothing collides: the feed-throughs on one diameter, the U-bolt across
+    it, and on the internal bulkhead the conduit at 45 degrees between them.
+    """
+    rq = r.feed_through.radius_in_plate
+    d = r.feed_through.hole_diameter
+    n = r.feed_through.n_holes
+    holes: list[Hole] = []
+
+    if n == 1:
+        # The internal bulkhead: one dia 6 hole for the conduit, at 45 degrees so it is
+        # equidistant from both U-bolt legs.
+        holes.append(Hole("conduit", rq * math.cos(math.pi / 4),
+                          rq * math.sin(math.pi / 4), d))
+    else:
+        for i in range(n):
+            ang = math.pi * i  # 0 and 180 degrees
+            holes.append(Hole(f"feed-through {i}", rq * math.cos(ang),
+                              rq * math.sin(ang), d))
+
+    half = UBOLT_LEG_SPACING / 2.0
+    holes.append(Hole("U-bolt leg A", 0.0, +half, UBOLT_HOLE_DIAMETER))
+    holes.append(Hole("U-bolt leg B", 0.0, -half, UBOLT_HOLE_DIAMETER))
+    return holes
+
+
+def check_hole_layout(r: SealResult, holes: list[Hole] | None = None) -> SealCheck:
+    """Nothing collides, and nothing is too near the edge.
+
+    A separate check from `check_seal()` because it answers a different question. That one
+    asks whether the plate carries its load; this one asks whether the part can be made --
+    and the project's own history says those fail independently. Correction 14's tang passed
+    every stress margin it had and stood 5.18 mm proud of the leading edge.
+    """
+    v: list[str] = []
+    notes: list[str] = []
+    mm = 1000.0
+    hs = holes if holes is not None else hole_layout(r)
+
+    for i, a in enumerate(hs):
+        edge = r.bulkhead.radius - a.radius_in_plate - a.diameter / 2.0
+        if edge < MIN_LIGAMENT:
+            v.append(
+                f"{a.name} leaves {edge * mm:.2f} mm to the disc edge, under the "
+                f"{MIN_LIGAMENT * mm:.1f} mm minimum")
+        for b in hs[i + 1:]:
+            gap = (math.hypot(a.x - b.x, a.y - b.y)
+                   - a.diameter / 2.0 - b.diameter / 2.0)
+            if gap < MIN_LIGAMENT:
+                v.append(
+                    f"{a.name} and {b.name} leave {gap * mm:.2f} mm of metal between them, "
+                    f"under the {MIN_LIGAMENT * mm:.1f} mm minimum")
+
+    worst_edge = min(r.bulkhead.radius - h.radius_in_plate - h.diameter / 2.0 for h in hs)
+    worst_gap = min(
+        (math.hypot(a.x - b.x, a.y - b.y) - a.diameter / 2.0 - b.diameter / 2.0)
+        for i, a in enumerate(hs) for b in hs[i + 1:])
+    notes.append(
+        f"{len(hs)} holes; tightest ligament {worst_gap * mm:.1f} mm, closest approach to "
+        f"the edge {worst_edge * mm:.1f} mm")
+    notes.append(
+        "the U-bolt's BACKING PLATE is not modelled and it is structure -- "
+        "point_load_stress() goes as log(plate radius / footprint radius), so what sits "
+        "under the nuts sets the stress, not what is in the holes")
+    return SealCheck(ok=not v, violations=v, notes=notes)

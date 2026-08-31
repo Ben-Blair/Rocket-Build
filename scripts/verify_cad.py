@@ -30,7 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from design import bay, hinge
+from design import bay, hinge, seal as seal_mod
 from design.configure import baseline, build_vehicle
 from design.control import CANARD_MODULE_CAD
 from design.onshape import get
@@ -42,10 +42,57 @@ PART_STUDIO = "dfb730308a9933e911684b5c"
 BAY = "7baeb0969c14bbb9352a946f"
 BEARING = "0483e6c18e364a5b057b4134"
 ASSEMBLY = "ff7e2e472d6694342f892f9c"
+SEAL = "ba0ba9346b807b5930c70563"
+# Where scripts/place_bulkhead.py puts the seal: the module's aft face, in the module frame.
+SEAL_STATION = 0.1429  # m
+INTERNAL_BULKHEAD = "ae46611f27f5c1d87d47922c"
 MM = 1000.0
 
-EXPECTED_INSTANCES = 34
+# 35 since the aft gas seal went in (scripts/place_bulkhead.py). The module assembly is the
+# one place this project runs Onshape's own interference check, which is why the seal is
+# instanced here and the recovery bay's internal bulkhead -- 240 mm further aft, in a bay
+# that has never been modelled -- deliberately is not.
+EXPECTED_INSTANCES = 35
 EXPECTED_ASM_FEATURES = 9
+
+
+def seal_analytic_volume(r) -> float:
+    """A bulkhead's volume from design/seal.py: the disc, less every hole in the layout."""
+    v = math.pi * r.bulkhead.radius**2 * r.bulkhead.thickness
+    for h in seal_mod.hole_layout(r):
+        v -= math.pi * (h.diameter / 2.0) ** 2 * r.bulkhead.thickness
+    return v
+
+
+def assembly_less_seal(mp: dict) -> dict:
+    """The assembly's mass properties with the aft gas seal's contribution removed.
+
+    Mass and centroid are exact. The two inertias are removed by parallel axis about the
+    seal's own centroid, using the seal Part Studio's OWN measured tensor -- read back
+    rather than modelled, which is how correction 22's stainless shafts were found.
+
+    Roll is a straight subtraction because both parts sit on the same axis. Transverse has
+    to move the reference point, since taking mass out of one end shifts the centroid of
+    what is left: each part's transverse inertia is referred to the COMBINED centroid, the
+    seal's is subtracted there, and the remainder is referred back to its own.
+    """
+    pid = get(f"/parts/d/{DOC}/w/{WS}/e/{SEAL}")[0]["partId"]
+    sp = get(f"/parts/d/{DOC}/w/{WS}/e/{SEAL}/partid/{pid}/massproperties")["bodies"][pid]
+
+    m_all, m_seal = mp["mass"][0], sp["mass"][0]
+    m = m_all - m_seal
+    z_all, z_seal = mp["centroid"][2], SEAL_STATION + sp["centroid"][2]
+    z = (m_all * z_all - m_seal * z_seal) / m
+
+    # Onshape returns the inertia tensor about the part's own centroid, row-major 3x3.
+    ix_all, iz_all = mp["inertia"][0], mp["inertia"][8]
+    ix_seal, iz_seal = sp["inertia"][0], sp["inertia"][8]
+
+    i_roll = iz_all - iz_seal
+    ix_all_c = ix_all + m_all * (z_all - z) ** 2
+    ix_seal_c = ix_seal + m_seal * (z_seal - z) ** 2
+    i_trans = (ix_all_c - ix_seal_c) - m * 0.0  # already about the remainder's own centroid
+    return {"mass": m, "station": z, "i_transverse": i_trans, "i_roll": i_roll}
 
 
 def part_volume(element: str, name_prefix: str) -> float:
@@ -65,6 +112,11 @@ def main() -> None:
     j = hinge.selected_root_joint(s, r.canards)
     b = bay.build_bay(s, g, hinge.canard_hinge_station(r) - r.tube_station(1))
 
+    from design.configure import evaluate as _evaluate
+    _ev = _evaluate(p)
+    sl = seal_mod.from_evaluation(_ev)
+    ib = seal_mod.internal_bulkhead_from_evaluation(_ev)
+
     # Shaft: sleeve + tang box, less the part of the tang box that is already inside the
     # round sleeve, less the spline socket. Exact, so it must agree exactly.
     sleeve = math.pi * (s.journal_dia / 2) ** 2 * s.sleeve_length
@@ -75,6 +127,7 @@ def main() -> None:
 
     mp = get(f"/assemblies/d/{DOC}/w/{WS}/e/{ASSEMBLY}/massproperties")
     t = CANARD_MODULE_CAD
+    less_seal = assembly_less_seal(mp)
 
     checks = [
         ("bearing volume, mm^3",
@@ -91,11 +144,34 @@ def main() -> None:
         ("one retainer, mm^3",
          b.retainer_volume / 8.0 * 1e9,
          part_volume(BAY, "Servo retainer") * 1e9, 30.0),
-        ("module mass, g", t.mass * 1000.0, mp["mass"][0] * 1000.0, 1e-3),
+        # The two bulkheads, against the disc-less-holes analytic figure. Compared TIGHT
+        # for the same reason as the bearing: a solid disc and a drilled one differ by 1.7%
+        # of mass, which no tolerance-based check would notice, and the holes not cutting is
+        # exactly the failure mode (Part Studio 1's `Extrude 4` cut nothing at all).
+        ("aft gas seal, mm^3",
+         seal_analytic_volume(sl) * 1e9,
+         part_volume(SEAL, "Aft gas seal") * 1e9, 1e-2),
+        ("internal bulkhead, mm^3",
+         seal_analytic_volume(ib) * 1e9,
+         part_volume(INTERNAL_BULKHEAD, "Recovery internal bulkhead") * 1e9, 1e-2),
+        # THE ASSEMBLY IS NO LONGER THE MODULE. The aft gas seal was instanced in Aug 2026,
+        # so `/massproperties` now returns module + seal while `CANARD_MODULE_CAD` is the
+        # module alone. The seal is NOT folded into that tensor on purpose: it is a
+        # structure part, budgeted in `mass.DEFAULT_STRUCTURE_BUDGET["couplers_bulkheads"]`
+        # with every other bulkhead, and moving it into the canard module's tensor without
+        # taking it out of that line would count 38 g twice. `estimate_inertia` removes a
+        # measured component's mass from the bulk and adds it back, so a double count there
+        # is not visible as a mass error -- only as an inertia one.
+        #
+        # So the seal is SUBTRACTED from the assembly before comparing, using its own
+        # measured properties rather than an analytic disc. That keeps the check exact and
+        # keeps it a check: it still fails if anything else in the assembly moves.
+        ("module mass, g", t.mass * 1000.0, less_seal["mass"] * 1000.0, 1e-3),
         ("module station, mm", t.station_from_module_face * MM,
-         mp["centroid"][2] * MM, 1e-3),
-        ("module I_transverse, e-6", t.i_transverse * 1e6, mp["inertia"][0] * 1e6, 1e-2),
-        ("module I_roll, e-6", t.i_roll * 1e6, mp["inertia"][8] * 1e6, 1e-2),
+         less_seal["station"] * MM, 1e-3),
+        ("module I_transverse, e-6", t.i_transverse * 1e6,
+         less_seal["i_transverse"] * 1e6, 1e-2),
+        ("module I_roll, e-6", t.i_roll * 1e6, less_seal["i_roll"] * 1e6, 1e-2),
     ]
 
     print(f"  {'quantity':24s} {'design':>12s} {'CAD':>12s} {'delta':>10s} {'':>8s}")

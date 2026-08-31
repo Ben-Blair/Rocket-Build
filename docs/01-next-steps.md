@@ -111,8 +111,13 @@ Read this first if you are picking the project back up.
   Tracker and telemetry radio live there, self-contained, on one connector. A future payload
   of **up to about 300 g needs no other change**; past that the vehicle goes over-stable
   rather than unstable, and the nose ballast is the trim knob.
+- **Both bulkheads are CAD now** (correction 34). `scripts/make_bulkhead_cad.py` builds
+  them, `scripts/place_bulkhead.py` puts the aft gas seal in `Assembly 1` at Z = 142.900,
+  and Onshape's own **Check interference reports none across all 35 instances**. Volumes
+  agree with the analytic disc-less-holes to 0.000 mm³. **Read the caveat in correction 34
+  before trusting that clean result.**
 - **The canard module has no open engineering item.** What is left in it is CAD — the
-  seal's geometry, the pass-through hole, the two vent holes — and the Step 3 drawing.
+  pass-through hole, the two vent holes — and the Step 3 drawing.
 - **Step 4 is next**: avionics. Decisions D7 (flight computer) and D8 (state estimation)
   are open, drive the largest and least specified line in the budget, and now also decide
   whether the nav bay is long enough. **Closing D7 is the single highest-value thing left**:
@@ -139,7 +144,7 @@ these, because they moved once already when the altimeter went into the budget
 on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
 so instead of hiding it.
 
-Thirty-three corrections are worth knowing about. The first four changed the design; two of the
+Thirty-four corrections are worth knowing about. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
@@ -885,6 +890,43 @@ that silently recurs:
    tube at the hinge station runs at 256× and that was free. This ran at 20× and it was
    not — it was spending a bay whose margin was 0.1 mm. **An unchecked number that turns out
    enormous is not automatically good news; ask what it is costing.**
+
+34. **The bulkheads are built, and the interference check that passed does not prove what
+   it looks like it proves.** `design/seal.py` sized both discs in August 2026 and neither
+   had ever been drawn — which is the condition correction 11 and correction 18 both warn
+   about: *a part that is not modelled cannot collide with anything.*
+
+   Built: **Aft gas seal** (⌀74.8 × 4.8 G-10, 2 × ⌀4.0 feed-through, 2 × ⌀5.5 U-bolt) and
+   **Recovery internal bulkhead** (same disc, 1 × ⌀6.0 conduit hole). Volumes verified
+   against the analytic disc-less-holes to **0.000 mm³** — the only proof the holes actually
+   cut, since a solid disc and a drilled one differ by 1.7% of mass and no tolerance-based
+   check would ever notice. The seal is instanced in `Assembly 1` at Z = 142.900, the
+   module's aft face, read from the Part Studio's bounding box rather than typed.
+
+   **Check interference reports none, across all 35 instances.** And here is the caveat:
+   **the disc is ⌀74.8 in a ⌀74.8 bore, so it could not have reported one.** This project's
+   own rule — *zero clearance is not an interference* (corrections 10 and 18) — applies to
+   its own newest part. The clean result says nothing about the seal against the tube; what
+   it does say is that the seal does not foul the printed bay, the retainer bars or the
+   servos, which is what it was run for. **The bond line is a fit allowance, not geometry**,
+   and modelling it would make the disc read as loose in every future clash check — the same
+   reasoning `make_bearing_cad.py` uses for its nominal ⌀8.000.
+
+   Two bookkeeping points, both of which would have been wrong if left implicit:
+   - **The seal is deliberately NOT in `CANARD_MODULE_CAD`.** It is a structure part,
+     budgeted with every other bulkhead in `couplers_bulkheads`, and folding it into the
+     canard module's measured tensor without taking it out of that line would count 38 g
+     twice — invisibly, because `estimate_inertia` removes a measured component's mass from
+     the bulk and adds it back, so a double count shows up as an inertia error and never as
+     a mass one. `verify_cad.py` subtracts the seal from the assembly before comparing, and
+     recovers the module tensor to zero delta.
+   - **`Bulkhead.mass` was the solid disc.** The CAD reads 38.377 g against the model's
+     39.022 g, because the model never subtracted the holes. `drilled_mass` does, and the
+     two now agree to the milligram. 1.7% is small; two numbers for one part is not.
+
+   The internal bulkhead is **built but not assembled**, and that is the honest state: it
+   sits 240 mm aft in a recovery bay nothing has modelled, and a part placed where it is not
+   is worse than a part that is missing, because it looks finished.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.

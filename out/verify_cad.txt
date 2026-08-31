@@ -1,0 +1,25 @@
+  quantity                       design          CAD      delta         
+  bearing volume, mm^3          130.246      130.246     +0.000   +0.00%  ok
+  shaft volume, mm^3            698.138      698.138     +0.000   +0.00%  ok
+  bay volume, mm^3            28889.045    28256.421   -632.624   -2.19%  ok
+  one retainer, mm^3            102.630       90.808    -11.822  -11.52%  ok
+  aft gas seal, mm^3          20744.087    20744.087     -0.000   -0.00%  ok
+  internal bulkhead, mm^3     20729.007    20729.007     +0.000   +0.00%  ok
+  module mass, g                298.756      298.756     -0.000   -0.00%  ok
+  module station, mm             75.151       75.151     +0.000   +0.00%  ok
+  module I_transverse, e-6      622.187      622.187     +0.000   +0.00%  ok
+  module I_roll, e-6            673.225      673.225     -0.000   -0.00%  ok
+
+  assembly instances                  35  (want 35) ok
+  assembly features                    9  (want 9) ok
+  hand-placed revolute mates           4  (want 4) ok
+  instances with no part reference     0  ok
+  features not OK                      0  ok
+
+  collar boss rim R 35.856 against a tube bored to R 37.400 -- checked on RADIUS, which is the thing an axis-aligned
+  bounding box cannot tell you.
+
+  ALL CONSISTENT
+
+  This does NOT prove there are no interferences -- an interference moves no
+  volume and no mass. Run 'Check interference...' in the browser for that.
