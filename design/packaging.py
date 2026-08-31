@@ -112,9 +112,26 @@ class ServoGeometry:
     envelope_length: float      # tip-to-tip across the lugs
     lug_hole_pitch_along: float
     lug_hole_pitch_across: float
+    # Two hole SIZES on the mounting flange, both confirmed against the drawing
+    # (KST_0012, callouts "dia 1.50-4" and "dia 2-2") but NEITHER labelled with a
+    # function -- the datasheet dimensions the flange, it does not name what either
+    # hole is for. What is known, not guessed:
+    #   - 4 small holes, one at each corner of the 26.5 x 5.0 rectangle. KST's own
+    #     listing says the servo ships with 4 mounting screws, and 4 holes at the
+    #     corners of a rectangular flange is the standard screw pattern on this class
+    #     of servo. Read as MOUNTING SCREWS, M1.4-ish, until a real screw is held to
+    #     one and measured.
+    #   - 2 larger holes, one on the flange centreline at EACH lug position (so they
+    #     sit BETWEEN the two rows of small holes, not beside them -- see
+    #     scripts/make_servo_cad.py, which sketches them at y=0 while the small ones
+    #     are at y=+/-2.5). Two holes, centred, larger than a screw needs, is more
+    #     consistent with LOCATING DOWELS for repeatable placement in a servo tray
+    #     than with a second fastener -- but this is inference from the geometry,
+    #     not a labelled callout, and nothing in this project currently uses them
+    #     for anything. Confirm before designing a tray that assumes it.
     lug_hole_dia: float
     lug_hole_count: int
-    lug_hole_2_dia: float       # the second, larger hole pattern
+    lug_hole_2_dia: float
     lug_hole_2_count: int
     flange_from_top: float      # top face down to the lug plane
     flange_thickness: float
@@ -160,7 +177,11 @@ class ServoGeometry:
 
 
 SERVO_GEOMETRY: dict[str, ServoGeometry] = {
-    # KST X08 Plus V6.0, datasheet KST_0012 rev 2025-04.
+    # KST X08 Plus V6.0, datasheet KST_0012 rev 2025-04:
+    # https://www.kst-servo-shop.de/media/c2/0f/7d/1749810622/KST_0012_X08_Plus_V6_Datenblatt_04_2025_de.pdf
+    # (the filename alone was cited here for a long time with no URL saved anywhere in
+    # the project -- fine until someone needs to re-check a number and has to search for
+    # the PDF again. Save the source, not just its name.)
     #
     # TWO THINGS ON THIS DRAWING CONTRADICTED WHAT THIS PROJECT HAD ASSUMED. Both had
     # been flagged as unverified in docs/05 and both turned out to be wrong:

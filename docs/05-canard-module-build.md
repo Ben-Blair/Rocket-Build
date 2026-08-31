@@ -708,7 +708,9 @@ Datasheet KST_0012 rev 2025-04. Everything here is off the dimensioned drawing a
 | | |
 |---|---|
 | Case | 23.5 × 8.0 × 16.8 mm ±0.2 |
-| Envelope with lugs | 29.5 mm long; lug holes 4 × ⌀1.5 on 26.5 × 5.0, plus 2 × ⌀2 |
+| Envelope with lugs | 29.5 mm long; lug holes 4 × ⌀1.5 on 26.5 × 5.0, plus 2 × ⌀2 (both confirmed against the datasheet drawing's own callouts, "⌀1.50-4" and "⌀2-2") |
+| — 4 × ⌀1.5 holes | at the 4 corners of the 26.5 × 5.0 rectangle. **Read as mounting screws** — KST lists 4 screws as supplied with the servo, and 4 corner holes on a rectangular flange is the ordinary pattern on this class of servo — but the datasheet dimensions the holes and does not caption their function, so this is inference, not a labelled fact |
+| — 2 × ⌀2 holes | **on the flange centreline**, one per lug position, between the two rows of small holes rather than beside them. Larger than a screw needs and only two of them: consistent with locating dowels for repeatable placement in a tray. **Purpose unconfirmed** — nothing in this project uses them yet, and no callout on the drawing names them. Check before building a tray that assumes they take a pin |
 | Lug plane | 5.25 mm below the case top face; flange ~1 mm |
 | **Output shaft axis** | along the **16.8 mm** dimension, out of the 23.5 × 8 face |
 | **Shaft position** | **6.14 mm from one case end** — 5.61 mm off the body centre |
