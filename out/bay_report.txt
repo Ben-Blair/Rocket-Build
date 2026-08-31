@@ -2,7 +2,7 @@
 ============================================================================================
 THE PRINTED CANARD BAY
 ============================================================================================
-  one printed part, PETG-CF, 39.2 g, 41.5 mm long
+  one printed part, PETG-CF, 38.6 g, 41.5 mm long
   it holds  4 x KST X08 Plus V6.0 (9 g, 8 mm, 5.3 kgf.cm @ 8.4 V)
   it carries the inboard 3.700 mm of each bearing, which is the
             half of the seat the 2.3 mm airframe wall cannot reach
@@ -18,7 +18,7 @@ THE PRINTED CANARD BAY
     servo tray, back face                        R   31.935
     servo case, inboard end                      R    6.085
     bond line (epoxy)                                 0.150 radial
-    collar stands proud of the shell bore by          1.150
+    collar stands proud of the shell bore by          1.650
     tray webs span                                    2.915
 
   axial extent (mm from the module tube's forward face)
@@ -89,9 +89,10 @@ CLEARANCES  --  every place the bay comes near something else
     servo top face vs shell bore                   +1.665 mm   radial
     servo top face vs tray back face               -1.250 mm   radial -- NEGATIVE is correct here, the servo stands proud of the tray into the standoff gap
     servo spline tip vs shell OD                   +0.865 mm   radial, inside the collar bore
-    shaft sleeve vs collar bore, printed           +0.750 mm   radial, before reaming
-    bearing OD vs collar bore, reamed              +0.000 mm   radial, the press fit
+    shaft sleeve vs collar bore, as printed        +0.750 mm   radial, before reaming
+    bearing OD vs collar bore, as reamed           +0.000 mm   radial -- zero is correct, this is the press fit, and it is the size the CAD carries
     retainer bar vs servo flange                   +0.000 mm   radial -- zero is correct, the bar clamps the flange
+    retainer bridge vs servo case, in Z            +0.200 mm   axial, each end -- the bar may only be this long where it crosses the flange, because the case body occupies the radius the bar sits at
 
 ============================================================================================
 MARGINS
@@ -102,12 +103,14 @@ MARGINS
     heat-set insert pull-out                        133.2x
     bay-to-tube bond shear                          898.4x
 
-  mass            39.2 g   (shell 28.8, trays 8.3, collars 0.4)
+  mass            38.6 g   (shell 28.7, trays 8.3, collars 0.5)
   bond area     9260.6 mm^2 of shell against the tube ID
 
   VERDICT on the BAY: buildable, every margin met.
     note  M2 heat-set inserts, dia 3.2 x 4.0, into 5.00 mm of tray at Y +/-6.0 -- clear of the 8 mm case, which is the whole point of clamping rather than using the servo's own lug holes (0.62 mm of ligament, see the header)
-    note  collar printed dia 7.50 and reamed to dia 8.000 H7 through the wall in one pass -- 0.250 mm of stock on the radius, which is what an FDM hole needs to come out round
+    note  collar printed dia 7.50 and reamed to dia 8.000 H7 through the wall in one pass -- 0.250 mm of stock on the radius, which is what an FDM hole needs to come out round. THE CAD CARRIES THE REAMED SIZE, because the assembly is the vehicle that flies
+    note  retainer bridge 2.60 mm across a 3.00 mm exposed flange band, widening to 4.70 mm at the screws where the case is not in the way
+    note  collar boss rim at R 35.856, 1.544 mm clear of the tube bore -- checked on RADIUS, not on the bounding box
     note  flange relieved 8.60 mm wide over the full 29.5 mm lug envelope, so the clamp bosses sit beside the flange rather than under it
     note  0.515 mm between the servo output face and the collar's inboard end
     note  NOT A BAY DEFECT, but found here: no bought servo horn fits. a bought horn needs 4.0 mm of height at dia 7.4, and there is 0.515 mm between the servo output face and the bearing. Outboard of that the hole is the bearing bore, dia 6.0, which a dia 7.4 hub cannot enter. So the coupling has to live INSIDE the dia 6.0 journal -- which is the broached socket design/hinge.py already models and checks

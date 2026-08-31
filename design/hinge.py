@@ -351,8 +351,11 @@ def hinge_loads(stack: HingeStack, hinge_moment: float, mean_chord: float,
     d, ell = stack.journal_dia, stack.bearing_length
     p = 6.0 * m_bearing / (d * ell * ell) + n / (d * ell)
 
-    # Sleeve bending where it leaves the tube: solid section there, since the spline
-    # socket is at the inboard end.
+    # Sleeve bending where it leaves the tube. SOLID section there -- the spline socket
+    # stops well inboard of the wall. That sentence used to be the whole justification and
+    # it was an assumption; shaft_section_stress() below now checks it, because the socket
+    # makes the shaft hollow INSIDE the bearing and a deeper socket would move the governing
+    # station without anything here noticing.
     z = math.pi * d ** 3 / 32.0
     sigma = m_wall / z
 
@@ -454,6 +457,16 @@ class BondedCoupling:
         return {k: 0.577 * v / self.shaft_torsion for k, v in SHAFT_YIELD.items()}
 
 
+# The two adhesives this joint can be made with, and they are NOT interchangeable: the
+# retaining compound wants a small gap and comes apart with heat, the epoxy wants a thicker
+# bond line and does not. Exposed so a report can price both rather than asserting one.
+COUPLING_ADHESIVES = {
+    "anaerobic retaining compound": (RETAINING_COMPOUND_SHEAR,
+                                     RETAINING_COMPOUND_MAX_RADIAL_GAP),
+    "structural epoxy": (STRUCTURAL_EPOXY_SHEAR, 0.250e-3),
+}
+
+
 def bonded_coupling(stack: HingeStack, stall_torque: float, teeth: int = 15,
                     adhesive_shear: float = RETAINING_COMPOUND_SHEAR,
                     max_radial_gap: float = RETAINING_COMPOUND_MAX_RADIAL_GAP,
@@ -473,7 +486,84 @@ def bonded_coupling(stack: HingeStack, stall_torque: float, teeth: int = 15,
     )
 
 
-def check_coupling(c: BondedCoupling) -> HingeCheck:
+def shaft_internal_moment(stack: HingeStack, normal: float, load_radius: float,
+                          radius: float) -> float:
+    """Bending moment inside the shaft at `radius`, with the bearing's reaction taken off.
+
+    The panel hangs the whole load outboard, and the bearing pushes back over its length --
+    so the moment is NOT simply N x (load_radius - radius) once you are inside the bearing.
+    It peaks at the bearing's outboard end and falls to zero at its inboard end, which is
+    the free end of the shaft.
+
+    The reaction is taken as the single-material linear distribution -- the same one
+    hinge_loads() uses for p_max. That is deliberately the CONSERVATIVE choice here: a real
+    seat with a soft printed collar pushes its reaction OUTBOARD toward the stiff G10, which
+    puts more of it outboard of any station you ask about and so lowers this moment.
+    design/bay.py has the two-material version if you want the exact number.
+
+    Returns zero at the bearing's inboard end and N x (load_radius - tube OD) at its
+    outboard end; both are worth checking if this is ever edited.
+    """
+    ell = stack.bearing_length
+    m_centre = normal * (load_radius - stack.bearing_centre)
+    a = normal / ell                 # uniform part, from the direct force
+    b = 12.0 * m_centre / ell ** 3   # linear part, from the couple
+
+    u = min(max(radius - stack.bearing_inboard, 0.0), ell)
+    h = ell - u
+    reaction = a * h ** 2 / 2.0 + b * (h ** 3 / 3.0 + (u - ell / 2.0) * h ** 2 / 2.0)
+    return normal * (load_radius - radius) - reaction
+
+
+@dataclass(frozen=True)
+class ShaftStation:
+    """One place along the shaft where the section is checked."""
+
+    name: str
+    radius: float
+    bore: float            # 0.0 for a solid section
+    moment: float
+    outer_dia: float
+
+    @property
+    def section_modulus(self) -> float:
+        d, di = self.outer_dia, self.bore
+        return math.pi * (d ** 4 - di ** 4) / (32.0 * d)
+
+    @property
+    def stress(self) -> float:
+        return abs(self.moment) / self.section_modulus
+
+    @property
+    def margins(self) -> dict[str, float]:
+        return {k: v / self.stress for k, v in SHAFT_YIELD.items()} if self.stress > 0 \
+            else {k: math.inf for k in SHAFT_YIELD}
+
+
+def shaft_stations(stack: HingeStack, c: BondedCoupling, normal: float,
+                   load_radius: float) -> list[ShaftStation]:
+    """The two candidates for the governing bending station, and why there are two.
+
+    The shaft is SOLID where it leaves the tube and HOLLOW where the spline socket is, and
+    the socket reaches inside the bearing. So the worst section is a race between a big
+    moment on a full section and a smaller moment on a weakened one. Which wins depends on
+    the socket depth, and nothing in this module used to look at the second one at all.
+    """
+    return [
+        ShaftStation("tube OD, solid", stack.tube_outer_radius, 0.0,
+                     shaft_internal_moment(stack, normal, load_radius,
+                                           stack.tube_outer_radius), stack.journal_dia),
+        ShaftStation("socket end, hollow", stack.sleeve_inboard + c.socket_depth,
+                     c.socket_dia,
+                     shaft_internal_moment(stack, normal, load_radius,
+                                           stack.sleeve_inboard + c.socket_depth),
+                     stack.journal_dia),
+    ]
+
+
+def check_coupling(c: BondedCoupling, stack: HingeStack | None = None,
+                   normal: float | None = None,
+                   load_radius: float | None = None) -> HingeCheck:
     v: list[str] = []
     notes: list[str] = []
 
@@ -511,6 +601,26 @@ def check_coupling(c: BondedCoupling) -> HingeCheck:
         notes.append(f"socket drilled {c.socket_depth * 1000:.2f} mm deep against "
                      f"{c.engagement * 1000:.2f} mm engaged, leaving {c.reservoir * 1000:.2f} mm "
                      f"of reservoir for surplus compound")
+    if stack is not None and normal is not None and load_radius is not None:
+        stations = shaft_stations(stack, c, normal, load_radius)
+        worst = max(stations, key=lambda st: st.stress)
+        for st in stations:
+            m = st.margins["6061-T6"]
+            if m < COUPLING_MARGIN_REQUIRED:
+                v.append(f"shaft bending at the {st.name} station is {st.stress / 1e6:.1f} "
+                         f"MPa, {m:.2f}x on 6061-T6")
+        notes.append(
+            "shaft bending, both candidate sections: "
+            + "; ".join(f"{st.name} {st.stress / 1e6:.1f} MPa "
+                        f"({st.margins['6061-T6']:.1f}x)" for st in stations)
+            + f" -- the {worst.name} station governs")
+        if worst.bore > 0:
+            notes.append(
+                "THE SOCKET NOW GOVERNS THE SHAFT. It did not when it was drilled "
+                f"{c.socket_depth * 1000:.2f} mm deep; a deeper socket moves the worst "
+                "section off the tube wall and onto the weakened one. Re-read this before "
+                "changing the socket depth.")
+
     notes.append(f"releases at about {RETAINING_COMPOUND_RELEASE_C:.0f} C, which is the "
                  f"only reason a servo can be changed once its shaft is on")
 
@@ -1087,6 +1197,13 @@ TANG_THICKNESS = 1.800e-3
 TANG_WIDTH = 11.900e-3
 TANG_ENGAGEMENT = 25.500e-3
 BOND_LINE = 0.100e-3
+
+# How far the tang's SOLID is modelled inboard of the panel root, purely so the boolean
+# union with the shaft has something to bite on. It must stay OUTBOARD OF THE TUBE OD, or
+# the blade is modelled inside the airframe wall -- see cad/canard_articulation.fs. The
+# panel root is at R 40.200 and the tube OD at 39.700, so anything under 0.5 mm is safe;
+# 0.4 leaves a tenth of clear air and still gives the union 0.4 mm of overlap.
+TANG_MODEL_OVERSHOOT = 0.400e-3
 
 
 def swept_out_root_joint(stack: HingeStack, canards) -> RootJoint:

@@ -108,10 +108,10 @@ class MeasuredComponent:
 CANARD_MODULE_CAD = MeasuredComponent(
     name="canard module (CAD assembly, real servos, hinge stack, root tang, 3.2 mm panels, "
          "four hinge bearings, printed bay)",
-    mass=0.299776,
-    station_from_module_face=0.075142,
-    i_transverse=622.787e-6,
-    i_roll=674.113e-6,
+    mass=0.298756,
+    station_from_module_face=0.075151,
+    i_transverse=622.187e-6,
+    i_roll=673.225e-6,
     source="Onshape canard-control module, Assembly 1, Aug 2026, after the root tang of "
            "design/hinge.py, the 3.2 mm laminate panel of design/configure.py, the four "
            "dia 6/8 x 6 plain bearings placed by scripts/place_bearings.py, and the "
@@ -129,9 +129,24 @@ CANARD_MODULE_CAD = MeasuredComponent(
 #            check that reads what is there instead of what it expects finds things the
 #            check was not looking for.
 #
-# Net: 276.999 -> 299.776 g, roll 665.938 -> 674.113 kg mm^2 (+1.2%), transverse +1.4%.
+# Net: 276.999 -> 298.756 g, roll 665.938 -> 673.225 kg mm^2 (+1.1%), transverse +1.4%.
 # The two changes very nearly cancelled, which is exactly why a total is a bad place to
 # look for an error.
+#
+# The last gram of that came off in an interference audit, and none of it was about mass:
+#   -0.11 g  the collar bore corrected from its AS-PRINTED dia 7.500 to its AS-REAMED
+#            dia 8.000. The printed size had a dia 8 bearing inside a dia 7.5 hole, four
+#            times over. An assembly is the vehicle that FLIES, and that one is reamed.
+#   -0.07 g  the tang's modelling overshoot cut 1.0 -> 0.4 mm. At 1.0 the blade started at
+#            R 39.200, inside a wall running 37.400 -> 39.700.
+#   -0.13 g  the collar boss stopped reaching for the shell OD. A flat-ended boss on a
+#            RADIAL axis has its rim at hypot(reach, OD/2), so reaching R 37.250 put the
+#            rim at 37.730 -- inside a tube bored to 37.400.
+#   -0.60 g  the retainer bar became a dog bone, because a rectangle long enough to seat
+#            an M2 head buried 1.7 mm of itself in the servo case.
+#   -0.01 g  the bearing bore opened dia 6.000 -> 6.030, its actual running clearance.
+# Onshape's own assembly interference check went 17 pairs -> 0. Every one of those was
+# invisible to part count, to mass, and to the axis-aligned bounding box.
 #
 # WHAT IS LEFT OUT is now small and it is all electrical: wiring, connectors, the servo
 # leads, and whatever holds them. Say 20 g. The module was 0.565 kg in the mass budget

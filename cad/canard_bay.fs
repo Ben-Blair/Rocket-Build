@@ -94,6 +94,9 @@ export const canardBay = defineFeature(function(context is Context, id is Id, de
         annotation { "Name" : "Collar bore" } isLength(definition.collarBore, LENGTH_BOUNDS);
         annotation { "Name" : "Collar inner R" } isLength(definition.collarInnerR, LENGTH_BOUNDS);
 
+        annotation { "Name" : "Collar boss overlap into the shell" }
+        isLength(definition.collarOverlap, LENGTH_BOUNDS);
+
         annotation { "Name" : "Tray flange R" } isLength(definition.trayFlangeR, LENGTH_BOUNDS);
         annotation { "Name" : "Tray back R" } isLength(definition.trayBackR, LENGTH_BOUNDS);
         annotation { "Name" : "Tray width" } isLength(definition.trayWidth, LENGTH_BOUNDS);
@@ -113,6 +116,12 @@ export const canardBay = defineFeature(function(context is Context, id is Id, de
         annotation { "Name" : "Screw row 2 Z" } isLength(definition.screwZ2, LENGTH_BOUNDS);
 
         annotation { "Name" : "Retainer thickness" } isLength(definition.retThk, LENGTH_BOUNDS);
+
+        annotation { "Name" : "Retainer bridge half-length in Z" }
+        isLength(definition.retBridgeHalfZ, LENGTH_BOUNDS);
+
+        annotation { "Name" : "Retainer pad half-length in Z" }
+        isLength(definition.retPadHalfZ, LENGTH_BOUNDS);
         annotation { "Name" : "Build retainer" } definition.buildRetainer is boolean;
     }
     {
@@ -144,10 +153,23 @@ export const canardBay = defineFeature(function(context is Context, id is Id, de
         var adds = [];
         for (var q = 0; q < 4; q += 1)
         {
-            // collar boss
+            // Collar boss. It stops at the shell BORE plus an overlap -- NOT at the
+            // shell OD.
+            //
+            // This is a flat-ended cylinder on a RADIAL axis, and the shell's outer
+            // surface is a cylinder about the ROCKET axis. Run the boss out to x = 37.250
+            // and its rim at y = +/-6 lands at hypot(37.250, 6) = 37.730 from the rocket
+            // axis -- 0.330 mm INSIDE a tube whose bore is 37.400. Four buried collars,
+            // and the axis-aligned bounding box says max X = 37.250 and looks perfect,
+            // because radius is not a coordinate a box knows about. Onshape's own
+            // interference check is what found it.
+            //
+            // The boss does not need the reach anyway: the shell already fills from its
+            // bore outward. The boss only has to fill from the bearing to the bore.
             adds = append(adds, radialCylinder(context, id + ("collar" ~ q), q,
-                    definition.collarInnerR, definition.shellOd / 2, definition.zHinge,
-                    definition.collarOd, 0 * meter));
+                    definition.collarInnerR,
+                    definition.shellId / 2 + definition.collarOverlap,
+                    definition.zHinge, definition.collarOd, 0 * meter));
 
             // servo tray
             adds = append(adds, quadrantCuboid(context, id + ("tray" ~ q), q,
@@ -238,16 +260,44 @@ export const canardBay = defineFeature(function(context is Context, id is Id, de
         // identical, so the Part Studio carries one and the print is set to eight.
         if (definition.buildRetainer)
         {
+            // A DOG BONE, not a rectangle, and the servo's own geometry forces it.
+            //
+            // The flange is 29.5 long on a 23.5 case, so its inboard face -- the only face
+            // a clamp can push on -- is exposed ONLY in two 3 mm bands, one off each end
+            // of the case. Everywhere else the case body is in the way, and the bar sits
+            // at R 25.435 -> 26.935, which is inside the case's own radial range. A
+            // rectangular bar long enough to seat an M2 head (dia 3.8) therefore buried
+            // 1.7 mm of itself in the servo, 20 mm^3 a bar, eight times over.
+            //
+            // So: narrow across the flange, wide at the screws, where nothing is in the
+            // way because the screws sit outboard of the 8 mm case in Y.
+            const yFlange = definition.windowWid / 2;
+            const yOuter = definition.trayWidth / 2;
+            const rIn = definition.bossFaceR - definition.retThk;
+            const rOut = definition.bossFaceR;
+
             before = snapshot(context);
-            fCuboid(context, id + "retainer", {
-                    "corner1" : vector(definition.bossFaceR - definition.retThk,
-                                       -definition.trayWidth / 2,
-                                       definition.screwZ1 - definition.insertDia),
-                    "corner2" : vector(definition.bossFaceR,
-                                       definition.trayWidth / 2,
-                                       definition.screwZ1 + definition.insertDia)
+            fCuboid(context, id + "retBridge", {
+                    "corner1" : vector(rIn, -yFlange, definition.screwZ1 - definition.retBridgeHalfZ),
+                    "corner2" : vector(rOut, yFlange, definition.screwZ1 + definition.retBridgeHalfZ)
             });
-            var bar = madeBy(context, before);
+            var barParts = [madeBy(context, before)];
+            for (var sgn in [-1, 1])
+            {
+                before = snapshot(context);
+                fCuboid(context, id + ("retPad" ~ (sgn > 0 ? "p" : "m")), {
+                        "corner1" : vector(rIn, min(sgn * yFlange, sgn * yOuter),
+                                           definition.screwZ1 - definition.retPadHalfZ),
+                        "corner2" : vector(rOut, max(sgn * yFlange, sgn * yOuter),
+                                           definition.screwZ1 + definition.retPadHalfZ)
+                });
+                barParts = append(barParts, madeBy(context, before));
+            }
+            opBoolean(context, id + "retJoin", {
+                    "tools" : qUnion(barParts),
+                    "operationType" : BooleanOperationType.UNION
+            });
+            var bar = qUnion(evaluateQuery(context, qUnion(barParts)));
             var holes = [];
             for (var sgn in [-1, 1])
             {

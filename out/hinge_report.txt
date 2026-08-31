@@ -214,11 +214,19 @@ THE COUPLING  --  fifteen keys, cast rather than cut
   shaft wall         15.7 MPa in torsion   6061-T6 10.2x, 303 stainless 8.8x, 4140 steel 24.1x
   cast keys          29.9 MPa of bearing IF they carried it all -- not counted
 
+  shaft, tube OD, solid       M 0.7303 N m on Z 21.206 mm^3 ->  34.4 MPa, 6061-T6 8.0x
+  shaft, socket end, hollow   M 0.3813 N m on Z 16.582 mm^3 ->  23.0 MPa, 6061-T6 12.0x
+  (the socket makes the shaft hollow INSIDE the bearing, so the worst section is a
+   race between a big moment on a full section and a smaller one on a weakened
+   section. At 3.20 mm deep the tube wall still wins. At about 4.5 mm it stops
+   winning, and nothing outside this check would say so.)
+
   VERDICT: buildable
     note  socket dia 4.100 on a dia 4.0 spline: 0.050 mm radial, a slip fit on the crests with the valleys left open for the compound to key into
     note  socket wall 0.950 mm, shaft torsion 15.7 MPa (6061-T6 10.2x, 303 stainless 8.8x, 4140 steel 24.1x)
     note  the fifteen cast keys would carry it at 29.9 MPa of bearing if they carried everything -- NOT counted in the verdict, which treats the socket as smooth
     note  socket drilled 3.20 mm deep against 2.90 mm engaged, leaving 0.30 mm of reservoir for surplus compound
+    note  shaft bending, both candidate sections: tube OD, solid 34.4 MPa (8.0x); socket end, hollow 23.0 MPa (12.0x) -- the tube OD, solid station governs
     note  releases at about 250 C, which is the only reason a servo can be changed once its shaft is on
 
   BUILD NOTE: anaerobics cure on contact with active metal ions. The spline is

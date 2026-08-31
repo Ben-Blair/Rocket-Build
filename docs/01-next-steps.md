@@ -459,6 +459,52 @@ that silently recurs:
    module total moved 276.999 → 299.776 g and looked unremarkable. **A total is a bad place
    to look for an error.**
 
+23. **An interference audit found six modelling defects that every other check passed.**
+   Asked to go through the details properly, the useful move turned out to be Onshape's own
+   assembly **Check interference** — which the REST API does not expose (`/interferencecheck`
+   404s) and which nothing in this project had ever run. It reported **17 interfering pairs**.
+   All six causes were invisible to part count, to mass, to the `evaluate()` violations, and
+   to the axis-aligned bounding box.
+
+   | what | why it was invisible |
+   |---|---|
+   | **Tang modelled inside the tube wall**, ×4. Its 1.0 mm union overshoot started the blade at R 39.200 in a wall running 37.400 → 39.700 | the tang is unioned *into* the shaft, so the shaft's bounding box never changed |
+   | **Collar boss buried in the tube**, ×4. A flat-ended boss on a *radial* axis has its rim at `hypot(reach, OD/2)`: reaching R 37.250 put it at **37.730**, inside a bore of 37.400 | max X was 37.250 and looked perfect. **Radius is not a coordinate a bounding box knows** |
+   | **Retainer bar buried in the servo**, ×8, 20 mm³ each. The flange's inboard face is only exposed in two 3 mm bands off the case ends; a bar long enough to seat an M2 head overran them by 1.7 mm | nothing measured the bar against the case |
+   | **Collar bore modelled AS-PRINTED** ⌀7.500 with a ⌀8.000 bearing inside it, ×4 | both numbers were individually right; the model was carrying a manufacturing intermediate |
+   | **Bearing bore ⌀6.000 on a ⌀6.000 shaft** — the design's own 0.030 mm running clearance was never modelled | *"zero clearance is not an interference"* — this project's own lesson, repeated one part further out |
+   | **Four ⌀12 spikes 22 mm long** through the airframe, from a half-applied rebuild | see below |
+
+   Fixed: tang overshoot 1.0 → **0.4 mm** (now a parameter, not a constant); collar boss stops
+   at the shell **bore** plus 0.5 mm rather than reaching the OD; the retainer is a **dog bone**,
+   2.6 mm across the flange and 4.7 mm at the screws; the collar bore carries the **as-reamed**
+   ⌀8.000; the bearing bore is **⌀6.030**. **Check interference now reports none, across all 34
+   instances.** `design/bay.py` grew a collar-rim check on RADIUS and a bridge-vs-case check, so
+   none of these can come back silently.
+
+   **The shaft's own bending was also being checked in only one place.** The spline socket makes
+   the shaft hollow *inside the bearing*, and `hinge_loads()` checked the solid section at the
+   tube wall on the strength of a comment. `shaft_stations()` now checks both, integrating the
+   bearing reaction to get the real internal moment: tube wall 34.4 MPa (8.0×) still governs
+   against the socket end's 23.0 MPa (12.0×) — **but at about 4.5 mm of socket depth it stops
+   governing**, and nothing would have said so.
+
+24. **Three Onshape workflow facts that cost the most time, recorded so they cost it once.**
+   - **A feature's Feature Studio namespace is IMMUTABLE.** Editing new FeatureScript into an
+     existing feature is refused with *"Feature does not match"* — with and without
+     `serializationVersion`, with `rejectMicroversionSkew` both ways, and with no microversion
+     at all. New source can only reach a feature by **deleting and re-adding** it.
+   - **Rebuilding a Part Studio orphans every assembly instance of it.** Onshape *heals* the
+     orphan to an **empty `partId`**: it keeps its name and its transform, still lists in the
+     tree, contributes no mass and no geometry, and puts any rigid group holding it into ERROR.
+     There is **no instance-delete route on the API**, so the cleanup is manual. Hence the rule
+     now enforced by `make_bay_cad.py`: **finish a Part Studio before putting it in an assembly.**
+   - **Adding a parameter to a custom feature silently defaults it on existing instances.** A
+     half-applied rebuild left `collarOverlap` at Onshape's spec default of **25 mm**; the studio
+     regenerated `OK`, kept its part count and its part names, and grew four ⌀12 spikes 22 mm
+     long straight out through the airframe. Only the volume check caught it — which is why
+     `verify()` compares volume against `design/bay.py` rather than counting parts.
+
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.
 

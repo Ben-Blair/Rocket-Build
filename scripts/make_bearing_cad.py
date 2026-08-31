@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import math
 import sys
+from urllib.parse import quote
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -89,8 +90,22 @@ def add(feature: dict, element: str) -> str:
     return r["feature"]["featureId"]
 
 
+def bore_dia(s: hinge.HingeStack) -> float:
+    """The bearing's BORE, which is the journal plus its running clearance -- not the
+    journal diameter.
+
+    Modelled at dia 6.000 originally, exactly equal to the shaft, which is the same defect
+    this whole hinge exists to correct: the wall pass-through was dia 5.000 on dia 5.000
+    for months and no interference check could ever report it, because zero clearance is
+    not an interference. Onshape's assembly interference check DID flag this one, as four
+    coincident cylinders -- but only because the surfaces were exactly coincident, which is
+    luck, not a check. Carry the design's clearance.
+    """
+    return s.journal_dia + hinge.BEARING_RUNNING_CLEARANCE
+
+
 def build(element: str, s: hinge.HingeStack) -> None:
-    od, idia, length = s.bearing_od * MM, s.journal_dia * MM, s.bearing_length * MM
+    od, idia, length = s.bearing_od * MM, bore_dia(s) * MM, s.bearing_length * MM
 
     # 1. The outer cylinder, growing INBOARD from the origin, so +Z is outward radial.
     sk = add(ob.sketch("Bearing OD", "Top",
@@ -152,13 +167,65 @@ def name_and_material(element: str) -> None:
     print(f"  named '{PART_NAME}', iglidur G at {IGLIDUR_G_DENSITY:.0f} kg/m^3")
 
 
+def correct_bore(element: str, s: hinge.HingeStack) -> bool:
+    """Bring an already-built bearing's bore to the design size, in place.
+
+    In place, because the element is referenced by four assembly instances and a rebuild
+    would orphan every one of them -- Onshape heals an orphaned instance to an empty
+    partId, so it keeps its name and transform and quietly weighs nothing. The bore is
+    plain feature JSON (a sketch and an extrude), so it can simply be edited; only CUSTOM
+    features are stuck, because a feature's Feature Studio namespace is immutable.
+    """
+    want = bore_dia(s)
+    fl = get(f"/partstudios/d/{DOC}/w/{WS}/e/{element}/features")
+    sk = next(f for f in fl["features"]
+              if f["name"] == "Bearing bore" and f["featureType"] == "newSketch")
+    have = None
+    for e in sk.get("entities", []):
+        g = e.get("geometry", {})
+        if g.get("btType") == "BTCurveGeometryCircle-115":
+            have = g["radius"] * 2.0
+    if have is not None and abs(have - want) < 1e-9:
+        print(f"  bore is dia {have * MM:.3f}, which is what the design wants")
+        return False
+    print(f"  bore is dia {have * MM:.3f}, design wants dia {want * MM:.3f} -- CORRECTING")
+    for e in sk.get("entities", []):
+        g = e.get("geometry", {})
+        if g.get("btType") == "BTCurveGeometryCircle-115":
+            g["radius"] = want / 2.0
+    for c in sk.get("constraints", []):
+        if c.get("constraintType") == "DIAMETER":
+            for q in c["parameters"]:
+                if q.get("parameterId") == "length":
+                    q["expression"] = f"{want * MM:.4f} mm"
+    call("POST", f"/partstudios/d/{DOC}/w/{WS}/e/{element}"
+                 f"/features/featureid/{quote(sk['featureId'], safe='')}",
+         {"feature": sk, "serializationVersion": fl.get("serializationVersion"),
+          "sourceMicroversion": fl.get("sourceMicroversion"),
+          "rejectMicroversionSkew": False})
+    st = get(f"/partstudios/d/{DOC}/w/{WS}/e/{element}/features")["featureStates"] \
+        .get(sk["featureId"], {}).get("featureStatus")
+    if st != "OK":
+        raise SystemExit(f"the bore sketch regenerated as {st}")
+    return True
+
+
 def main() -> None:
     s = stack()
     rebuild = "--rebuild" in sys.argv
     existing = find_element(ELEMENT_NAME)
     if existing and not rebuild:
-        print(f"'{ELEMENT_NAME}' already exists ({existing['id']}). "
-              f"Pass --rebuild to delete and regenerate it.")
+        print(f"'{ELEMENT_NAME}' already exists ({existing['id']}).")
+        if correct_bore(existing["id"], s):
+            mp = get(f"/partstudios/d/{DOC}/w/{WS}/e/{existing['id']}/massproperties") \
+                ["bodies"]["-all-"]
+            want = math.pi * ((s.bearing_od / 2) ** 2 - (bore_dia(s) / 2) ** 2) \
+                * s.bearing_length
+            print(f"  volume now {mp['volume'][0] * 1e9:.3f} mm^3 against "
+                  f"{want * 1e9:.3f} analytic")
+            if abs(mp["volume"][0] - want) > 1e-12:
+                raise SystemExit("volume does not match the annulus after the correction")
+            print(f"  mass {mp['mass'][0] * 1000:.4f} g each")
         return
     if existing:
         call("DELETE", f"/elements/d/{DOC}/w/{WS}/e/{existing['id']}")
@@ -180,7 +247,7 @@ def main() -> None:
     print(f"\nexpected: X and Y +/-{s.bearing_od * MM / 2:.3f}, "
           f"Z {-s.bearing_length * MM:.3f} .. 0.000")
 
-    v = math.pi * ((s.bearing_od / 2) ** 2 - (s.journal_dia / 2) ** 2) * s.bearing_length
+    v = math.pi * ((s.bearing_od / 2) ** 2 - (bore_dia(s) / 2) ** 2) * s.bearing_length
     mp = get(f"/partstudios/d/{DOC}/w/{WS}/e/{element}/massproperties")["bodies"]["-all-"]
     solid = math.pi * (s.bearing_od / 2) ** 2 * s.bearing_length
     print(f"\nvolume {mp['volume'][0] * 1e9:.3f} mm^3 against analytic {v * 1e9:.3f}; "

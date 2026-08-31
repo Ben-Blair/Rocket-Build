@@ -60,7 +60,11 @@ EXPECTED_PARTS = 13          # the tang joins a shaft and the slot cuts a panel,
                              # applied.
 BOND_LINE_MM = hinge.BOND_LINE * 1000.0   # imported, not typed -- the FeatureScript takes
                                           # it as a parameter from here
-OVERSHOOT_MM = 1.000         # must match OVERSHOOT in the FeatureScript
+# The tang solid's overshoot inboard of the panel root. Imported, NOT typed: it moved
+# 1.0 -> 0.4 mm when Onshape's interference check found the blade modelled inside the
+# airframe wall, and a second copy of it here would have made this mass prediction wrong
+# by exactly the volume of the bug it was supposed to catch.
+OVERSHOOT_MM = hinge.TANG_MODEL_OVERSHOOT * 1000.0
 MASS_TOLERANCE_G = 0.05
 
 PS = f"/partstudios/d/{DOC}/w/{WS}/e/{PART_STUDIO}"
@@ -182,16 +186,51 @@ def check_panel_thickness(j: hinge.RootJoint) -> None:
             f"what the report claims. Run make_hinge_stack.py --panel first.")
 
 
-def apply(j: hinge.RootJoint, station_mm: float) -> None:
+def apply(j: hinge.RootJoint, station_mm: float, redeploy: bool = False) -> None:
     check_panel_thickness(j)
     have = existing()
-    if have:
+    if have and not redeploy:
         print(f"  already present: {', '.join(f['name'] for f in have)} -- leaving it alone")
         return
+    if have:
+        # REDEPLOY exists because a feature's Feature Studio namespace is IMMUTABLE.
+        # POSTing an existing feature back with a bumped namespace microversion is refused
+        # with "Feature does not match" -- tried with and without serializationVersion,
+        # with rejectMicroversionSkew both ways, and with no microversion at all. So the
+        # only way to pick up edited FeatureScript is to delete the feature and add it
+        # again, and that is safe HERE only because this feature creates no parts: it cuts
+        # the panels and unions the tang into shafts that already exist, so every part id
+        # survives and the assembly's four hand-placed mates never notice. It would not be
+        # safe on a feature that creates bodies.
+        before_ids = {p["partId"] for p in parts()}
+        for f in have:
+            call("DELETE", f"{PS}/features/featureid/{quote(f['featureId'], safe='')}")
+        after_ids = {p["partId"] for p in parts()}
+        if before_ids != after_ids:
+            raise SystemExit(f"deleting the tang changed the part ids "
+                             f"({before_ids ^ after_ids}); STOP -- the assembly references "
+                             f"these and its mates cannot be rebuilt from the API")
+        print(f"  deleted {len(have)} feature(s) to pick up new FeatureScript; "
+              f"all {len(after_ids)} part ids survived")
 
     before = total_mass_g()
     _, _, expect = expected_mass_change_g(j)
     print(f"  before          {len(parts())} parts, {before:.4f} g")
+
+    # Push the Feature Studio first, and prove it compiled: an empty featurespecs is the
+    # only symptom the API gives for a parse error, and a custom feature that fails to
+    # compile can regenerate this Part Studio to EMPTY while reporting featureStatus OK.
+    src = (Path(__file__).resolve().parents[1] / "cad" / "canard_articulation.fs").read_text()
+    old_src = get(f"/featurestudios/d/{DOC}/w/{WS}/e/{FEATURE_STUDIO}")["contents"]
+    post(f"/featurestudios/d/{DOC}/w/{WS}/e/{FEATURE_STUDIO}", {"contents": src})
+    specs = get(f"/featurestudios/d/{DOC}/w/{WS}/e/{FEATURE_STUDIO}/featurespecs")
+    got = specs.get("featureSpecs", specs) if isinstance(specs, dict) else specs
+    names = [x.get("featureName") or x.get("featureTypeName") for x in got]
+    if FEATURE_NAME not in names:
+        post(f"/featurestudios/d/{DOC}/w/{WS}/e/{FEATURE_STUDIO}", {"contents": old_src})
+        raise SystemExit(f"'{FEATURE_NAME}' missing from compiled exports {names}; "
+                         f"old source restored")
+    print(f"  Feature Studio compiles, exports: {names}")
 
     mv = get(f"/documents/d/{DOC}/w/{WS}/currentmicroversion")["microversion"]
     q = lambda pid, mm_val: {"btType": "BTMParameterQuantity-147",
@@ -206,6 +245,7 @@ def apply(j: hinge.RootJoint, station_mm: float) -> None:
             q("tangWidth", j.tang_width * MM),
             q("tangEngagement", j.engagement * MM),
             q("bondLine", BOND_LINE_MM),
+            q("tangOvershoot", hinge.TANG_MODEL_OVERSHOOT * 1000.0),
         ]}}
     fid = post(f"{PS}/features", feature)["feature"]["featureId"]
 
@@ -231,13 +271,15 @@ def apply(j: hinge.RootJoint, station_mm: float) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--redeploy", action="store_true",
+                    help="delete and re-add the feature so it picks up edited FeatureScript")
     args = ap.parse_args()
     j, station_mm = joint()
     print(f"\ncanard root tang -- {'APPLY' if args.apply else 'check only'}\n")
     report(j, station_mm)
     print()
-    if args.apply:
-        apply(j, station_mm)
+    if args.apply or args.redeploy:
+        apply(j, station_mm, redeploy=args.redeploy)
     else:
         have = existing()
         print(f"  in the model    {'yes: ' + have[0]['name'] if have else 'NOT PRESENT'}")

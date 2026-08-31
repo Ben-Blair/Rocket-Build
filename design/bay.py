@@ -53,7 +53,6 @@ from dataclasses import dataclass, field
 from .hinge import HingeStack
 from .materials import (
     BAY_MATERIAL,
-    G10_INTERLAMINAR_SHEAR,
     G10_BEARING,
     G10_MODULUS,
     PRINT_MATERIALS,
@@ -82,7 +81,28 @@ SERVO_POCKET_CLEARANCE = 0.300e-3
 SHELL_END_MARGIN = 6.000e-3      # shell past the servo lug envelope, each end
 
 COLLAR_OD = 12.000e-3
-COLLAR_PRINTED_BORE = 7.500e-3   # reamed to dia 8 H7 AFTER bonding; see docs/05
+
+# TWO DIAMETERS, AND THE CAD CARRIES THE SECOND ONE.
+#
+# The collar comes off the printer at dia 7.500, undersize on purpose, and is reamed to
+# dia 8 H7 through the wall in one pass after the bay is bonded in. So the part has two
+# sizes in its life, and it matters which one the model holds: the assembly represents the
+# vehicle that FLIES, and the vehicle that flies has been reamed.
+#
+# Modelling the printed size instead put a dia 8.000 bearing inside a dia 7.500 hole -- a
+# real 0.25 mm radial interference over 3.550 mm, four times over, 86 mm^3 of two solids
+# occupying the same space. It would have been found by the first person to run a clash
+# check and believed by anyone who did not.
+#
+# The printed size stays here because it has to be printed, but nothing geometric uses it.
+COLLAR_PRINTED_BORE = 7.500e-3   # what comes off the printer
+
+# How far the collar boss reaches PAST the shell bore, to guarantee the union bites. It
+# must NOT reach the shell OD: the boss is flat-ended on a radial axis and the shell's
+# outer surface is curved about the rocket axis, so a boss run out to R 37.250 puts its
+# rim at hypot(37.250, 6) = 37.730 -- inside a tube bored to 37.400. See cad/canard_bay.fs.
+COLLAR_BOSS_OVERLAP = 0.500e-3
+
 
 # --- how the servo is held, and why not by its own lug screws -------------------------
 # The obvious mounting is the servo's own four M1.4 screws through the flange into the
@@ -107,6 +127,13 @@ COLLAR_PRINTED_BORE = 7.500e-3   # reamed to dia 8 H7 AFTER bonding; see docs/05
 #
 # Cost: one more printed part per servo, about a gram, and eight M2 x 6 screws.
 RETAINER_THICKNESS = 1.500e-3
+# The bar is a dog bone. Across the flange it may only be as long in Z as the flange's
+# exposed inboard face, which is the 3.0 mm the 29.5 mm flange overhangs the 23.5 mm case
+# at each end; any longer and the bar buries itself in the servo body, which sits at a
+# radius the bar has to pass through. At the screws it can be longer, because the screws
+# are outboard of the 8 mm case in Y where nothing is in the way.
+RETAINER_BRIDGE_HALF_Z = 1.300e-3
+RETAINER_PAD_HALF_Z = 2.350e-3
 RETAINER_SCREW_ACROSS = 6.000e-3     # +/- Y of the clamp screws, clear of the 8 mm case
 INSERT_DIA = 3.200e-3                # M2 heat-set insert
 INSERT_DEPTH = 4.000e-3
@@ -272,9 +299,33 @@ class BayGeometry:
         return self.shell_outer_radius - SHELL_WALL
 
     @property
+    def collar_bore(self) -> float:
+        """As REAMED -- the size the flying part has, and the size the CAD carries.
+
+        Taken from the hinge stack rather than restated, so that it cannot drift from the
+        bearing it has to hold."""
+        return self.stack.wall_bore_dia
+
+    @property
+    def collar_wall(self) -> float:
+        return (COLLAR_OD - self.collar_bore) / 2.0
+
+    @property
+    def ream_stock_on_radius(self) -> float:
+        return (self.collar_bore - COLLAR_PRINTED_BORE) / 2.0
+
+    @property
     def collar_reach(self) -> float:
-        """How far the collar boss stands proud of the shell bore."""
-        return self.shell_inner_radius - self.stack.bearing_inboard
+        """How far the collar boss stands proud of the shell bore, plus its overlap."""
+        return (self.shell_inner_radius + COLLAR_BOSS_OVERLAP
+                - self.stack.bearing_inboard)
+
+    @property
+    def collar_rim_radius(self) -> float:
+        """Distance from the ROCKET axis to the outer rim of the collar boss.
+
+        The number the bounding box cannot tell you and the tube cares about."""
+        return math.hypot(self.shell_inner_radius + COLLAR_BOSS_OVERLAP, COLLAR_OD / 2.0)
 
     @property
     def collar_bore_length(self) -> float:
@@ -422,7 +473,7 @@ class BayGeometry:
         mass is the kind of thing a total hides."""
         ro, ri = self.shell_outer_radius, self.shell_inner_radius
         shell = math.pi * (ro ** 2 - ri ** 2) * self.length
-        bores = 4.0 * math.pi * (COLLAR_PRINTED_BORE / 2.0) ** 2 * SHELL_WALL
+        bores = 4.0 * math.pi * (self.collar_bore / 2.0) ** 2 * SHELL_WALL
         return shell - bores
 
     @property
@@ -443,14 +494,22 @@ class BayGeometry:
         """Only the part of each collar that stands PROUD of the shell bore. The rest of
         the collar's bore length is shell, and is accounted for there."""
         annulus = math.pi * ((COLLAR_OD / 2.0) ** 2
-                             - (COLLAR_PRINTED_BORE / 2.0) ** 2)
+                             - (self.collar_bore / 2.0) ** 2)
         return 4.0 * annulus * self.collar_reach
 
     @property
+    def flange_overhang(self) -> float:
+        """How far the flange projects past the case at each end -- the only place a clamp
+        can touch its inboard face."""
+        return (self.servo.envelope_length - self.servo.case_length) / 2.0
+
+    @property
     def retainer_volume(self) -> float:
-        """Eight bars: two per servo, each spanning the tray width."""
-        bar = self.tray_width * (2.0 * (RETAINER_SCREW_ACROSS)) * RETAINER_THICKNESS
-        return 8.0 * bar / 2.0
+        """Eight dog-bone bars: a bridge across the flange plus two screw pads."""
+        bridge = (self.window_width * 2.0 * RETAINER_BRIDGE_HALF_Z * RETAINER_THICKNESS)
+        pads = 2.0 * ((self.tray_width / 2.0 - self.window_width / 2.0)
+                      * 2.0 * RETAINER_PAD_HALF_Z * RETAINER_THICKNESS)
+        return 8.0 * (bridge + pads)
 
     @property
     def volume(self) -> float:
@@ -536,7 +595,6 @@ def clearances(bay: "BayGeometry") -> list[tuple[str, float, str]]:
     Each entry is (what, clearance in metres, which direction).
     """
     s, sv = bay.stack, bay.servo
-    half = SERVO_POCKET_CLEARANCE
     return [
         ("servo case side vs tray window",
          (bay.window_width - sv.case_width) / 2.0, "circumferential, each side"),
@@ -553,13 +611,19 @@ def clearances(bay: "BayGeometry") -> list[tuple[str, float, str]]:
          "the servo stands proud of the tray into the standoff gap"),
         ("servo spline tip vs shell OD",
          bay.shell_outer_radius - s.spline_tip, "radial, inside the collar bore"),
-        ("shaft sleeve vs collar bore, printed",
+        ("shaft sleeve vs collar bore, as printed",
          (COLLAR_PRINTED_BORE - s.journal_dia) / 2.0, "radial, before reaming"),
-        ("bearing OD vs collar bore, reamed",
-         (s.wall_bore_dia - s.bearing_od) / 2.0, "radial, the press fit"),
+        ("bearing OD vs collar bore, as reamed",
+         (bay.collar_bore - s.bearing_od) / 2.0,
+         "radial -- zero is correct, this is the press fit, and it is the size the CAD "
+         "carries"),
         ("retainer bar vs servo flange",
          bay.boss_face - (s.servo_output_face - sv.flange_from_top - sv.flange_thickness),
          "radial -- zero is correct, the bar clamps the flange"),
+        ("retainer bridge vs servo case, in Z",
+         (bay.flange_overhang - 2.0 * RETAINER_BRIDGE_HALF_Z) / 2.0,
+         "axial, each end -- the bar may only be this long where it crosses the flange, "
+         "because the case body occupies the radius the bar sits at"),
     ]
 
 
@@ -657,15 +721,50 @@ def check_bay(bay: BayGeometry, moment: float, normal: float,
         v.append(f"the servo tray at R {bay.tray_back_face * MM:.3f} is outboard of the "
                  f"shell bore at R {bay.shell_inner_radius * MM:.3f} -- the servo will not "
                  f"go in")
-    if COLLAR_PRINTED_BORE >= s.wall_bore_dia:
+    if bay.ream_stock_on_radius <= 0:
         v.append(f"the collar is printed at dia {COLLAR_PRINTED_BORE * MM:.2f}, which the "
-                 f"dia {s.wall_bore_dia * MM:.2f} reamer would not clean up")
+                 f"dia {bay.collar_bore * MM:.2f} reamer would not clean up")
     else:
         notes.append(
             f"collar printed dia {COLLAR_PRINTED_BORE * MM:.2f} and reamed to dia "
-            f"{s.wall_bore_dia * MM:.3f} H7 through the wall in one pass -- "
-            f"{(s.wall_bore_dia - COLLAR_PRINTED_BORE) * MM / 2.0:.3f} mm of stock on the "
-            f"radius, which is what an FDM hole needs to come out round")
+            f"{bay.collar_bore * MM:.3f} H7 through the wall in one pass -- "
+            f"{bay.ream_stock_on_radius * MM:.3f} mm of stock on the radius, which is what "
+            f"an FDM hole needs to come out round. THE CAD CARRIES THE REAMED SIZE, because "
+            f"the assembly is the vehicle that flies")
+    if bay.collar_wall < MIN_WALL:
+        v.append(f"the collar leaves {bay.collar_wall * MM:.2f} mm of wall around a "
+                 f"dia {bay.collar_bore * MM:.2f} bore, under the {MIN_WALL * MM:.2f} mm "
+                 f"four-perimeter minimum")
+
+    # --- 3c. the clamp bar must not bury itself in the servo ------------------------------
+    if RETAINER_BRIDGE_HALF_Z * 2.0 > bay.flange_overhang:
+        v.append(f"the retainer bridge is {RETAINER_BRIDGE_HALF_Z * 2.0 * MM:.2f} mm long in "
+                 f"Z where it crosses the flange, against {bay.flange_overhang * MM:.2f} mm "
+                 f"of exposed flange -- the rest of it lands inside the servo case, which "
+                 f"occupies the very radius the bar sits at")
+    else:
+        notes.append(f"retainer bridge {RETAINER_BRIDGE_HALF_Z * 2.0 * MM:.2f} mm across a "
+                     f"{bay.flange_overhang * MM:.2f} mm exposed flange band, widening to "
+                     f"{RETAINER_PAD_HALF_Z * 2.0 * MM:.2f} mm at the screws where the case "
+                     f"is not in the way")
+    if SCREW_DIA * 1.9 > RETAINER_PAD_HALF_Z * 2.0:
+        v.append(f"an M{SCREW_DIA * MM:.0f} head is about "
+                 f"{SCREW_DIA * 1.9 * MM:.1f} mm across and the screw pad is only "
+                 f"{RETAINER_PAD_HALF_Z * 2.0 * MM:.2f} mm long in Z")
+
+    # --- 4a. does the collar boss stay inside the tube ------------------------------------
+    # The check a bounding box cannot do. A flat-ended boss on a radial axis has its rim
+    # further from the ROCKET axis than its centre, and the tube bore is a radius.
+    if bay.collar_rim_radius > s.tube_inner_radius:
+        v.append(f"the collar boss rim reaches R {bay.collar_rim_radius * MM:.3f}, "
+                 f"{(bay.collar_rim_radius - s.tube_inner_radius) * MM:.3f} mm inside a tube "
+                 f"bored to R {s.tube_inner_radius * MM:.3f}. A flat-ended boss on a radial "
+                 f"axis puts its rim at hypot(reach, OD/2), not at `reach` -- and an "
+                 f"axis-aligned bounding box will report the reach and look fine")
+    else:
+        notes.append(f"collar boss rim at R {bay.collar_rim_radius * MM:.3f}, "
+                     f"{(s.tube_inner_radius - bay.collar_rim_radius) * MM:.3f} mm clear of "
+                     f"the tube bore -- checked on RADIUS, not on the bounding box")
 
     # --- 4b. does the SERVO FLANGE clear the bay -----------------------------------------
     if not bay.flange_clear:

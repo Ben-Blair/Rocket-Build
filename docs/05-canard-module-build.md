@@ -617,7 +617,8 @@ much of the collar's benefit they deliver. Plain PETG passes if there is no hard
 | Servo window | 24.100 × 8.600 through the tray — clears the **case** |
 | Flange relief | 8.600 wide over the full 29.5 lug envelope, R 26.935 → 27.935 — clears the **flange** |
 | Clamp inserts | 8 × M2 heat-set, ⌀3.2 × 4.0, at Y ±6.0 on two rows per servo |
-| Retainer bars | 15.0 × 6.4 × 1.5, two per servo, 2× M2 each |
+| Retainer bars | dog bone: 2.6 mm bridge × 8.6 wide across the flange, 4.7 mm pads out to 18.4 wide at the screws, 1.5 thick. Two per servo, 2× M2 each |
+| Collar bore, in the CAD | **⌀8.000 as reamed** — the assembly is the vehicle that flies, and it has been reamed. ⌀7.500 is the print size |
 
 The frame is the module Part Studio's own — origin on the rocket axis, Z 0 at the tube's
 forward face — so the bay drops into `Assembly 1` at **identity**. No transform to compute
@@ -649,6 +650,8 @@ envelope; `design/bay.py` now prints a clearance table on every run so it cannot
 | | |
 |---|---|
 | servo case vs window | +0.300 each side, +0.300 each end |
+| retainer bridge vs case, in Z | +0.200 each end — the bar is a **dog bone**: 2.6 mm across the flange, 4.7 mm at the screws |
+| collar boss rim vs tube bore | +1.544 radial — checked on **radius**, `hypot(reach, OD/2)`, not on the bounding box |
 | servo flange vs relief | +0.300 each side |
 | servo top face vs collar | +0.515 radial |
 | servo top face vs shell bore | +1.665 radial |

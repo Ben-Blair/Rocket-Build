@@ -271,6 +271,9 @@ export const canardRootTang = defineFeature(function(context is Context, id is I
 
         annotation { "Name" : "Bond line (each face)" }
         isLength(definition.bondLine, LENGTH_BOUNDS);
+
+        annotation { "Name" : "Tang overshoot inboard of the panel root" }
+        isLength(definition.tangOvershoot, LENGTH_BOUNDS);
     }
     {
         const found = classifyCanardBodies(context);
@@ -307,8 +310,22 @@ export const canardRootTang = defineFeature(function(context is Context, id is I
             });
 
             // --- the tang itself, unioned into the shaft --------------------------------
+            //
+            // THE TANG'S OVERSHOOT IS NOT THE SLOT'S, and it is a parameter for a reason.
+            // The slot may overshoot as far as it likes -- it cuts panels, and inboard of
+            // the panel root there is nothing to cut. The TANG adds material, and inboard
+            // of the panel root is the AIRFRAME WALL. At the shared 1 mm both used to
+            // carry, the tang started at R 39.200 in a tube whose wall runs 37.400 ->
+            // 39.700, so 0.5 mm of an 11.9 mm-wide blade sat inside the tube, four times
+            // over, everywhere the dia 8 bore did not already clear it. Found by Onshape's
+            // assembly interference check; invisible to every mass and bounding-box test
+            // this project runs, because the tang is unioned into the shaft and the shaft's
+            // box does not change.
+            //
+            // It only has to overlap the shaft enough for the union to bite, and the shaft
+            // runs out to the panel root, so a few tenths is plenty.
             const tang = makeBox(context, id + ("tangBox" ~ q), spin,
-                    vector(rootR - OVERSHOOT, -halfT, hingeZ - halfW),
+                    vector(rootR - definition.tangOvershoot, -halfT, hingeZ - halfW),
                     vector(rootR + definition.tangEngagement, halfT, hingeZ + halfW));
             // UNION takes EVERY body in `tools` and NO `targets`. `targets` exists only
             // for SUBTRACTION and INTERSECTION, where the operation is directional --

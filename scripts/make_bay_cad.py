@@ -39,7 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design import bay, hinge
 from design.configure import baseline, build_vehicle
-from design.materials import BAY_MATERIAL, PRINT_MATERIALS
+from design.materials import BAY_MATERIAL
 from design.onshape import call, get, post
 from design.packaging import SERVO_GEOMETRY
 
@@ -118,7 +118,9 @@ def parameters(b: bay.BayGeometry) -> list[dict]:
         q("zAft", b.aft_face),
         q("zHinge", b.hinge_station),
         q("collarOd", bay.COLLAR_OD),
-        q("collarBore", bay.COLLAR_PRINTED_BORE),
+        # AS REAMED, not as printed. The assembly is the vehicle that flies.
+        q("collarBore", b.collar_bore),
+        q("collarOverlap", bay.COLLAR_BOSS_OVERLAP),
         q("collarInnerR", s.bearing_inboard),
         q("trayFlangeR", b.tray_flange_face),
         q("trayBackR", b.tray_back_face),
@@ -136,6 +138,8 @@ def parameters(b: bay.BayGeometry) -> list[dict]:
         q("screwZ1", b.screw_stations[0]),
         q("screwZ2", b.screw_stations[1]),
         q("retThk", bay.RETAINER_THICKNESS),
+        q("retBridgeHalfZ", bay.RETAINER_BRIDGE_HALF_Z),
+        q("retPadHalfZ", bay.RETAINER_PAD_HALF_Z),
         {"btType": "BTMParameterBoolean-144", "parameterId": "buildRetainer", "value": True},
     ]
 
@@ -146,10 +150,39 @@ def build(fs_id: str, b: bay.BayGeometry, rebuild: bool = False) -> str:
         ps = el["id"]
         feats = get(f"/partstudios/d/{DOC}/w/{WS}/e/{ps}/features").get("features", [])
         if feats and rebuild:
+            # DELETE AND RE-ADD, because there is no alternative.
+            #
+            # A feature's Feature Studio namespace is IMMUTABLE. POSTing the feature back
+            # with a bumped namespace microversion is refused with "Feature does not
+            # match" -- tried with and without serializationVersion, with
+            # rejectMicroversionSkew both ways, and with no microversion at all. So new
+            # FeatureScript can only reach an existing feature by replacing it.
+            #
+            # And a HALF-DONE rebuild is worse than none. When the edit-in-place attempt
+            # above failed, it had already pushed the new source, and Onshape filled the
+            # newly-declared `collarOverlap` on the OLD feature with the spec default of
+            # 25 mm. The Part Studio regenerated as OK, kept its part count, kept its part
+            # names, and grew four dia 12 spikes 22 mm long straight out through the
+            # airframe. Nothing except a volume check would have said so. That is why
+            # verify() compares volume against design/bay.py and not just part count.
+            asm = get(f"/assemblies/d/{DOC}/w/{WS}/e/{ASM}")["rootAssembly"]
+            referencing = [i for i in asm["instances"] if i.get("elementId") == ps]
+            if referencing:
+                raise SystemExit(
+                    f"REFUSING to rebuild: Assembly 1 holds {len(referencing)} instance(s) "
+                    f"of '{PS_NAME}'. Deleting the feature destroys the bodies they point "
+                    f"at, and Onshape heals an orphaned instance to an EMPTY partId -- it "
+                    f"keeps its name and its transform, weighs nothing, and puts the "
+                    f"airframe rigid group into ERROR.\n\n"
+                    f"There is no instance-delete route on the API. Delete those "
+                    f"{len(referencing)} instances in the browser first, then --rebuild, "
+                    f"then --assemble.\n\n"
+                    f"The lesson, which is cheap to follow: FINISH THE PART STUDIO BEFORE "
+                    f"PUTTING IT IN AN ASSEMBLY.")
             for fdef in feats:
                 call("DELETE", f"/partstudios/d/{DOC}/w/{WS}/e/{ps}"
                                f"/features/featureid/{quote(fdef['featureId'], safe='')}")
-            print(f"  deleted {len(feats)} feature(s) to rebuild")
+            print(f"  deleted {len(feats)} feature(s) to pick up new FeatureScript")
             feats = []
         if feats:
             print(f"  Part Studio '{PS_NAME}' already built ({ps}), "
@@ -259,10 +292,37 @@ def assemble(ps: str, b: bay.BayGeometry) -> None:
     flown: rotate by quadrant, translate by the lug pitch for the aft row.
     """
     a = get(f"/assemblies/d/{DOC}/w/{WS}/e/{ASM}")["rootAssembly"]
-    have = {i["name"].rsplit("<", 1)[0].strip() for i in a["instances"]}
-    if PART_NAME in have:
-        print(f"  '{PART_NAME}' is already in Assembly 1")
+
+    # REBUILDING A PART STUDIO BREAKS THE ASSEMBLY INSTANCES THAT REFERENCE IT.
+    # Deleting the feature destroys the bodies, and Onshape heals the orphaned instance to
+    # an EMPTY partId rather than leaving it visibly dangling. The instance keeps its name
+    # and its transform, still lists, still shows in the tree -- and contributes no mass and
+    # no geometry, while any rigid group holding it regenerates as ERROR. That is a silent
+    # 38.5 g hole in the module tensor: the exact failure mode this project keeps meeting.
+    # Detect it by the empty partId and replace those instances rather than adding more.
+    ours = [i for i in a["instances"] if i.get("elementId") == ps]
+    broken = [i for i in ours if not i.get("partId")]
+    if broken:
+        # And the API cannot clear them: there is no instance-delete route on v10.
+        # /instance/{id} and /instances/{id} both 404, encoded or not. So this has to be
+        # said plainly rather than papered over -- inserting nine more on top of nine dead
+        # ones would leave a tree full of ghosts that weigh nothing.
+        raise SystemExit(
+            f"{len(broken)} of {len(ours)} instance(s) of '{PS_NAME}' in Assembly 1 have "
+            f"lost their part reference. They still list, still hold a transform, and "
+            f"contribute NO mass and NO geometry, and any rigid group holding them "
+            f"regenerates as ERROR.\n\n"
+            f"This is what rebuilding a Part Studio does to an assembly that already "
+            f"references it. The API has no way to delete an assembly instance, so:\n"
+            f"  1. open Assembly 1 in the browser\n"
+            f"  2. delete the {len(broken)} '{PS_NAME}' instances from the instance list\n"
+            f"  3. re-run this script with --assemble\n")
+    if len(ours) == 9:
+        print(f"  the bay and its 8 bars are already in Assembly 1, all resolving")
         return
+    if ours:
+        raise SystemExit(f"{len(ours)} instance(s) of this element in the assembly, "
+                         f"expected 0 or 9. Sort that out by hand rather than adding more.")
 
     parts = {p["name"]: p["partId"] for p in get(f"/parts/d/{DOC}/w/{WS}/e/{ps}")}
     before = {i["id"] for i in a["instances"]}

@@ -234,7 +234,16 @@ def main() -> None:
         + ", ".join(f"{k} {m:.1f}x" for k, m in cpl.shaft_torsion_margin.items()))
     say(f"  cast keys         {cpl.key_pressure / 1e6:5.1f} MPa of bearing IF they carried it "
         f"all -- not counted")
-    chk_cpl = hinge.check_coupling(cpl)
+    say("")
+    for st in hinge.shaft_stations(sel, cpl, loads_sel.normal_force, load_r):
+        say(f"  shaft, {st.name:20s} M {st.moment:.4f} N m on Z "
+            f"{st.section_modulus * 1e9:6.3f} mm^3 -> {st.stress / 1e6:5.1f} MPa, "
+            f"6061-T6 {st.margins['6061-T6']:.1f}x")
+    say("  (the socket makes the shaft hollow INSIDE the bearing, so the worst section is a")
+    say("   race between a big moment on a full section and a smaller one on a weakened")
+    say("   section. At 3.20 mm deep the tube wall still wins. At about 4.5 mm it stops")
+    say("   winning, and nothing outside this check would say so.)")
+    chk_cpl = hinge.check_coupling(cpl, sel, loads_sel.normal_force, load_r)
     say("")
     say(f"  VERDICT: {'buildable' if chk_cpl.ok else 'NOT BUILDABLE'}"
         + ("" if chk_cpl.ok else f" -- {len(chk_cpl.violations)} violation(s)"))
