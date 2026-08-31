@@ -885,6 +885,20 @@ output shaft tangentially and cannot drive a radial hinge. See the state of play
    Heat-set inserts, not printed threads. Layer lines perpendicular to the load path.
 7. **Circular pattern** the panel/shaft/servo/bay set 4× about the tube axis.
 
+## Verifying the model
+
+`python scripts/verify_cad.py` cross-checks every design number against what the Onshape
+model actually contains — volumes against exact analytic figures, and the measured mass
+tensor against `design/control.py` — plus instance count, feature status, the four
+hand-placed mates, and whether any assembly instance has lost its part reference.
+
+**It cannot catch an interference.** Two solids in the same space change no volume and no
+mass. There is exactly one tool for that and it is not in the API
+(`/assemblies/.../interferencecheck` 404s on v10): open `Assembly 1` in the browser, select
+every instance, right-click → **Check interference…**. Run it after any assembly change. It
+is the only check that found the tang buried in the tube wall, the collar boss rim outside
+the shell, and the retainer bar inside the servo — none of which moved a gram.
+
 ## What to check when you are done
 
 - **Mass properties.** Compare the module's mass against the model: 0.147 kg tube +
