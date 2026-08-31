@@ -272,14 +272,37 @@ def main() -> None:
     pk = ev.packing
     say(pk.report(caliber=0.0794))
     say()
+    h = recovery.size_harness(ev.rocket.length, r.shock_infinite_mass)
+    say()
+    say("  THE HARNESS IS SIZED NOW, AND THAT IS WHAT FIXED THE MARGIN. Its volume used to")
+    say("  come from `shock_cord_and_links = 220 g` in the mass budget divided by an assumed")
+    say("  bulk density -- an unchecked number turned into a volume by a guess, and a quarter")
+    say("  of the bay. Nothing had ever checked its STRENGTH either.")
+    say()
+    say(f"  {'webbing':24s} {'rating':>8s} {'after knots':>12s} {'vs shock':>9s} {'g/m':>6s}")
+    say("  " + "-" * 64)
+    for w in recovery.WEBBING_OPTIONS:
+        mark = "  <- selected" if w.name == h.webbing.name else ""
+        say(f"  {w.name:24s} {w.rating / 1000:6.1f} kN {w.working_load / 1000:9.1f} kN "
+            f"{w.working_load / h.opening_load:8.1f}x {w.mass_per_metre * 1000:6.0f}{mark}")
+    say()
+    say(f"  The opening shock is {h.opening_load:.0f} N and 1\" tubular nylon is rated 17.8 kN.")
+    say(f"  **The harness was about {recovery.WEBBING_OPTIONS[-1].working_load / h.opening_load / recovery.HARNESS_MARGIN_REQUIRED:.0f} times more webbing than the load asks for**, and the")
+    say("  excess was not free -- it was spending a bay whose margin was 0.1 mm. Same shape")
+    say("  as the tube at the hinge running at 256x, except that this one had a bill.")
+    say()
+    say(f"  Selected {h.webbing.name}, 2 x {h.length_each:.2f} m, "
+        f"{h.webbing_mass * 1e3:.0f} g against the 170 g the budget assumed.")
+    say("  The knot derating is what moved the selection two sizes, not the rating.")
+    say()
     say("  The conduit and four U-bolts are RIGID -- the canopy packs around them rather")
     say("  than compressing with them -- so they are added to the required length directly")
     say("  instead of through the fill limit. Putting them through it would inflate them by")
     say("  1/0.85 and manufacture a shortfall, which is precisely correction 5.")
     say()
-    say(f"  margin was +13.0 mm before any of this hardware was counted; it is now "
-        f"{pk.margin * MM:+.1f} mm.")
-    say("  The U-bolts cost more than the conduit does: 4 x 6 cm3 of envelope against 4.7.")
+    say(f"  Margin: +13.0 mm before any of this was counted, +0.1 mm once the coupler bore")
+    say(f"  and the rigid hardware went in, and {pk.margin * MM:+.1f} mm now the harness is sized and the")
+    say(f"  internal bulkhead is the measured {10.8:.1f} mm stack rather than a 12.0 mm allowance.")
 
     text = "\n".join(lines)
     print(text)

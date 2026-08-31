@@ -202,6 +202,116 @@ CONDUIT_DENSITY = 1400.0  # kg/m^3, thin-wall PETG or glass tube -- a few grams 
 # the entire margin, so it was worth getting right rather than staying "conservative".
 UBOLT_ENVELOPE_VOLUME = 3.0e-6  # m^3
 
+# ======================================================================================
+# THE HARNESS
+# ======================================================================================
+#
+# It is a quarter of the recovery bay's volume, it carries every newton of the opening
+# shock, and until Aug 2026 NOTHING IN THIS PROJECT HAD EVER SIZED IT. Its volume came from
+# `shock_cord_and_links = 0.220 kg` in the mass budget divided by an assumed bulk density --
+# a budget line nobody had checked, turned into a volume by a guess. Its strength came from
+# nowhere at all.
+#
+# Sizing it against the load it actually carries is what fixed the recovery bay's margin,
+# and the direction of the answer is the point: **the harness was about twenty times
+# stronger than it needs to be.** 1 inch tubular nylon is rated 17.8 kN. The main's opening
+# shock is 1.31 kN (design/seal.py, and note that even that is the infinite-mass bound). A
+# number that was never checked came out enormous, which is the same shape as the tube at
+# the hinge station running at 256x -- except that here the excess was not free, because it
+# was spending a bay whose margin turned out to be 0.1 mm.
+#
+# THE DERATING MATTERS MORE THAN THE RATING. Webbing is joined with knots or sewn loops and
+# a knot costs roughly half the rated strength -- that is the standard figure and it is not
+# a detail, it moves the selection by two sizes. Sewn loops do better but only if somebody
+# sews them properly, which is not a thing to assume about a part you have not made yet.
+#
+# WHY NOT KEVLAR, since it packs smaller and survives the ejection gas: it does not stretch.
+# Nylon takes 20-30% elongation and absorbs the shock; Kevlar transmits it, and this project
+# has no model of harness elasticity, so switching would raise a load (`seal.opening_shock`)
+# that nothing here could recompute. A Kevlar LEADER at the charge end is the standard way
+# to get the heat resistance without the stiffness, and it is what the protectors are for.
+KNOT_STRENGTH_FACTOR = 0.5
+
+# Harness margin. Higher than the 2.0x used elsewhere in this project on purpose: opening
+# shock is the least well known load in the vehicle -- seal.opening_shock says nobody should
+# believe it to better than a factor of two without a load cell -- and a harness failure
+# loses the vehicle and all its data.
+HARNESS_MARGIN_REQUIRED = 3.0
+
+# Each harness leg, as a multiple of overall vehicle length. Long enough that the two
+# sections cannot come back and hit each other, and long enough for the canopy to inflate
+# clear of the airframe.
+HARNESS_LENGTH_FACTOR = 2.5
+
+# Tubular nylon as it is sold. Mass per metre is computed from the webbing geometry rather
+# than quoted, and should be replaced with a vendor figure the moment a part number exists
+# -- the same rule the canopies follow.
+@dataclass(frozen=True)
+class Webbing:
+    name: str
+    width: float  # m
+    mass_per_metre: float  # kg/m
+    rating: float  # N, straight pull
+
+    @property
+    def working_load(self) -> float:
+        """Rating after the knot derating -- the number the check is against."""
+        return self.rating * KNOT_STRENGTH_FACTOR
+
+
+WEBBING_OPTIONS: list[Webbing] = [
+    Webbing('1/2" tubular nylon', 0.0127, 0.011, 4448.0),    # 1000 lbf
+    Webbing('9/16" tubular nylon', 0.0143, 0.014, 6672.0),   # 1500 lbf
+    Webbing('3/4" tubular nylon', 0.0191, 0.020, 11121.0),   # 2500 lbf
+    Webbing('1" tubular nylon', 0.0254, 0.030, 17793.0),     # 4000 lbf
+]
+
+
+def select_webbing(opening_load: float,
+                   margin: float = HARNESS_MARGIN_REQUIRED) -> Webbing:
+    """The lightest stocked webbing that carries `opening_load` with margin, after knots."""
+    for w in sorted(WEBBING_OPTIONS, key=lambda x: x.mass_per_metre):
+        if w.working_load >= margin * opening_load:
+            return w
+    return WEBBING_OPTIONS[-1]
+
+
+@dataclass(frozen=True)
+class Harness:
+    webbing: Webbing
+    length_each: float  # m, one leg
+    opening_load: float  # N
+
+    @property
+    def total_length(self) -> float:
+        return 2.0 * self.length_each
+
+    @property
+    def webbing_mass(self) -> float:
+        return self.total_length * self.webbing.mass_per_metre
+
+    @property
+    def mass(self) -> float:
+        return self.webbing_mass + HARNESS_HARDWARE_KG
+
+    @property
+    def margin(self) -> float:
+        return self.webbing.working_load / self.opening_load
+
+    @property
+    def ok(self) -> bool:
+        return self.margin >= HARNESS_MARGIN_REQUIRED
+
+
+def size_harness(vehicle_length: float, opening_load: float) -> Harness:
+    """Pick the webbing and the length from the load and the vehicle, not from a budget."""
+    return Harness(
+        webbing=select_webbing(opening_load),
+        length_each=HARNESS_LENGTH_FACTOR * vehicle_length,
+        opening_load=opening_load,
+    )
+
+
 # VENDOR PACK VOLUMES -- these replace the density estimate for the two canopies, which is
 # the single biggest source of uncertainty in this whole calculation. Published figures,
 # not measurements of your own hardware, and both are quoted by the vendor as assuming a
@@ -370,6 +480,7 @@ def add_conduit(comp: Compartment, inner_diameter: float,
 def default_soft_goods(
     recovery_budget: dict[str, float] | None = None,
     inner_diameter: float = 0.0748,
+    harness: Harness | None = None,
 ) -> list[Compartment]:
     """The two compartments, built from the recovery mass budget in `design.mass`.
 
@@ -387,7 +498,13 @@ def default_soft_goods(
 
     budget = recovery_budget if recovery_budget is not None else DEFAULT_RECOVERY_BUDGET
 
-    webbing = max(budget["shock_cord_and_links"] - HARNESS_HARDWARE_KG, 0.0)
+    # The harness mass comes from the SIZED harness when one is supplied, and from the
+    # budget line only as a fallback. That budget line was the whole problem: it was never
+    # checked, and dividing it by a bulk density turned an unchecked number into a volume.
+    if harness is not None:
+        webbing = harness.webbing_mass
+    else:
+        webbing = max(budget["shock_cord_and_links"] - HARNESS_HARDWARE_KG, 0.0)
     protector_each = budget["nomex_protectors"] / 2.0
 
     # The conduit runs the length of the MAIN compartment only: it starts at the aft gas

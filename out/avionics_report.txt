@@ -141,10 +141,10 @@ THE NOSE AS A SWAPPABLE MODULE -- and what a future payload may weigh
     nose payload   SM min   SM max   verdict
   --------------------------------------------------
             0 g     1.99     2.48   ok
-           50 g     2.05     2.54   ok
+           50 g     2.04     2.54   ok
           105 g     2.11     2.60   ok  <- instrumentation
-          200 g     2.22     2.71   ok
-          300 g     2.33     2.82   ok
+          200 g     2.21     2.71   ok
+          300 g     2.32     2.82   ok
           500 g     2.53     3.02   SM over 3.0 -- over-stable
 
   SO: ANYTHING UP TO ABOUT 300 g GOES IN WITH NO OTHER CHANGE, and past that the

@@ -6,52 +6,52 @@ CP 0.35 cal, motor mass 3%.
 
   bare vehicle, no ballast
     median                      1.95 cal
-    5th - 95th percentile       1.32 - 2.57 cal
-    1st percentile              1.07 cal
-    P(SM < 1.4 safety floor)     7.6 %
-    P(SM < 1.5 R1 target)      12.0 %
-    P(SM < 1.0 unsafe)           0.6 %
+    5th - 95th percentile       1.32 - 2.56 cal
+    1st percentile              1.06 cal
+    P(SM < 1.4 safety floor)     7.8 %
+    P(SM < 1.5 R1 target)      12.5 %
+    P(SM < 1.0 unsafe)           0.7 %
     P(SM > 3.0 over-stable)     0.2 %
   as designed (100 g nose ballast)
-    median                      2.09 cal
-    5th - 95th percentile       1.46 - 2.70 cal
+    median                      2.08 cal
+    5th - 95th percentile       1.45 - 2.69 cal
     1st percentile              1.20 cal
-    P(SM < 1.4 safety floor)     3.6 %
-    P(SM < 1.5 R1 target)       6.2 %
+    P(SM < 1.4 safety floor)     3.7 %
+    P(SM < 1.5 R1 target)       6.5 %
     P(SM < 1.0 unsafe)           0.2 %
     P(SM > 3.0 over-stable)     0.7 %
 
-    wet mass  6.16 kg (5-95%: 5.77 - 6.56)
+    wet mass  6.13 kg (5-95%: 5.74 - 6.52)
 
 ========================================================================================
 SENSITIVITY: WHAT ACTUALLY MOVES THE MARGIN
 ========================================================================================
-  nominal rail-exit static margin 1.95 cal
+  nominal rail-exit static margin 1.94 cal
   effect on SM of a +1 sigma error in each input:
 
     input                             delta SM  direction
     CP prediction error                 +0.350  more stable ########################################
     avionics bay (budget)               +0.098  more stable ###########
-    aft fins                            -0.043  LESS stable #####
+    aft fins                            -0.044  LESS stable #####
     structure: motor_mount_centering_rings    -0.037  LESS stable ####
-    propellant                          -0.036  LESS stable ####
+    propellant                          -0.037  LESS stable ####
     structure: couplers_bulkheads       +0.034  more stable ####
     contingency                         +0.033  more stable ####
     canard shafts/bearings/sled         +0.033  more stable ###
     motor case (dry)                    -0.029  LESS stable ###
     avionics in nose (budget)           +0.024  more stable ##
-    recovery (budget)                   +0.023  more stable ##
     tube: booster                       -0.022  LESS stable ##
+    recovery (budget)                   +0.022  more stable ##
 
 ========================================================================================
 REDESIGN OPTION: GROW THE AFT FINS?
 ========================================================================================
      aft span  nom SM  P(<1.4)  P(<1.0)  Cm_delta  authority  roll lost
-         1.05    0.78    90.0%    58.9%     10.36       100%       7.9%
-         1.15    1.07    69.8%    29.2%     10.77        76%       9.4%
-         1.25    1.33    43.0%    10.9%     11.12        63%      11.0%
-         1.40    1.67    14.5%     1.6%     11.57        52%      13.8%
-         1.55    1.95     3.4%     0.2%     11.94        46%      16.9%
+         1.05    0.78    90.3%    59.4%     10.38       100%       7.9%
+         1.15    1.07    70.2%    29.6%     10.79        76%       9.4%
+         1.25    1.33    43.6%    11.2%     11.14        63%      11.0%
+         1.40    1.66    14.9%     1.6%     11.59        52%      13.8%
+         1.55    1.94     3.6%     0.2%     11.96        46%      16.9%
 
 ========================================================================================
 SIZING CANARDS AND AFT FINS TOGETHER
@@ -60,33 +60,33 @@ SIZING CANARDS AND AFT FINS TOGETHER
                servo torque margin >= 2.0, plus every limit in configure.LIMITS
 
      canard   aft     SM  P(<1.0)  lat g  xrange  flut  torq  verdict
-       0.70  1.25   1.75     2.3%   1.59    354m  2.58  3.5x  risk 2.3%
-       0.70  1.40   2.09     0.2%   1.45    319m  2.25  3.7x  ok
-       0.70  1.55   2.36     0.0%   1.35    292m  1.99  3.8x  ok
-       0.70  1.70   2.58     0.0%   1.26    271m  1.78  4.0x  SM 3.10 > 3.0 cal
-       0.70  1.85   2.77     0.0%   1.20    252m  1.62  4.1x  SM 3.27 > 3.0 cal
-       0.85  1.25   1.46    10.8%   2.16    479m  2.60  2.6x  risk 10.8%
-       0.85  1.40   1.80     1.7%   1.96    428m  2.26  2.8x  risk 1.7%
-       0.85  1.55   2.08     0.2%   1.81    390m  2.00  2.9x  ok
-       0.85  1.70   2.31     0.0%   1.69    360m  1.79  3.0x  ok
-       0.85  1.85   2.51     0.0%   1.60    335m  1.63  3.1x  SM 3.01 > 3.0 cal
-       1.00  1.25   1.21    28.6%   2.79    615m  2.61  2.1x  SM 1.25 < 1.4 cal; risk 28.6%
-       1.00  1.40   1.54     7.3%   2.51    545m  2.27  2.2x  risk 7.3%
-       1.00  1.55   1.83     1.4%   2.31    494m  2.01  2.3x  risk 1.4%
-       1.00  1.70   2.07     0.3%   2.15    454m  1.80  2.4x  ok
-       1.00  1.85   2.27     0.0%   2.02    422m  1.63  2.5x  ok
-       1.15  1.25   0.99    50.5%   3.49    764m  2.63  1.7x  SM 1.03 < 1.4 cal; risk 50.5%; torque 
-       1.15  1.40   1.32    19.6%   3.10    669m  2.28  1.8x  SM 1.36 < 1.4 cal; risk 19.6%; torque 
-       1.15  1.55   1.60     5.2%   2.83    602m  2.02  1.9x  risk 5.2%; torque 1.9x
-       1.15  1.70   1.85     1.2%   2.63    551m  1.81  2.0x  risk 1.2%; torque 2.0x
-       1.15  1.85   2.05     0.3%   2.46    510m  1.64  2.0x  ok
-       1.30  1.25   0.81    69.8%   4.25    925m  2.64  1.4x  SM 0.84 < 1.4 cal; risk 69.8%; torque 
-       1.30  1.40   1.13    36.7%   3.73    800m  2.30  1.5x  SM 1.16 < 1.4 cal; risk 36.7%; torque 
-       1.30  1.55   1.41    14.0%   3.38    716m  2.03  1.6x  risk 14.0%; torque 1.6x
-       1.30  1.70   1.65     4.2%   3.12    652m  1.82  1.7x  risk 4.2%; torque 1.7x
-       1.30  1.85   1.86     1.1%   2.92    600m  1.65  1.7x  risk 1.1%; torque 1.7x
+       0.70  1.25   1.75     2.4%   1.62    363m  2.56  3.5x  risk 2.4%
+       0.70  1.40   2.08     0.2%   1.48    327m  2.23  3.6x  ok
+       0.70  1.55   2.35     0.0%   1.38    299m  1.98  3.8x  ok
+       0.70  1.70   2.58     0.0%   1.29    277m  1.77  3.9x  SM 3.10 > 3.0 cal
+       0.70  1.85   2.76     0.0%   1.22    259m  1.61  4.1x  SM 3.27 > 3.0 cal
+       0.85  1.25   1.46    11.1%   2.21    491m  2.58  2.6x  risk 11.1%
+       0.85  1.40   1.79     1.8%   2.00    439m  2.24  2.7x  risk 1.8%
+       0.85  1.55   2.07     0.3%   1.85    400m  1.99  2.8x  ok
+       0.85  1.70   2.31     0.0%   1.73    369m  1.78  3.0x  ok
+       0.85  1.85   2.50     0.0%   1.64    344m  1.62  3.1x  SM 3.01 > 3.0 cal
+       1.00  1.25   1.21    29.1%   2.86    631m  2.59  2.0x  SM 1.24 < 1.4 cal; risk 29.1%
+       1.00  1.40   1.54     7.5%   2.57    558m  2.26  2.2x  risk 7.5%
+       1.00  1.55   1.82     1.5%   2.36    506m  2.00  2.3x  risk 1.5%
+       1.00  1.70   2.06     0.3%   2.20    465m  1.79  2.3x  ok
+       1.00  1.85   2.26     0.0%   2.07    432m  1.62  2.4x  ok
+       1.15  1.25   0.99    51.0%   3.57    783m  2.61  1.7x  SM 1.03 < 1.4 cal; risk 51.0%; torque 
+       1.15  1.40   1.32    20.1%   3.17    686m  2.27  1.8x  SM 1.35 < 1.4 cal; risk 20.1%; torque 
+       1.15  1.55   1.60     5.4%   2.89    618m  2.01  1.9x  risk 5.4%; torque 1.9x
+       1.15  1.70   1.84     1.3%   2.69    565m  1.80  1.9x  risk 1.3%; torque 1.9x
+       1.15  1.85   2.05     0.3%   2.52    522m  1.63  2.0x  ok
+       1.30  1.25   0.80    70.2%   4.35    948m  2.62  1.4x  SM 0.84 < 1.4 cal; risk 70.2%; torque 
+       1.30  1.40   1.12    37.4%   3.82    821m  2.28  1.5x  SM 1.16 < 1.4 cal; risk 37.4%; torque 
+       1.30  1.55   1.40    14.4%   3.46    734m  2.02  1.6x  risk 14.4%; torque 1.6x
+       1.30  1.70   1.64     4.3%   3.19    668m  1.81  1.6x  risk 4.3%; torque 1.6x
+       1.30  1.85   1.85     1.2%   2.98    615m  1.64  1.7x  risk 1.2%; torque 1.7x
 
-  BEST: canard 1.15 cal, aft 1.85 cal -- 510 m crossrange, 2.46 g, median SM 2.05, P(unsafe) 0.3%
+  BEST: canard 1.15 cal, aft 1.85 cal -- 522 m crossrange, 2.52 g, median SM 2.05, P(unsafe) 0.3%
 
 ========================================================================================
 NOSE BALLAST TRADE
@@ -94,13 +94,13 @@ NOSE BALLAST TRADE
   ballast station 191 mm from the nose tip
 
      ballast  median SM  5th pct  P(<1.4)  authority
-         0 g       1.95     1.32     7.6%       100%
-        50 g       2.02     1.39     5.2%        97%
-       100 g       2.09     1.46     3.6%        94%
-       150 g       2.15     1.53     2.4%        91%
-       200 g       2.22     1.59     1.5%        88%
-       300 g       2.34     1.72     0.6%        83%
-       400 g       2.46     1.85     0.3%        79%
+         0 g       1.95     1.32     7.8%       100%
+        50 g       2.01     1.39     5.4%        97%
+       100 g       2.08     1.45     3.7%        94%
+       150 g       2.15     1.52     2.5%        91%
+       200 g       2.21     1.59     1.5%        88%
+       300 g       2.34     1.72     0.7%        83%
+       400 g       2.46     1.84     0.3%        79%
 
 Reading the ballast table: ballast buys margin and spends control authority, roughly
 proportionally, because a_lat ~ 1/SM. The right answer is not to pick a number now. It is

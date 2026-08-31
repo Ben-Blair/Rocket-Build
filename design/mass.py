@@ -48,7 +48,14 @@ NOSE_AVIONICS = {"telemetry_radio", "gps_tracker_independent"}
 DEFAULT_RECOVERY_BUDGET: dict[str, float] = {
     "drogue_chute": 0.070,
     "main_chute": 0.280,
-    "shock_cord_and_links": 0.220,
+    # 0.186 kg, and it is now a RESULT rather than a budget line. It was 0.220 kg, which
+    # nothing had ever checked, and dividing it by an assumed bulk density is where a
+    # quarter of the recovery bay's volume came from. `recovery.size_harness()` picks the
+    # webbing from the opening shock it actually carries -- 3/4" tubular nylon at 4.3x after
+    # a knot derating, against 1" at 6.8x -- and 2 x 3.40 m comes to 136 g of webbing plus
+    # 50 g of links and swivels. `configure.evaluate()` re-derives it every run and warns if
+    # this constant has drifted from the sized part, so the two cannot disagree in silence.
+    "shock_cord_and_links": 0.186,
     "ejection_hardware_charges": 0.060,
     "nomex_protectors": 0.070,
 }

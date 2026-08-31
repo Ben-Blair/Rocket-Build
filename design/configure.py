@@ -240,6 +240,13 @@ class Evaluation:
 # the same threaded rod. 20 mm is a nut, a washer and somewhere to get a spanner.
 NOSE_BALLAST_CLEARANCE = 0.020  # m
 
+# The recovery bay's internal bulkhead, as BUILT rather than as allowed for: a 4.8 mm G-10
+# disc with a 3 mm epoxy fillet on each face. `recovery.BULKHEAD_THICKNESS` is still 12.0 mm
+# and is still the right thing for a bulkhead nobody has designed; this one has been
+# designed, so it is measured. Kept here rather than imported from seal.py because seal.py
+# imports recovery.py and the cycle is not worth the tidiness.
+INTERNAL_BULKHEAD_STACK = 0.0108  # m
+
 LIMITS = dict(
     sm_min=1.4,  # minimum over the flight, which occurs at rail exit (motor loaded)
     sm_max=3.0,  # above this the vehicle weathercocks hard and fights the controller
@@ -306,8 +313,35 @@ def evaluate(
     # profile to a length-based check.
     bays = joints.budgets(rocket, p.wall_thickness)
     rec_tube = next(t for t in rocket.tubes if t.name == "recovery bay")
+
+    # THE HARNESS IS SIZED, NOT BUDGETED. Its volume used to be the mass budget's
+    # `shock_cord_and_links` divided by an assumed bulk density -- an unchecked number turned
+    # into a volume by a guess, and a quarter of the bay. `recovery.size_harness` picks the
+    # webbing from the load it actually carries, with a knot derating, and the answer was
+    # two sizes down from 1 inch tubular nylon.
+    #
+    # The load comes from `seal.opening_shock` at its infinite-mass bound, which is the same
+    # number the aft gas seal's U-bolt is checked against. One load, two parts, no chance of
+    # them disagreeing.
+    from . import atmosphere, seal as seal_mod
+    _main = recovery.Canopy(
+        "main", recovery.size_for_descent_rate(masses.dry_mass, 5.0), 2.2)
+    _drogue = recovery.Canopy("drogue", 0.457, 1.5)
+    opening_load = seal_mod.opening_shock(
+        masses.dry_mass, _drogue.descent_rate(masses.dry_mass, 200.0),
+        _main.cd_a, atmosphere.density(200.0), 1.7)
+    harness = recovery.size_harness(rocket.length, opening_load)
+
+    # And the internal bulkhead is a MEASURED stack now, not a 12 mm allowance: a 4.8 mm
+    # G-10 disc with a 3 mm fillet on each face (design/seal.py). Carrying the allowance
+    # after the part exists is the same error as the mass budget's 240 g placeholder against
+    # 63 g of measured hardware (correction 20).
+    internal = seal_mod.internal_bulkhead_from_evaluation
     packing = recovery.check_packing(
-        rec_tube.inner_diameter, bays["recovery bay"].equivalent_length)
+        rec_tube.inner_diameter, bays["recovery bay"].equivalent_length,
+        compartments=recovery.default_soft_goods(
+            inner_diameter=rec_tube.inner_diameter, harness=harness),
+        bulkhead_thickness=INTERNAL_BULKHEAD_STACK)
     if not packing.fits:
         violations.append(
             f"recovery bay {rec_tube.length * 1000:.0f} mm, needs "
@@ -327,6 +361,23 @@ def evaluate(
     # So it does not flip `feasible`. It also does not get to be silent, because a check
     # that cannot fail is not evidence of anything.
     warnings: list[str] = []
+
+    # The harness has to be strong enough, and the mass budget has to agree with the part
+    # that was sized. Two checks because there are two ways for this to go wrong and only
+    # one of them is about strength.
+    if not harness.ok:
+        violations.append(
+            f"harness {harness.webbing.name} runs {harness.margin:.1f}x against the "
+            f"{opening_load:.0f} N opening shock after knots, short of "
+            f"{recovery.HARNESS_MARGIN_REQUIRED:.1f}x")
+    budgeted = (recovery.DEFAULT_BUDGET_HARNESS if hasattr(recovery, "DEFAULT_BUDGET_HARNESS")
+                else mass_mod.DEFAULT_RECOVERY_BUDGET["shock_cord_and_links"])
+    if abs(budgeted - harness.mass) > 0.005:
+        warnings.append(
+            f"mass.py budgets {budgeted * 1000:.0f} g for the harness and "
+            f"recovery.size_harness() makes it {harness.mass * 1000:.0f} g -- the packing "
+            f"check and the mass budget are describing different parts")
+
     nav = bays["nav bay"]
     nav_pack = avionics.check_packing(
         nav.min_bore, nav.usable_length, avionics.NAV_BAY_STACK, end_closures=0)

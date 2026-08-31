@@ -230,7 +230,7 @@ Two more things about this bay:
 |---|---|---|---|---|---|
 | Drogue parachute | 18 in, deployed at apogee | 1 | 0.070 kg | ~$35 | |
 | Main parachute | **56 in** solved; buy the Fruity Chutes Iris Ultra 60" Compact (nearest real size, lands slower). 193 g, 38.2 cu in packed | 1 | 0.280 kg budgeted | ~$110 | |
-| Shock cord, quick links, swivels | Tubular nylon / Kevlar | set | 0.220 kg | ~$60 | |
+| Shock cord, quick links, swivels | **3/4" tubular nylon, 2 × 3.40 m** (2500 lbf) + links/swivels | set | **0.186 kg** | ~$50 | **sized, not budgeted** — 4.2× on the 1.32 kN opening shock after a knot derating. 1" nylon is 6.7× and costs a quarter of the bay. Kevlar packs smaller but does not stretch: use a Kevlar **leader** at the charge end, not a Kevlar harness. docs/01 correction 33 |
 | Nomex protectors | | 2 | 0.070 kg | ~$30 | |
 | Ejection charge hardware, shear pins | | set | 0.060 kg | ~$25 | |
 
@@ -292,7 +292,7 @@ avionics, and it is the least specified — expect it to move once D7 and D8 clo
 
 ## Mass reconciliation
 
-Model dry mass **5.553 kg**, wet **6.177 kg** including 100 g ballast and 0.505 kg of contingency
+Model dry mass **5.515 kg**, wet **6.139 kg** including 100 g ballast and 0.501 kg of contingency
 (10%, carried deliberately — every real build comes out heavy). Weigh each part as it
 arrives, replace the estimate in `design/mass.py`, and rerun `scripts/robustness.py`. Every
 guess retired shrinks the static margin distribution, and the ballast is what you adjust in

@@ -124,10 +124,10 @@ Values marked *(computed)* are outputs of `scripts/sweep.py` and
 | R5 | Max Mach | ≤ 0.8 | Keeps you subsonic. Transonic aero invalidates Barrowman, makes the controller design far harder, and adds no value to a controls project |
 | R6 | Apogee | ≤ 1600 m (5250 ft) AGL | **Neither a waiver limit nor a field-size limit** — both are unbounded at this site (C5, C5a). The cap is retained on the three grounds that survive: keeping max Mach under 0.8 with real margin (R5), keeping the manoeuvre visible and filmable from the pad, and holding search time and cost per flight low enough to fly five or six times *with the data intact*. An unbounded field removes the risk of landing off the property; it does not make a rocket easier to find. See `scripts/recovery_study.py` |
 | R7 | Internal diameter for actuator bay | Not binding — 4 servos need 79 mm of arc against 188 mm available, 45 mm central void (see §4) | **Superseded.** Diameter is set by the 54 mm motor mount and recovery packing volume, not by the actuators |
-| R8 | Commanded lateral acceleration authority early in coast | ≥ 0.5 g | Enough for a measurable, visible correction. Baseline achieves **1.82 g** at 8°, for **390 m** of crossrange |
+| R8 | Commanded lateral acceleration authority early in coast | ≥ 0.5 g | Enough for a measurable, visible correction. Baseline achieves **1.82 g** at 8°, for **400 m** of crossrange |
 | R9 | Roll authority | Net Cl_delta must retain correct sign at all conditions, with ≥ 50% of canard-only authority surviving interference | See §5 |
 | R10 | Control loop rate | ≥ 100 Hz | Baseline pitch mode is 4.3 Hz, so 100 Hz gives ~23x margin. `baseline.py` derives a ≥87 Hz floor from it |
-| R11 | Recovery | Dual deploy: 18 in drogue at apogee, **56 in** main at 200 m (650 ft). 5.0 m/s landing, 50 ft·lbf, 100 s descent | Sized by `design/recovery.py`, drogue fixed at 18 in and main solved for the landing rate. Landing energy is inside the ~75 ft·lbf guidance; confirm the current figure with your prefect |
+| R11 | Recovery | Dual deploy: 18 in drogue at apogee, **56 in** main at 200 m (650 ft). 5.0 m/s landing, 50 ft·lbf, 100 s descent. Harness **3/4" tubular nylon, 2 × 3.40 m**, 4.2× on the opening shock after knots | Sized by `design/recovery.py`, drogue fixed at 18 in and main solved for the landing rate. Landing energy is inside the ~75 ft·lbf guidance; confirm the current figure with your prefect |
 | R12 | Canards centered + locked on any fault, loss of nav, or after burnout+N s | Mandatory | Safety, and required to get range approval |
 
 ---
@@ -290,10 +290,10 @@ On the selected Cesaroni J449 Blue Streak:
 | Nose module | Instrumentation, self-contained, one connector. Swappable for a payload up to ~300 g in 469 cm³ (correction 32) |
 | Canards | 4 panels, 67.5 root / 27.0 tip / **67.5 mm semispan**, **35.4° LE sweep** matching the aft fins, 45° interdigitated |
 | Aft fins | 4 panels, 151 root / 68 tip / **123.1 mm semispan**, 87 mm sweep |
-| Mass | **5.55 kg dry, 6.18 kg wet** (includes 100 g nose ballast) |
+| Mass | **5.52 kg dry, 6.14 kg wet** (includes 100 g nose ballast) |
 | Static margin | **2.11 cal at rail exit, 2.60 cal in coast** |
-| Flight | apogee **1358 m (4457 ft)**, max Mach **0.524**, max q 18.9 kPa, 8.3 g peak, T/W 7.3 |
-| Control | **1.82 g** lateral at 8° deflection, **390 m** crossrange over an 11.6 s window |
+| Flight | apogee **1369 m (4490 ft)**, max Mach **0.526**, max q 19.1 kPa, 8.4 g peak, T/W 7.3 |
+| Control | **1.82 g** lateral at 8° deflection, **400 m** crossrange over an 11.7 s window |
 | Roll | Cl_delta +5.66 /rad canards vs −0.95 /rad aft fins interdigitated (16.8% cancellation) |
 | Actuator | KST X08 Plus V6.0, 3.6× torque margin, 79 mm of arc needed against 188 mm (§4.2) |
 | Hinge | 0.0577 N·m per panel, hinge at 0.20c of MAC — forward of the 0.25c panel CP, so restoring at any sweep |

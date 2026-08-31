@@ -101,9 +101,12 @@ Read this first if you are picking the project back up.
 - **The joints are modelled** (correction 31). `design/joints.py` — all four of them, which
   `tube_section.py` has wanted since it was written. **A coupler is a tube and its bore is
   usable**, so it costs local diameter and not bay length; only bulkheads cost length. That
-  settled the nose shoulder, and it also took the recovery bay from **+6.8 mm to +0.1 mm**,
-  because for anything that *packs* the narrowed bore is a volume penalty. **The recovery
-  bay now has no margin at all** — see correction 31.
+  settled the nose shoulder, and it also took the recovery bay from +6.8 mm to +0.1 mm.
+- **The recovery bay margin is fixed, and the harness is why** (correction 33). It is
+  **+17.8 mm** now, and the fix was not to shave anything: **nothing in this project had
+  ever sized the harness.** Its volume came from a budget line nobody had checked, divided
+  by an assumed bulk density; its strength came from nowhere. Sized against the opening
+  shock it actually carries, it is **3/4" tubular nylon at 4.2×** rather than 1" at 6.7×.
 - **The nose is the instrumentation module, and it is meant to come off** (correction 32).
   Tracker and telemetry radio live there, self-contained, on one connector. A future payload
   of **up to about 300 g needs no other change**; past that the vehicle goes over-stable
@@ -118,8 +121,8 @@ Read this first if you are picking the project back up.
 Current vehicle: 79.4 mm OD fiberglass, 1361 mm, canards 0.85 cal / aft fins 1.55 cal
 interdigitated 45°, **both sets swept 35.4°**, Cesaroni J449 Blue Streak, 4× KST X08 Plus
 servos flat-mounted with the hinge at 0.20 of MAC, 100 g nose ballast. Canards 67.5 root /
-27.0 tip (0.40 taper). **6.18 kg wet, apogee 1358 m, Mach 0.524, static margin
-2.11–2.60 cal, P(SM<1.0) 0.2%, 390 m crossrange.** Telemetry radio and GPS tracker ride in
+27.0 tip (0.40 taper). **6.14 kg wet, apogee 1369 m, Mach 0.526, static margin
+2.11–2.60 cal, P(SM<1.0) 0.2%, 400 m crossrange.** Telemetry radio and GPS tracker ride in
 the **nose** at station 300 mm, not in the nav bay (correction 30). Every one of those
 figures moved in Aug 2026 — the missing dual-deploy altimeter (correction 26) and then the
 nose move. `scripts/baseline.py` regenerates
@@ -136,7 +139,7 @@ these, because they moved once already when the altimeter went into the budget
 on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
 so instead of hiding it.
 
-Thirty-two corrections are worth knowing about. The first four changed the design; two of the
+Thirty-three corrections are worth knowing about. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
@@ -836,6 +839,52 @@ that silently recurs:
    for exactly that reason. A dense payload sitting directly ahead of it is between that
    antenna and the sky. Nothing in this project models RF; if the payload is metallic, check
    the fix on the ground before the flight.
+
+33. **Nothing had ever sized the harness, and it was twenty times stronger than the load.**
+   Correction 31 left the recovery bay at **+0.1 mm** — not a pass, a coincidence — and the
+   obvious levers were all bad ones: shave the fill limit, shorten the coupler, lengthen a
+   frozen airframe. The margin came from somewhere else entirely.
+
+   **The harness is a quarter of the bay's volume and nobody had ever looked at it.** Its
+   volume came from `shock_cord_and_links = 0.220 kg` in the mass budget divided by an
+   assumed bulk density — an unchecked number turned into a volume by a guess. Its
+   *strength* came from nowhere at all: nothing in this project had ever compared a harness
+   to a load, though the harness carries every newton of the opening shock and its failure
+   loses the vehicle and all its data.
+
+   The opening shock is **1.32 kN** (`seal.opening_shock`, already computed for the U-bolt,
+   and already the infinite-mass bound). 1" tubular nylon is rated **17.8 kN**.
+
+   | webbing | rating | after knots | vs shock | g/m |
+   |---|---|---|---|---|
+   | 1/2" tubular nylon | 4.4 kN | 2.2 kN | 1.7× | 11 |
+   | 9/16" tubular nylon | 6.7 kN | 3.3 kN | 2.5× | 14 |
+   | **3/4" tubular nylon** | **11.1 kN** | **5.6 kN** | **4.2×** | **20** |
+   | 1" tubular nylon | 17.8 kN | 8.9 kN | 6.7× | 30 |
+
+   **The knot derating is what moves the selection, not the rating.** A knot costs roughly
+   half the rated strength; without that factor the answer is two sizes smaller and wrong.
+
+   2 × 3.40 m of 3/4" is **136 g against the 170 g the budget assumed**, and the bay goes
+   **+0.1 → +17.8 mm**. `mass.py` now carries 0.186 kg as a *result*, and `evaluate()`
+   re-derives it every run and warns if the constant drifts from the sized part — because
+   the packing check and the mass budget reading different numbers is how this started.
+
+   The internal bulkhead helped too, for the same kind of reason: it is the **measured
+   10.8 mm** stack from `design/seal.py` — a 4.8 mm disc with a 3 mm fillet each face — and
+   not the 12.0 mm allowance for a bulkhead nobody had designed. Correction 20's shape.
+
+   **Kevlar was the obvious answer and it is the wrong one.** It packs smaller and survives
+   the ejection gas, but it does not stretch: nylon takes 20–30% elongation and absorbs the
+   shock, Kevlar transmits it, and this project has no model of harness elasticity — so
+   switching would raise the very load (`seal.opening_shock`) that nothing here could then
+   recompute. A Kevlar *leader* at the charge end is the standard way to get the heat
+   resistance without the stiffness.
+
+   **The general lesson is the one this project keeps re-learning from the other end.** The
+   tube at the hinge station runs at 256× and that was free. This ran at 20× and it was
+   not — it was spending a bay whose margin was 0.1 mm. **An unchecked number that turns out
+   enormous is not automatically good news; ask what it is costing.**
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.

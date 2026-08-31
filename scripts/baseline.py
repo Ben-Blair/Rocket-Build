@@ -327,6 +327,13 @@ def main() -> None:
     print(f"  bulkhead allowance  {seal.stack_length(ib) * 1000:.1f} mm assembled against "
           f"recovery.BULKHEAD_THICKNESS {recovery.BULKHEAD_THICKNESS * 1000:.1f} mm")
     print(f"  internal bhd check  {'OK' if ibchk.ok else 'VIOLATIONS: ' + '; '.join(ibchk.violations)}")
+    from design import recovery as rec
+    h = rec.size_harness(r.length, sl.shock_infinite_mass)
+    print(f"  harness             {h.webbing.name}, 2 x {h.length_each:.2f} m, "
+          f"{h.webbing_mass * 1e3:.0f} g -- {h.margin:.1f}x on the "
+          f"{h.opening_load:.0f} N opening shock after a knot derating")
+    print(f"    sized, not budgeted; it was 1\" nylon at "
+          f"{rec.WEBBING_OPTIONS[-1].working_load / h.opening_load:.1f}x and a quarter of the bay")
     print(f"  packing             {ev.packing}")
     print("     Full argument: python scripts/seal_report.py")
 
