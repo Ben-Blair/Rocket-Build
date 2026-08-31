@@ -213,6 +213,43 @@ export const canardHingeConnectors = defineFeature(function(context is Context, 
  * sizing the skin against the tang instead of against the slot overstated it by 1.44x and
  * turned a 1.69x margin into an apparent 2.5x.
  */
+/**
+ * Build one axis-aligned box, spin it about the rocket axis, and hand back a query that
+ * resolves to exactly that body.
+ *
+ * WHY NOT JUST `qCreatedBy(boxId, EntityType.BODY)`, which is the obvious way and is what
+ * this file did first: it came back EMPTY. `fCuboid` creates its body under a sub-operation
+ * of the id it is given, and the query did not match it. Nothing said so -- the empty query
+ * made `opTransform` a silent no-op, and the failure only surfaced one step later as
+ * "Need at least two parts or surfaces for a Boolean operation", which points at the
+ * boolean and not at the query that actually failed.
+ *
+ * Capturing the body as a DIFFERENCE instead -- everything that exists now, minus
+ * everything that existed a moment ago -- does not care how the primitive names its
+ * sub-ids. It also lets this assert that exactly one body appeared, so the next person
+ * gets told which operation failed rather than which one noticed.
+ */
+function makeBox(context is Context, boxId is Id, spin is Transform,
+                 corner1 is Vector, corner2 is Vector) returns Query
+{
+    // `newBody`, not `box`: **`box` is a reserved identifier in FeatureScript**, and using
+    // it as a variable is a parse error that surfaces ONLY as an empty `featurespecs`
+    // response -- no message, no line number, and the Part Studio's features all go to
+    // error because the studio they depend on will not compile. This project had already
+    // recorded that gotcha before walking into it again.
+    const before = qUnion(evaluateQuery(context, qAllSolidBodies()));
+    fCuboid(context, boxId, { "corner1" : corner1, "corner2" : corner2 });
+    const newBody = qSubtraction(qAllSolidBodies(), before);
+
+    const made = evaluateQuery(context, newBody);
+    if (size(made) != 1)
+        throw regenError("makeBox(" ~ toString(boxId) ~ ") produced " ~ toString(size(made))
+            ~ " bodies, expected exactly 1. The box primitive did not build.");
+
+    opTransform(context, boxId + "spin", { "bodies" : newBody, "transform" : spin });
+    return newBody;
+}
+
 annotation { "Feature Type Name" : "Canard root tang" }
 export const canardRootTang = defineFeature(function(context is Context, id is Id, definition is map)
     precondition
@@ -259,35 +296,45 @@ export const canardRootTang = defineFeature(function(context is Context, id is I
             const q = toString(quadrant);
 
             // --- the slot in the panel, cut oversize by the bond line -------------------
-            const slotId = id + ("slotBox" ~ q);
-            fCuboid(context, slotId, {
-                    "corner1" : vector(rootR - OVERSHOOT, -halfT - bond, hingeZ - halfW - bond),
-                    "corner2" : vector(rootR + definition.tangEngagement + bond,
-                                       halfT + bond, hingeZ + halfW + bond)
-            });
-            opTransform(context, id + ("slotSpin" ~ q), {
-                    "bodies" : qCreatedBy(slotId, EntityType.BODY),
-                    "transform" : spin
-            });
+            const slot = makeBox(context, id + ("slotBox" ~ q), spin,
+                    vector(rootR - OVERSHOOT, -halfT - bond, hingeZ - halfW - bond),
+                    vector(rootR + definition.tangEngagement + bond,
+                           halfT + bond, hingeZ + halfW + bond));
             opBoolean(context, id + ("slotCut" ~ q), {
-                    "tools" : qCreatedBy(slotId, EntityType.BODY),
+                    "tools" : slot,
                     "targets" : found.panels[quadrant],
                     "operationType" : BooleanOperationType.SUBTRACTION
             });
 
             // --- the tang itself, unioned into the shaft --------------------------------
-            const tangId = id + ("tangBox" ~ q);
-            fCuboid(context, tangId, {
-                    "corner1" : vector(rootR - OVERSHOOT, -halfT, hingeZ - halfW),
-                    "corner2" : vector(rootR + definition.tangEngagement, halfT, hingeZ + halfW)
-            });
-            opTransform(context, id + ("tangSpin" ~ q), {
-                    "bodies" : qCreatedBy(tangId, EntityType.BODY),
-                    "transform" : spin
-            });
+            const tang = makeBox(context, id + ("tangBox" ~ q), spin,
+                    vector(rootR - OVERSHOOT, -halfT, hingeZ - halfW),
+                    vector(rootR + definition.tangEngagement, halfT, hingeZ + halfW));
+            // UNION takes EVERY body in `tools` and NO `targets`. `targets` exists only
+            // for SUBTRACTION and INTERSECTION, where the operation is directional --
+            // targets minus tools. Passing a target to a union is BOOLEAN_BAD_INPUT, and
+            // the message says nothing about which argument was wrong.
+            //
+            // Worth knowing how this presented, because it cost a full debugging cycle:
+            // the slot cut above is a SUBTRACTION and worked first time, so four of the
+            // eight operations succeeded and four failed, and the feature reported only
+            // "Need at least two parts or surfaces for a Boolean operation" -- which points
+            // at a body count, not at an argument name. Every body involved resolved
+            // correctly; the geometry was never the problem.
+            // ORDER MATTERS HERE, and it is the whole fix. `opBoolean` UNION takes every
+            // body in `tools` and NO `targets` -- targets exists only for SUBTRACTION and
+            // INTERSECTION, where the operation is directional. Passing a target to a union
+            // is BOOLEAN_BAD_INPUT.
+            //
+            // And the SHAFT goes first. The union keeps the identity of the first body, so
+            // listing the shaft first means the merged part keeps the shaft's name and its
+            // material. With the tang first it came back as "Part 10" at 0.0000 g, and the
+            // module mass FELL by 10.5 g where it should have risen by 12 -- geometry
+            // perfect, mass meaningless. That is the same silent loss as the circular
+            // pattern dropping material from its copies, which once made this studio read
+            // 0.175 kg instead of 0.260. Check the mass after every boolean.
             opBoolean(context, id + ("tangJoin" ~ q), {
-                    "tools" : qCreatedBy(tangId, EntityType.BODY),
-                    "targets" : found.shafts[quadrant],
+                    "tools" : qUnion([found.shafts[quadrant], tang]),
                     "operationType" : BooleanOperationType.UNION
             });
         }

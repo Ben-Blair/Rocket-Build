@@ -105,14 +105,23 @@ class MeasuredComponent:
 # kg*mm^2. Roll is down 2.2%, which nudges roll acceleration the other way from the 6.5%
 # the CAD tensor bought in the first place.
 CANARD_MODULE_CAD = MeasuredComponent(
-    name="canard module (CAD assembly, real servos, hinge stack)",
-    mass=0.258650,
-    station_from_module_face=0.075122,
-    i_transverse=581.280e-6,
-    i_roll=604.584e-6,
-    source="Onshape canard-control module, Assembly 1, Aug 2026 (REST API), after the "
-           "hinge stack of design/hinge.py",
+    name="canard module (CAD assembly, real servos, hinge stack, root tang, 3.2 mm panels)",
+    mass=0.276239,
+    station_from_module_face=0.074941,
+    i_transverse=613.818e-6,
+    i_roll=664.908e-6,
+    source="Onshape canard-control module, Assembly 1, Aug 2026, after the root tang of "
+           "design/hinge.py and the 3.2 mm laminate panel of design/configure.py",
 )
+# The root tang and the 3.2 mm panel together are the largest single move this tensor has
+# made: mass 258.650 -> 276.239 g, ROLL inertia 604.584 -> 664.908 kg mm^2, up 10.0%, and
+# transverse 581.280 -> 613.818, up 5.6%. Roll is the axis GV-3 flies and the canard module
+# is roughly 11% of vehicle roll inertia, so this one is worth re-reading rather than
+# assuming it washes out. It comes from two changes that are not related to each other:
+# +17.5 g of aluminium tang hanging at large radius, and -4.6 g cut out of the panel roots
+# at even larger radius, on panels that are themselves 0.2 mm thicker.
+#   mass 0.258650 kg, station 0.075122 m, Itrans 581.280e-6, Iroll 604.584e-6
+#
 # Superseded by the line above, kept because the delta is the whole argument for the
 # hinge rebuild and it is small: closing the two open fits cost 1.2 g and took roll
 # inertia down 1.3%. The shaft went from a dia 5 x 10.8 rod that ran 7.785 mm into the

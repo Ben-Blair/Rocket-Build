@@ -50,6 +50,14 @@ FEATURE_TYPE = "canardRootTang"
 FEATURE_NAME = "Canard root tang"
 EXPECTED_PARTS = 13          # the tang joins a shaft and the slot cuts a panel, so the
                              # part COUNT must not move. If it does, a boolean missed.
+                             #
+                             # APPLIED 2026-08-30, in the browser, because the /features
+                             # quota was spent. Measured afterwards through /parts and
+                             # /massproperties: every shaft 746.856 mm^3 against 746.856
+                             # predicted, every panel down by exactly the 619.520 mm^3 slot,
+                             # module 263.3267 -> 276.2319 g. This script is kept for
+                             # rebuilds and is still the readable statement of what was
+                             # applied.
 BOND_LINE_MM = hinge.BOND_LINE * 1000.0   # imported, not typed -- the FeatureScript takes
                                           # it as a parameter from here
 OVERSHOOT_MM = 1.000         # must match OVERSHOOT in the FeatureScript
