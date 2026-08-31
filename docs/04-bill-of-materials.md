@@ -169,8 +169,8 @@ Step 4 scope — listed for budget completeness, not yet specified (D7, D8 open)
 | IMU daughterboard | 1 | 0.020 kg | ~$30 | |
 | Battery, 2S LiPo 1500 mAh | 1 | 0.090 kg | ~$20 | |
 | Servo power BEC | 1 | 0.025 kg | ~$15 | |
-| Telemetry radio | 1 | 0.045 kg | ~$50 | |
-| Independent GPS tracker | 1 | 0.060 kg | ~$100–200 | |
+| Telemetry radio | 1 | 0.045 kg | ~$50 | **in the nose**, station 282–318 mm |
+| Independent GPS tracker | 1 | 0.060 kg | ~$100–200 | **in the nose**, with its own battery |
 | Wiring, connectors, sled hardware | — | 0.230 kg | ~$60 | |
 
 **Separate the servo supply from the IMU supply.** Four servos slewing on a shared bus next
@@ -185,22 +185,33 @@ crossrange and it *improved* static margin, because the altimeter lands forward 
 318–445 mm, forward of the canard module and behind the nose cone. `configure.py` puts it
 there for GNSS sky view and to keep the antenna away from the servo power wiring.
 
-**AND IT DOES NOT CURRENTLY FIT.** `design/avionics.py` is the packing check the nav bay
-never had; `python scripts/avionics_report.py` is the argument. It wants **152 mm of sled
-against 103 mm available** — 117 mm with the tracker and radio moved to the nose.
+**THE TRACKER AND THE RADIO ARE NOT IN THIS BAY.** As of Aug 2026 they ride in the **nose**,
+on the ballast rod at station **282–318 mm** (docs/01 correction 30) — 105 g moved from
+station 381 mm to 300 mm. Both are RF parts, neither needs a short wire to the flight
+computer, and the nose shoulder is the one place a fibreglass airframe stops shielding an
+antenna. An independent tracker with its own battery in its own compartment is what
+"independent" is supposed to mean.
+
+**AND THE BAY STILL DOES NOT FIT.** `design/avionics.py` is the packing check the nav bay
+never had; `python scripts/avionics_report.py` is the argument. It wants **117 mm of sled
+against 103 mm available** — down from 152 mm before the move, so **14 mm short** rather
+than 49.
 
 Every envelope in that check is an estimate for a part nobody has chosen, so this is a
 **warning and not a violation**, and correction 5 is why: an estimate-driven shortfall was
 once acted on here and turned out not to be in the hardware. **Close D7 and measure before
-concluding anything.** What the check is sure of is the shape of the problem: a flat sled in
-a round tube can only use the rectangle inscribed in the circle, so the binding quantity is
-footprint on two faces, not volume — the bay looks two-thirds empty by volume and is not.
+concluding anything** — 14 mm is well inside what the 70% packing-efficiency guess is worth.
+What the check is sure of is the shape of the problem: a flat sled in a round tube can only
+use the rectangle inscribed in the circle, so the binding quantity is footprint on two
+faces, not volume — the bay looks two-thirds empty by volume and is not.
 
-Three more things about this bay:
+Two more things about this bay:
 
-- **Two of these parts have somewhere else to go.** The independent GPS tracker belongs in
-  the nose cone with its own battery — its job is to still be working when nothing else is —
-  and the telemetry radio can follow it. Worth 35 mm, and it touches no frozen geometry.
+- **THE NOSE SHOULDER IS UNMODELLED AND IT IS WORTH MORE THAN THE SHORTFALL.** §1 carries a
+  1 caliber (79 mm) shoulder, and a shoulder inserts *into* the tube it joins. Nobody has
+  decided whether the sled sits aft of it (the bay loses 79 mm, and is short by ~80) or runs
+  up inside it (the bay gains most of 79 mm, and fits easily). **Settle this before spending
+  any time on the packing efficiency.**
 - **The firing circuits leave this bay going aft**, cross the canard module, and cross the
   aft gas seal, because there is no room for an av-bay next to the charges. See docs/05.
 - **The static ports go here and only here**, 3 × ⌀3.2 mm. The canard module vents through

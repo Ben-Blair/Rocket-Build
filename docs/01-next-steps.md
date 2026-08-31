@@ -93,10 +93,11 @@ Read this first if you are picking the project back up.
     (correction 28). The canard module vents through **its own wall**, so it is not in the
     altimeter's sense volume and the wiring pass-through is potted solid.
   - **The nav bay has a packing check now** (`design/avionics.py`,
-    `scripts/avionics_report.py`) and **it does not pass** — 152 mm of sled wanted against
-    103 mm available, on estimated envelopes. Read correction 27 before doing anything
-    about it; this is correction 5's exact trap and it is now an `evaluate()` **warning**
-    rather than a violation.
+    `scripts/avionics_report.py`) and **it still does not pass**. 152 mm of sled wanted
+    against 103 available; **the tracker and the telemetry radio moved into the nose**
+    (correction 30), which bought 35 mm of the 49 mm gap and leaves it **14 mm short** on
+    estimated envelopes. Read correction 27 before doing anything more — this is
+    correction 5's exact trap, and it is an `evaluate()` **warning**, not a violation.
 - **The canard module has no open engineering item.** What is left in it is CAD — the
   seal's geometry, the pass-through hole, the two vent holes — and the Step 3 drawing.
 - **Step 4 is next**: avionics. Decisions D7 (flight computer) and D8 (state estimation)
@@ -108,22 +109,24 @@ Current vehicle: 79.4 mm OD fiberglass, 1361 mm, canards 0.85 cal / aft fins 1.5
 interdigitated 45°, **both sets swept 35.4°**, Cesaroni J449 Blue Streak, 4× KST X08 Plus
 servos flat-mounted with the hinge at 0.20 of MAC, 100 g nose ballast. Canards 67.5 root /
 27.0 tip (0.40 taper). **6.18 kg wet, apogee 1358 m, Mach 0.524, static margin
-2.10–2.58 cal, P(SM<1.0) 0.3%, 393 m crossrange** — every one of those moved in Aug 2026
-when the missing dual-deploy altimeter went into the mass budget (correction 26). `scripts/baseline.py` regenerates
+2.11–2.60 cal, P(SM<1.0) 0.2%, 390 m crossrange.** Telemetry radio and GPS tracker ride in
+the **nose** at station 300 mm, not in the nav bay (correction 30). Every one of those
+figures moved in Aug 2026 — the missing dual-deploy altimeter (correction 26) and then the
+nose move. `scripts/baseline.py` regenerates
 all of it; `evaluate()` reports feasible with no violations, and that now includes a check
 that the recovery hardware physically fits in the bay.
 
 **One open decision you should know about before the defence:** §7 used to claim the
 selected fin sizes gave the highest crossrange of any combination that passes every
 constraint. They do not. `scripts/robustness.py` now picks **canard 1.15 / aft 1.85 cal**,
-which passes everything and buys **514 m against the selected 393 m** — 31% more. It costs
+which passes everything and buys **514 m against the selected 390 m** — 32% more. It costs
 flutter margin and servo torque; run the script for the current figures rather than quoting
 these, because they moved once already when the altimeter went into the budget
 (correction 26) and they will move again when parts get weighed. **0.85/1.55 is retained**
 on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
 so instead of hiding it.
 
-Twenty-nine corrections are worth knowing about. The first four changed the design; two of the
+Thirty corrections are worth knowing about. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
@@ -693,6 +696,48 @@ that silently recurs:
    it the whole charge. For it the stuck case is not a contingency, it is the only case. And
    its **assembled stack is 10.8 mm against the 12.0 mm `BULKHEAD_THICKNESS` allowance** —
    which fits, and which was a typed number nothing had ever compared against a part.
+
+30. **The tracker and the radio moved to the nose, and the nose turned out to be the one
+   volume whose width is a function of station.** Correction 27 left the nav bay 49 mm short
+   and listed four ways out. This is the second of them and the only one that costs nothing
+   structural: **the telemetry radio and the independent GPS tracker now ride in the nose**,
+   on the same threaded rod as the ballast, 20 mm behind it.
+
+   It is not a packing dodge. It is where a tracker belongs. Its whole job is to still be
+   working when nothing else is, which argues for its own battery in its own compartment as
+   far from the servo bus as the airframe allows — and the nose is the best RF position on
+   the vehicle, because the shoulder region is the one place a fibreglass airframe stops
+   shielding an antenna. Both parts are RF and neither needs a short wire to the flight
+   computer.
+
+   **Checking it needed a new kind of check.** Every bay so far could be verified against
+   one diameter. A cone cannot: the sled is only as wide as its *narrowest* end allows, so
+   the answer is a band rather than a number, and the sled wants to sit as far aft as
+   possible where the cone is fullest. `NoseCone.radius_at()` is the tangent-ogive profile
+   — ρ = (R² + L²)/2R — and `check_nose_packing()` walks forward from the base until there
+   is enough two-sided sled area. **35.4 mm of sled at station 282–318 mm, 59.1 mm wide.**
+
+   | | before | after |
+   |---|---|---|
+   | nav bay sled wanted | 152 mm | **117 mm**, against 103 available |
+   | 105 g of avionics at | station 381 mm | **station 300 mm** |
+   | static margin | 2.10–2.58 cal | 2.11–2.60 cal |
+   | P(SM < 1.0) | 0.30% | **0.20%** |
+   | crossrange | 393 m | 390 m |
+
+   `design/mass.py` now splits the avionics budget between two stations rather than
+   averaging it, because this function's own comment records that putting a subsystem in the
+   wrong bay is worth about a quarter caliber of static margin.
+
+   **AND THE CHECK TURNED UP SOMETHING BIGGER THAN THE SHORTFALL IT WAS RUN FOR.** The nose
+   **shoulder is not modelled anywhere**. `docs/04` carries a 1 caliber — 79 mm — shoulder
+   on a 127 mm nav bay, and a shoulder inserts *into* the tube it joins. Which tube's length
+   it spends has never been decided, and **the two answers are 79 mm apart**: if the sled
+   must sit aft of it the bay is short by ~80 mm rather than 14, and if the sled runs up
+   inside it — which is how many high-power av-bays are actually built — the bay gains most
+   of that 79 mm and fits with room to spare. `avionics.py` assumes neither; it charges a
+   plain end closure at both ends, which is the arrangement nobody has drawn. **The 14 mm is
+   the smallest open question about this bay, not the largest one.**
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.

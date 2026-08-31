@@ -31,6 +31,29 @@ class NoseCone:
         factors = {"cone": 2.0 / 3.0, "ogive": 0.466, "vonkarman": 0.5}
         return factors[self.shape] * self.length
 
+    def radius_at(self, x: float) -> float:
+        """Outer radius at `x` metres from the tip.
+
+        Added Aug 2026 because moving the tracker and the telemetry radio into the nose
+        needs an answer to "is there room there", and a nose cone is the one part of this
+        vehicle whose available width is a function of station rather than a constant. A
+        bay is a cylinder and you can check it with one number; a cone cannot be.
+
+        Tangent ogive of radius rho = (R^2 + L^2) / 2R, which is the standard construction:
+        the profile is the arc that meets the base radius tangentially to the body tube, so
+        there is no slope discontinuity at the shoulder.
+        """
+        x = max(0.0, min(x, self.length))
+        r = self.base_diameter / 2.0
+        if self.shape == "cone":
+            return r * x / self.length
+        rho = (r**2 + self.length**2) / (2.0 * r)
+        return math.sqrt(rho**2 - (self.length - x) ** 2) + r - rho
+
+    def inner_radius_at(self, x: float) -> float:
+        """Usable radius at `x`, inside the wall."""
+        return max(self.radius_at(x) - self.wall_thickness, 0.0)
+
     @property
     def wetted_area(self) -> float:
         """Approximate lateral surface area."""

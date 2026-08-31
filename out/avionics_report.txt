@@ -12,7 +12,7 @@ THE NAV BAY -- where the boards go, and whether they go
   THE LAST LINE IS THE WHOLE MODELLING POINT. A flat sled in a round tube can only
   use the rectangle inscribed in the circle, and nothing goes in the corners it
   cannot reach. Add the component volumes up and the bay looks half empty --
-  150 cm3 of boards in 558 cm3 of tube. The binding quantity is FOOTPRINT ON
+  109 cm3 of boards in 558 cm3 of tube. The binding quantity is FOOTPRINT ON
   TWO FACES, and the bay's length is what that footprint has to fit into.
 
 ============================================================================================
@@ -27,50 +27,93 @@ THE STACK
   IMU daughterboard               20 g    25 x  20 x   8     5.0  isolate from servo noise
   battery, 2S 1500 mAh            90 g    70 x  35 x  15    24.5  
   servo power BEC                 25 g    30 x  20 x  10     6.0  
-  telemetry radio                 45 g    45 x  25 x  12    11.2  relocatable
-  GPS tracker, independent        60 g    60 x  30 x  15    18.0  relocatable -- conventionally lives in the nose
   wiring loom                     80 g     along one edge    14.0
   ------------------------------------------------------------------------------------------
-  TOTAL FOOTPRINT                                           127.1 cm2
+  TOTAL FOOTPRINT                                            97.9 cm2
+
+============================================================================================
+THE NOSE -- where the tracker and the radio went, Aug 2026
+============================================================================================
+
+  A NOSE IS THE ONE VOLUME IN THIS VEHICLE WHOSE WIDTH IS A FUNCTION OF STATION.
+  Every bay so far could be checked with one diameter. Here the sled is only as
+  wide as its NARROWEST end allows -- its forward end -- so the answer is a band,
+  and the sled wants to sit as far aft as it can where the cone is fullest.
+
+     station        OD   usable ID
+  ----------------------------------
+       150 mm    57.5 mm      52.9 mm
+       200 mm    68.7 mm      64.1 mm
+       250 mm    75.9 mm      71.3 mm
+       280 mm    78.3 mm      73.7 mm
+       318 mm    79.4 mm      74.8 mm
+
+  FITS   nose stack        35.4 mm sled at station 282-318 mm, 59.1 mm wide  2 parts, aft of the ballast
+  centroid at station 300 mm, which is where the 105 g
+  now sits instead of 381 mm.
+
+  Behind the ballast, not in front of it: the 100 g washer stack is at 191 mm on a
+  threaded rod and these two boards go on the same rod, 20 mm clear of it. Both are
+  RF parts and neither needs a short wire to the flight computer, so the nose is
+  the right place on RF grounds independently of the packing -- the shoulder region
+  is where a fibreglass airframe stops shielding an antenna.
 
 ============================================================================================
 THE VERDICT, ON ESTIMATED ENVELOPES
 ============================================================================================
 
-  NO FIT nav bay          need 151.7 mm, have 103.0 mm ( -48.7 mm)  short by 49 mm
-  NO FIT nav bay          need 116.8 mm, have 103.0 mm ( -13.8 mm)  short by 14 mm      with the tracker and radio moved out
+  NO FIT nav bay          need 116.8 mm, have 103.0 mm ( -13.8 mm)  short by 14 mm
+  NO FIT nav bay          need 151.7 mm, have 103.0 mm ( -48.7 mm)  short by 49 mm      before the move
 
   available = 127 mm of bay less two 12 mm end closures = 103 mm of sled
 
-  SO THE NAV BAY IS SHORT, AND THIS IS NOT YET A REASON TO CHANGE ANYTHING.
+  STILL SHORT BY 14 mm, AND STILL NOT YET A REASON TO CHANGE GEOMETRY.
 
   Correction 5 is the precedent and it is exact: the recovery bay was declared
   11 mm short on a number built from two multiplied estimates, the airframe was
   lengthened on the strength of it, and the shortfall turned out not to exist. Every
   envelope above is that same kind of estimate -- no part here has been chosen.
 
-  What would settle it, in order of how much it costs:
+  The move was worth 35 mm of the 49 mm gap. What is left:
 
-  1. CLOSE D7 AND MEASURE. Nine datasheets replace nine guesses. This is ten
-     minutes of work per part and it is the only thing that turns the verdict into
-     a fact. Do this before anything else on this list.
-  2. MOVE THE TRACKER AND RADIO TO THE NOSE CONE. Worth 35 mm, and it changes
-     no frozen geometry. It is also where a tracker belongs: its job is to still be
-     working when nothing else is, which argues for its own battery in its own
-     compartment, as far from the servo bus as the airframe allows.
+  1. CLOSE D7 AND MEASURE. Six datasheets replace six guesses, and 14 mm is well
+     inside what a 70% packing efficiency guess is worth -- at 0.80 the stack fits
+     with +0.8 cm2 to spare. This is the only thing that settles it, and it is
+     ten minutes of work per part.
+  2. THE NOSE SHOULDER IS UNMODELLED AND IT IS BIGGER THAN 14 mm -- see below.
   3. ONE END CLOSURE, NOT TWO. The bay's aft face is shared with the canard
-     module's forward face, and the forward one is the nose shoulder. If either is
-     structure that already exists, that is 12 mm back.
-  4. LENGTHEN THE NAV BAY. 1.6 -> 2.0 cal is +32 mm and it is the answer that
-     touches every number in the vehicle. It is last for that reason, not first.
+     module's forward face. If that plate already exists as the module's structure,
+     that is 12 mm back and the shortfall is gone.
+  4. LENGTHEN THE NAV BAY. 1.6 -> 2.0 cal is +32 mm and it touches every number in
+     the vehicle. Last for that reason, not first.
+
+============================================================================================
+THE THING THIS CHECK CANNOT SEE, AND IT IS LARGER THAN THE SHORTFALL
+============================================================================================
+
+  THE NOSE SHOULDER IS NOT IN THIS MODEL AT ALL. `docs/04` carries a 1 caliber
+  (79 mm) shoulder on a 127 mm nav bay, and a shoulder inserts INTO the
+  forward end of the tube it joins. Which tube's length it spends is a question
+  nobody has answered, and the two answers are 79 mm apart:
+
+    * if the sled has to sit AFT of the shoulder, the bay loses 79 mm rather than
+      the 12 mm this check charges, and it is short by ~80 mm, not 14;
+    * if the sled runs UP INSIDE the shoulder -- which is how many high-power
+      av-bays are actually built -- the bay GAINS most of that 79 mm and fits with
+      room to spare.
+
+  This check assumes neither. It charges a plain end closure at both ends, which is
+  the arrangement nobody has drawn. **The 14 mm shortfall is the smallest open
+  question about this bay, not the largest one.** Settle the shoulder before
+  spending an afternoon on the packing efficiency.
 
 ============================================================================================
 WHAT THE STACK MEANS FOR VENTING
 ============================================================================================
 
-  free air in the bay   303 cm3 (geometric less the boards)
+  free air in the bay   344 cm3 (geometric less the boards)
   static ports          3 x dia 3.2 mm, 24.1 mm2
-  lag, 177 m/s up       0.009 m
+  lag, 177 m/s up       0.012 m
   lag, 19 m/s down      0.0001 m
 
   This is the ONLY volume the altimeter senses. The canard module vents through
@@ -81,15 +124,13 @@ WHAT THE STACK MEANS FOR VENTING
 STILL A GUESS
 ============================================================================================
 
-  8 of 8 envelopes are estimates:
+  6 of 6 nav bay envelopes are estimates:
     flight computer PCB
     deployment altimeter
     GNSS receiver + antenna
     IMU daughterboard
     battery, 2S 1500 mAh
     servo power BEC
-    telemetry radio
-    GPS tracker, independent
 
   Replace each with a datasheet as D7 closes and set `measured=True`. When that
   list is empty this report stops needing its caveat, which is exactly what

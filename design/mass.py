@@ -38,6 +38,13 @@ DEFAULT_AVIONICS_BUDGET: dict[str, float] = {
     "gps_tracker_independent": 0.060,
 }
 
+# Which avionics lines physically live in the NOSE rather than in the nav bay. See
+# design/avionics.py: the nav bay wanted 152 mm of sled and had 103, and moving these two
+# was the only way out that touched no frozen geometry. Both are RF parts, neither needs a
+# short wire to the flight computer, and a tracker whose job is to still be working when
+# nothing else is belongs in its own compartment with its own battery anyway.
+NOSE_AVIONICS = {"telemetry_radio", "gps_tracker_independent"}
+
 DEFAULT_RECOVERY_BUDGET: dict[str, float] = {
     "drogue_chute": 0.070,
     "main_chute": 0.280,
@@ -102,6 +109,7 @@ def build_mass(
     contingency: float = 0.10,
     nose_ballast_kg: float = 0.0,
     nose_ballast_station: float = 0.191,
+    nose_avionics_station: float = 0.300,
 ) -> MassResult:
     """Assemble the mass list and compute dry/wet CG.
 
@@ -170,7 +178,19 @@ def build_mass(
     # heaviest budget lines, swapped. That is worth about a quarter caliber of static
     # margin, so the stations are now derived from the actual layout.
     x_motor = rocket.length - motor.length / 2.0
-    items.append(PointMass("avionics bay (budget)", sum(avionics.values()), bay_centre(rocket, "nav bay")))
+    # THE AVIONICS BUDGET IS IN TWO PLACES NOW. The telemetry radio and the independent
+    # tracker moved into the nose in Aug 2026 because the nav bay could not hold everything
+    # (docs/01 correction 27), and a point mass in the wrong bay is worth about a quarter
+    # caliber of static margin -- this function's own comment below says so, from the time
+    # the avionics and recovery budgets were accidentally swapped. So the split is modelled
+    # rather than averaged.
+    nose_items = {k: v for k, v in avionics.items() if k in NOSE_AVIONICS}
+    bay_items = {k: v for k, v in avionics.items() if k not in NOSE_AVIONICS}
+    items.append(PointMass("avionics bay (budget)", sum(bay_items.values()),
+                           bay_centre(rocket, "nav bay")))
+    if nose_items:
+        items.append(PointMass("avionics in nose (budget)", sum(nose_items.values()),
+                               nose_avionics_station))
     items.append(PointMass("recovery (budget)", sum(recovery.values()), bay_centre(rocket, "recovery bay")))
 
     joints = bay_joints(rocket)

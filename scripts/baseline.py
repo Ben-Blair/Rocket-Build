@@ -347,10 +347,15 @@ def main() -> None:
           f"against the {nav_bay.area * 1e6:.1f} mm2 convention drills. Lag does not size these holes")
     print(f"  venting check       {'OK' if vchk.ok else 'VIOLATIONS: ' + '; '.join(vchk.violations)}")
 
-    nav_pack = avionics.check_packing(nav.inner_diameter, nav.length)
-    nav_moved = avionics.check_packing(nav.inner_diameter, nav.length, avionics.relocatable())
+    nav_pack = avionics.check_packing(nav.inner_diameter, nav.length, avionics.NAV_BAY_STACK)
+    was = avionics.check_packing(nav.inner_diameter, nav.length, avionics.DEFAULT_STACK)
+    nose_fit = avionics.check_nose_packing(
+        r.nose, forward_limit=BASELINE.nose_ballast_station + 0.020)
     print(f"  nav bay packing     {nav_pack}")
-    print(f"    tracker+radio out {nav_moved}")
+    print(f"    before the move   {was}")
+    print(f"  nose stack          {nose_fit}")
+    print(f"  the move is worth   {(was.required_length - nav_pack.required_length) * 1000:.0f} mm "
+          f"of sled and moves 105 g from station 381 to {nose_fit.centroid * 1000:.0f} mm")
     print(f"  ON ESTIMATED ENVELOPES -- {len(nav_pack.estimated)} of "
           f"{len(nav_pack.components)} parts are guesses because D7 is open. Read")
     print("     correction 5 before touching geometry. python scripts/avionics_report.py")
@@ -390,7 +395,9 @@ def main() -> None:
   Mass overrides -- OpenRocket cannot know about your avionics, so override these
     canard module         add {sum(p.mass for p in m.items if 'servo' in p.name or 'shaft' in p.name):.3f} kg
                           (servos, shafts, bearings, sled)
-    avionics bay          add {sum(p.mass for p in m.items if 'avionics' in p.name):.3f} kg
+    avionics bay          add {sum(p.mass for p in m.items if p.name == 'avionics bay (budget)'):.3f} kg
+    nose cone             add {sum(p.mass for p in m.items if p.name == 'avionics in nose (budget)'):.3f} kg (telemetry radio + tracker)
+                          plus the {BASELINE.nose_ballast_kg * 1000:.0f} g ballast at {BASELINE.nose_ballast_station * 1000:.0f} mm
     recovery              add {sum(p.mass for p in m.items if 'recovery' in p.name):.3f} kg
 
   Simulation settings

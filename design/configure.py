@@ -236,6 +236,10 @@ class Evaluation:
         return not self.violations
 
 
+# Axial room left between the nose ballast washer stack and the first board behind it on
+# the same threaded rod. 20 mm is a nut, a washer and somewhere to get a spanner.
+NOSE_BALLAST_CLEARANCE = 0.020  # m
+
 LIMITS = dict(
     sm_min=1.4,  # minimum over the flight, which occurs at rail exit (motor loaded)
     sm_max=3.0,  # above this the vehicle weathercocks hard and fights the controller
@@ -260,10 +264,17 @@ def evaluate(
     rail_angle_deg: float = 5.0,
 ) -> Evaluation:
     rocket = build_vehicle(p)
+    # Where the nose-mounted avionics actually sit is geometry, not a guess: the cone
+    # narrows going forward, so `check_nose_packing` finds the most forward station at which
+    # the two boards still fit on a sled behind the ballast, and their centroid follows from
+    # that. Hardcoding a station here would drift the moment the nose fineness changed.
+    nose_fit = avionics.check_nose_packing(
+        rocket.nose, forward_limit=p.nose_ballast_station + NOSE_BALLAST_CLEARANCE)
     masses = mass_mod.build_mass(
         rocket, p.motor,
         servo_mass_each=SERVOS[p.servo].mass, n_servos=p.n_canards,
         nose_ballast_kg=p.nose_ballast_kg, nose_ballast_station=p.nose_ballast_station,
+        nose_avionics_station=nose_fit.centroid,
     )
     flight = trajectory.simulate(
         rocket, p.motor, masses, rail_length=rail_length, rail_angle_deg=rail_angle_deg
@@ -309,17 +320,22 @@ def evaluate(
     # that cannot fail is not evidence of anything.
     warnings: list[str] = []
     nav_tube = next(t for t in rocket.tubes if t.name == "nav bay")
-    nav_pack = avionics.check_packing(nav_tube.inner_diameter, nav_tube.length)
+    nav_pack = avionics.check_packing(
+        nav_tube.inner_diameter, nav_tube.length, avionics.NAV_BAY_STACK)
     if not nav_pack.fits:
-        relocated = avionics.check_packing(
-            nav_tube.inner_diameter, nav_tube.length, avionics.relocatable())
+        was = avionics.check_packing(
+            nav_tube.inner_diameter, nav_tube.length, avionics.DEFAULT_STACK)
         warnings.append(
             f"nav bay {nav_tube.length * 1000:.0f} mm needs "
-            f"{nav_pack.required_length * 1000:.0f} mm of sled on estimated envelopes "
-            f"({relocated.required_length * 1000:.0f} mm with the tracker and radio moved "
-            f"to the nose); {len(nav_pack.estimated)} of {len(nav_pack.components)} parts "
-            f"are guesses until D7 closes. See scripts/avionics_report.py"
+            f"{nav_pack.required_length * 1000:.0f} mm of sled on estimated envelopes, "
+            f"short by {-nav_pack.margin * 1000:.0f} mm (was "
+            f"{was.required_length * 1000:.0f} mm before the tracker and radio went to the "
+            f"nose); {len(nav_pack.estimated)} of {len(nav_pack.components)} parts are "
+            f"guesses until D7 closes. See scripts/avionics_report.py"
         )
+    if not nose_fit.fits:
+        warnings.append(
+            f"the nose cannot hold the relocated stack: {nose_fit.reason}")
 
     # Control assessment at the highest-q point after burnout, where authority is best.
     coast = [pt for pt in flight.points if pt.t >= flight.burnout_time]

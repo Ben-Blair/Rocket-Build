@@ -166,10 +166,10 @@ VENTING -- which volumes the altimeter is allowed to sense
 
   bay                free vol          ports      area    lag up   lag down
   --------------------------------------------------------------------------
-  nav bay              303 cm3 3 x d3.2 mm   24.1 mm2   0.009 m   0.0001 m
+  nav bay              344 cm3 3 x d3.2 mm   24.1 mm2   0.012 m   0.0001 m
   canard module        570 cm3 2 x d2.0 mm    6.3 mm2   0.487 m   0.0056 m
 
-  The lag model asks for 1.35 mm2 and convention drills 24.1. **The requirement everybody
+  The lag model asks for 1.53 mm2 and convention drills 24.1. **The requirement everybody
   gives for these holes -- the bay must breathe fast enough -- is not what sizes
   them, by a factor of about 300.** What sizes them is blockage tolerance, the
   ejection transient and what a person can drill by hand, none of which is modelled
@@ -177,8 +177,8 @@ VENTING -- which volumes the altimeter is allowed to sense
 
   venting check       OK
     note  nav bay lags 0.01 m at 177 m/s and 0.00 m descending at 30 m/s under drogue, which is the case that actually matters: lag on the way DOWN fires the main low, and there is no room below 200 m
-    note  nav bay port area 24.1 mm2 sits between the 1.3 mm2 the lag model needs and the 24.1 mm2 convention uses -- the model is the floor, convention is the ceiling, and both are satisfied
-    note  the canard module vents through its OWN WALL (6.3 mm2), so the sense volume is 303 cm3 and not 873 cm3. Sharing them would take the nav bay's lag 0.01 -> 0.08 m and put ejection gas one leak away from the sensor that fires the charges
+    note  nav bay port area 24.1 mm2 sits between the 1.5 mm2 the lag model needs and the 24.1 mm2 convention uses -- the model is the floor, convention is the ceiling, and both are satisfied
+    note  the canard module vents through its OWN WALL (6.3 mm2), so the sense volume is 344 cm3 and not 914 cm3. Sharing them would take the nav bay's lag 0.01 -> 0.08 m and put ejection gas one leak away from the sensor that fires the charges
     note  SO POT THE WIRING PASS-THROUGH SOLID. It is a wire route, not an air route -- and it is only allowed to be solid because the module vents overboard instead
     note  a bay sealed at the pad carries 15.3 kPa at 1358 m, which is 67 N on a bulkhead -- small, and not what sizes anything, but it is why every sealed volume in the vehicle gets a hole
 

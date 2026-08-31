@@ -84,11 +84,17 @@ class Component:
 # The stack, described from `docs/04` section 5. Masses come from that table so this file
 # and the BOM cannot disagree; envelopes are typical parts of each description.
 #
-# THE INDEPENDENT GPS TRACKER AND THE TELEMETRY RADIO ARE FLAGGED, not because they are
-# uncertain but because they are the two parts with somewhere else to go -- see
-# `relocatable()`. A tracker in particular wants to be as far from everything else as
-# possible and is conventionally carried in the nose.
-DEFAULT_STACK: list[Component] = [
+# THE TRACKER AND THE RADIO MOVED TO THE NOSE, Aug 2026. The nav bay wanted 152 mm of sled
+# and had 103. Of the four ways out (docs/01 correction 27) this is the only one that costs
+# nothing structural: it touches no frozen geometry and it is where a tracker belongs
+# anyway. Its whole job is to still be working when nothing else is, which argues for its
+# own battery, in its own compartment, as far from the servo bus as the airframe allows --
+# and the nose is also the best RF position on the vehicle, since the shoulder region is
+# the one place a fibreglass airframe is not shielding an antenna.
+#
+# It did NOT make the nav bay fit. See `NAV_BAY_STACK`'s verdict; it went 152 -> 117 mm
+# against 103, which is a 14 mm shortfall instead of a 49 mm one.
+NAV_BAY_STACK: list[Component] = [
     Component("flight computer PCB", 0.060, 0.070, 0.040, 0.015,
               note="custom board; D7 sets this"),
     Component("deployment altimeter", 0.060, 0.045, 0.018, 0.010,
@@ -99,12 +105,22 @@ DEFAULT_STACK: list[Component] = [
               note="isolate from servo noise"),
     Component("battery, 2S 1500 mAh", 0.090, 0.070, 0.035, 0.015),
     Component("servo power BEC", 0.025, 0.030, 0.020, 0.010),
-    Component("telemetry radio", 0.045, 0.045, 0.025, 0.012, note="relocatable"),
-    Component("GPS tracker, independent", 0.060, 0.060, 0.030, 0.015,
-              note="relocatable -- conventionally lives in the nose"),
 ]
 
-RELOCATABLE = {"telemetry radio", "GPS tracker, independent"}
+# In the nose, on the ballast rod. Both are RF parts and neither talks to the flight
+# computer in a way that needs a short wire.
+NOSE_STACK: list[Component] = [
+    Component("telemetry radio", 0.045, 0.045, 0.025, 0.012,
+              note="in the nose, Aug 2026"),
+    Component("GPS tracker, independent", 0.060, 0.060, 0.030, 0.015,
+              note="in the nose, with its own battery -- independent means independent"),
+]
+
+# Kept so that the old arrangement can still be evaluated, and because a report that can
+# only show the answer it arrived at is not showing an argument.
+DEFAULT_STACK: list[Component] = NAV_BAY_STACK + NOSE_STACK
+
+RELOCATED = {c.name for c in NOSE_STACK}
 
 # Wiring is not a board and does not sit on a face, but it is 80 g of loom that has to go
 # somewhere, and a sled with no room for the harness is a sled that does not close. Counted
@@ -186,16 +202,14 @@ def check_packing(inner_diameter: float, bay_length: float,
 
 
 def relocatable(components: list[Component] | None = None) -> list[Component]:
-    """The stack with the parts that have somewhere else to go taken out.
+    """The nav bay stack, i.e. the full stack less what now lives in the nose.
 
-    THE POINT OF THIS FUNCTION is that "the bay is short" has two kinds of answer and only
-    one of them touches frozen geometry. Lengthening the nav bay changes every number in the
-    vehicle. Moving the tracker into the nose cone changes nothing except a wire run -- and
-    it is where a tracker belongs anyway, since its whole job is to still be working when
-    nothing else is, which argues for its own battery in its own compartment.
+    Retained after the move so `scripts/avionics_report.py` can still show both
+    arrangements side by side. "The bay is short" had two kinds of answer and only one of
+    them touched frozen geometry; keeping both computable is what makes that visible.
     """
     parts = components if components is not None else DEFAULT_STACK
-    return [c for c in parts if c.name not in RELOCATABLE]
+    return [c for c in parts if c.name not in RELOCATED]
 
 
 def free_volume(inner_diameter: float, bay_length: float,
@@ -206,8 +220,74 @@ def free_volume(inner_diameter: float, bay_length: float,
     `design/venting.py` needs this and nothing else does. Note that it is the GEOMETRIC
     volume less the components, not less the sled: a sled is a plate a couple of millimetres
     thick and modelling it would be false precision against a 70% packing guess.
+
+    Defaults to `NAV_BAY_STACK`, not `DEFAULT_STACK` -- the tracker and the radio are in the
+    nose now and their volume is not in this bay's air. Small, and wrong is wrong.
     """
-    parts = components if components is not None else DEFAULT_STACK
+    parts = components if components is not None else NAV_BAY_STACK
     area = math.pi * inner_diameter**2 / 4.0
     geometric = area * (bay_length - end_closures * END_CLOSURE_THICKNESS)
     return max(geometric - sum(c.volume for c in parts), 0.0)
+
+
+# ---------------------------------------------------------------------------------------
+# The nose
+# ---------------------------------------------------------------------------------------
+@dataclass
+class NoseFit:
+    fits: bool
+    forward_station: float  # m from the tip, where the sled starts
+    aft_station: float
+    sled_width: float
+    length: float
+    centroid: float
+    footprint: float
+    reason: str
+
+    def __str__(self) -> str:
+        verdict = "FITS" if self.fits else "NO FIT"
+        return (
+            f"{verdict:6s} nose stack       "
+            f"{self.length * 1000:5.1f} mm sled at station "
+            f"{self.forward_station * 1000:.0f}-{self.aft_station * 1000:.0f} mm, "
+            f"{self.sled_width * 1000:.1f} mm wide  {self.reason}"
+        )
+
+
+def check_nose_packing(nose, components: list[Component] | None = None,
+                       aft_station: float | None = None,
+                       forward_limit: float = 0.0,
+                       width_fraction: float = SLED_WIDTH_FRACTION,
+                       efficiency: float = SLED_PACKING_EFFICIENCY,
+                       steps: int = 400) -> NoseFit:
+    """Where in the nose the relocated stack fits, and whether it does.
+
+    A NOSE IS THE ONE PART OF THIS VEHICLE WHOSE AVAILABLE WIDTH IS A FUNCTION OF STATION.
+    Every bay so far could be checked with one diameter. Here the sled is as wide as its
+    NARROWEST end allows, which is its forward end, so the answer is a band and not a
+    number -- and the sled wants to sit as far aft as it can, where the cone is fullest.
+
+    `forward_limit` is where the sled is not allowed to go forward of. Pass the ballast
+    station: the 100 g washer stack is on the same threaded rod and the boards go behind it.
+    """
+    parts = list(components if components is not None else NOSE_STACK)
+    aft = nose.length if aft_station is None else aft_station
+    footprint = sum(c.footprint for c in parts)
+
+    # Walk forward from the base until there is enough two-sided sled area.
+    for i in range(1, steps + 1):
+        x = aft - (aft - forward_limit) * i / steps
+        width = width_fraction * 2.0 * nose.inner_radius_at(x)
+        capacity = 2.0 * width * efficiency * (aft - x)
+        if capacity >= footprint:
+            tallest = max(c.height for c in parts)
+            half_height = nose.inner_radius_at(x)
+            if tallest > half_height:
+                return NoseFit(False, x, aft, width, aft - x, (x + aft) / 2.0, footprint,
+                               f"{tallest * 1000:.0f} mm part in {half_height * 1000:.0f} mm "
+                               f"of half-height at the forward end")
+            return NoseFit(True, x, aft, width, aft - x, (x + aft) / 2.0, footprint,
+                           f"{len(parts)} parts, aft of the ballast")
+    return NoseFit(False, forward_limit, aft, 0.0, aft - forward_limit,
+                   (forward_limit + aft) / 2.0, footprint,
+                   "does not fit anywhere aft of the ballast station")

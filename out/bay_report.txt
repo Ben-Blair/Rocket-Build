@@ -40,18 +40,18 @@ THE SEAT  --  and why 3.2x -> 21.3x was never the right pair of numbers
   Print the collar in something ten times softer than the tube and the collar
   moves aside: the load walks back into the G10 and the effective seat shortens.
 
-  moment at the seat centre   0.7805 N m
-  normal force                24.448 N
+  moment at the seat centre   0.7793 N m
+  normal force                24.409 N
   bearing                     dia 8.0 x 6.0 long
 
     collar material       E   p collar    p wall   collar     wall   L eff
                      GPa        MPa       MPa   margin   margin      mm
-    none             0.0       0.00    105.57       --     3.5x    2.37
-    PETG             1.7       9.35     35.90     5.3x    10.3x    4.08
-    ASA              2.0       9.73     33.52     5.7x    11.0x    4.22
-    PETG-CF          4.5      11.54     24.69     5.6x    15.0x    4.93  <-- selected
-    PA6-CF           6.0      12.21     22.53     7.4x    16.4x    5.17
-    G10 (fiction)    18.0      15.75     16.77       --    22.1x    6.00
+    none             0.0       0.00    105.40       --     3.5x    2.37
+    PETG             1.7       9.33     35.84     5.4x    10.3x    4.08
+    ASA              2.0       9.72     33.47     5.7x    11.1x    4.22
+    PETG-CF          4.5      11.52     24.65     5.6x    15.0x    4.93  <-- selected
+    PA6-CF           6.0      12.19     22.49     7.4x    16.5x    5.17
+    G10 (fiction)    18.0      15.73     16.74       --    22.1x    6.00
 
   So the collar IS worth building -- 3.5x to 15.0x on the wall is the
   single largest margin improvement anywhere in this hinge. But it is worth
@@ -101,7 +101,7 @@ MARGINS
     bearing seat, G10 wall                           15.0x
     servo clamp screw shear                          72.0x
     heat-set insert pull-out                        133.2x
-    bay-to-tube bond shear                          927.8x
+    bay-to-tube bond shear                          929.3x
 
   mass            38.6 g   (shell 28.7, trays 8.3, collars 0.5)
   bond area     9260.6 mm^2 of shell against the tube ID
