@@ -9,7 +9,7 @@ THE AFT GAS SEAL -- what it actually carries
 
   bore                       74.8 mm     the disc is the full ID
   piston area              4394.3 mm2
-  forward compartment      1058.2 cm3    geometric
+  forward compartment      1052.2 cm3    geometric
   free volume               156.2 cm3    15% of it -- the rest is parachute
 
 ============================================================================================
@@ -21,7 +21,7 @@ THE FUSE -- shear pins, and the charge that has to break them
   release force                    541 N
   release pressure               123.1 kPa    (17.9 psi)
   design pressure                246.2 kPa    at a 2.0x separation factor
-  BLACK POWDER CHARGE             1.19 g
+  BLACK POWDER CHARGE             1.18 g
 
   Sized on the compartment's GEOMETRIC volume, which is what every published rule
   of thumb does and what a ground test measures. Then note where it actually goes:
@@ -32,8 +32,8 @@ THE TWO PRESSURE CASES
 
   case                                 volume     pressure   on the disc
   ----------------------------------------------------------------------
-  design, joint releases             1058.2 cm3       246 kPa       1082 N
-  stuck joint, packed volume          156.2 cm3      1668 kPa       7329 N
+  design, joint releases             1052.2 cm3       246 kPa       1082 N
+  stuck joint, packed volume          156.2 cm3      1658 kPa       7287 N
 
   The same charge, a factor of 7 apart, and BOTH are true. In the
   nominal flight the pins let go almost immediately and the volume grows faster
@@ -50,15 +50,15 @@ THE DISC
 
   material                 G-10 sheet, 4.8 mm     thinnest STOCKED size that passes
   mass                         39.0 g
-  governing pressure           1668 kPa
-  bending stress                120 MPa   simply supported, centre
+  governing pressure           1658 kPa
+  bending stress                119 MPa   simply supported, centre
     same, edge clamped           76 MPa   the best case, reported not used
-  margin                       4.01x    against 2.0x required
-  centre deflection            1.35 mm    at the stuck pressure
+  margin                       4.04x    against 2.0x required
+  centre deflection            1.34 mm    at the stuck pressure
     at design pressure         0.20 mm
   disc holds to                6693 kPa   = 54x the pin release pressure
   glue line                    10.8 mm    disc edge + a fillet either side
-  bond shear                   2.89 MPa   margin 12.1x
+  bond shear                   2.87 MPa   margin 12.2x
 
   Both plate formulae are here on purpose. A disc bonded in with a fillet is
   between simply supported and clamped, and the two differ by 1.6x. Assuming the
@@ -85,11 +85,11 @@ THE MAIN'S OPENING SHOCK -- the load that arrives through the U-bolt
 THE HOLE THAT MAKES IT A FEED-THROUGH
 ============================================================================================
 
-  2 x dia 4.0 mm at R 22.6 mm, Kt 2.0 -> 223 MPa, margin 2.15x
+  2 x dia 4.0 mm at R 22.6 mm, Kt 2.0 -> 222 MPa, margin 2.17x
 
   AND THE HOLE IS WHAT SETS THE THICKNESS. This disc is governed by the feed-through hole:
-  the plate itself passes at 4.01x and the hole at 2.15x. Size the plate alone and
-  the answer is 4.0 mm, where the feed-through runs at 1.67x.
+  the plate itself passes at 4.04x and the hole at 2.17x. Size the plate alone and
+  the answer is 4.0 mm, where the feed-through runs at 1.68x.
   A bulkhead sized as though it were a bulkhead is not a sized feed-through.
 
   WHY THERE IS A HOLE AT ALL. The altimeter that fires these charges is in the NAV
@@ -113,10 +113,10 @@ VERDICT
 
   aft gas seal        OK
     note  pins release at 123 kPa and the disc holds to 6693 kPa, so the pins are 54x the weaker link. That ratio is the design intent, not a coincidence
-    note  recovery.FILL_LIMIT = 0.85 SETS THIS PRESSURE. The free volume a charge fires into is what the packing leaves over, so packing to 0.90 instead would take 1668 kPa to 2502 kPa -- a number chosen so a bay would close with cold hands is loading every bulkhead in the rocket
+    note  recovery.FILL_LIMIT = 0.85 SETS THIS PRESSURE. The free volume a charge fires into is what the packing leaves over, so packing to 0.90 instead would take 1658 kPa to 2488 kPa -- a number chosen so a bay would close with cold hands is loading every bulkhead in the rocket
     note  assembled stack 10.8 mm (disc + a 3 mm fillet each face) inside the 12.0 mm recovery.BULKHEAD_THICKNESS allowance, which until now was a typed number nothing had checked
     note  main opens at 19.2 m/s -- 14x the vehicle's weight at a shock factor of 1.0 and 25x at 1.7. The U-bolt needs a backing plate; the log term in point_load_stress() is the reason
-    note  2 x dia 4.0 mm at R 22.6 mm runs 2.15x, against the disc's own 4.01x -- THE HOLE GOVERNS, and sizing the plate without it lands one sheet size thin
+    note  2 x dia 4.0 mm at R 22.6 mm runs 2.17x, against the disc's own 4.04x -- THE HOLE GOVERNS, and sizing the plate without it lands one sheet size thin
     note  POT THE FEED-THROUGH ON THE FORWARD FACE. RTV is good to 315 C and the gas leaves the charge at 1837 K; the disc is the heat shield, so the sealant belongs behind it. Potting the exposed face is the version of this part that works on the bench and sooties the nav bay in flight
     note  THE MODULE VENTS THROUGH ITS OWN WALL, not through this disc and not forward into the nav bay -- see design/venting.py, which corrects the argument this file was first written on. The consequence is that the wiring pass-through is POTTED SOLID and the module is not in the altimeter's sense volume, so a leak past this seal goes overboard instead of into the sensor that fires the charges
 
@@ -130,13 +130,13 @@ THE SECOND BULKHEAD -- the one that was a 12 mm length allowance
 
                                    aft gas seal  internal bulkhead
   ------------------------------------------------------------------
-  governing pressure, kPa                  1668               1689
-  free fraction of compartment           0.1476             0.1458
+  governing pressure, kPa                  1658               1665
+  free fraction of compartment           0.1485             0.1479
   thickness, mm                             4.8                4.8
   mass, g                                    39                 39
-  plate margin                            4.01x              3.96x
+  plate margin                            4.04x              4.02x
   feed-through                           2 x d4             1 x d6
-  feed-through margin                     2.15x              2.19x
+  feed-through margin                     2.17x              2.22x
   protected by shear pins                   yes                 NO
   assembled stack, mm                      10.8               10.8
 
@@ -188,12 +188,12 @@ WHAT THE PACKING NOW COSTS
 
   inner diameter           74.8 mm
   contents:
-    main                    902 cm3 -> 240.8 mm of tube
-    drogue                  367 cm3 ->  97.7 mm of tube
-  required length         350.5 mm (4.41 cal)
-  available length        357.3 mm (4.50 cal)
-  margin                   +6.8 mm
-  fill fraction              81 % of geometric volume  (limit 85 %)
+    main                    896 cm3 -> 239.4 mm of tube
+    drogue                  361 cm3 ->  96.3 mm of tube
+  required length         347.8 mm (4.38 cal)
+  available length        347.8 mm (4.38 cal)
+  margin                   +0.1 mm
+  fill fraction              82 % of geometric volume  (limit 85 %)
   NOTE: canopies use vendor pack volumes; still estimated from bulk density: main harness, main protector, links/swivel, drogue harness, drogue protector, links/swivel
 
   The conduit and four U-bolts are RIGID -- the canopy packs around them rather
@@ -201,5 +201,5 @@ WHAT THE PACKING NOW COSTS
   instead of through the fill limit. Putting them through it would inflate them by
   1/0.85 and manufacture a shortfall, which is precisely correction 5.
 
-  margin was +13.0 mm before any of this hardware was counted; it is now +6.8 mm.
+  margin was +13.0 mm before any of this hardware was counted; it is now +0.1 mm.
   The U-bolts cost more than the conduit does: 4 x 6 cm3 of envelope against 4.7.

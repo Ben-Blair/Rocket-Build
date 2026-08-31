@@ -286,6 +286,8 @@ On the selected Cesaroni J449 Blue Streak:
 | Nose | 4:1 tangent ogive, 318 mm |
 | Bays, nose to tail | nav 127 mm, canard module 143 mm, recovery 357 mm, booster 416 mm |
 | Avionics location | flight computer, altimeter, GNSS, IMU, battery, BEC in the **nav bay**; telemetry radio and GPS tracker in the **nose** at station 282–318 mm (docs/01 correction 30) |
+| Joints | nose/nav **access**, nav/canard **access**, canard/recovery **separation** (main), recovery/booster **separation** (drogue). 1 cal engagement each; a coupler costs bore, not length — `design/joints.py`, docs/01 correction 31 |
+| Nose module | Instrumentation, self-contained, one connector. Swappable for a payload up to ~300 g in 469 cm³ (correction 32) |
 | Canards | 4 panels, 67.5 root / 27.0 tip / **67.5 mm semispan**, **35.4° LE sweep** matching the aft fins, 45° interdigitated |
 | Aft fins | 4 panels, 151 root / 68 tip / **123.1 mm semispan**, 87 mm sweep |
 | Mass | **5.55 kg dry, 6.18 kg wet** (includes 100 g nose ballast) |

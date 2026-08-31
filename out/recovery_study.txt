@@ -23,15 +23,15 @@ doubles the walk, and a 15 mph day is not unusual.
 ====================================================================================================
 RECOVERY BAY PACKING  --  does the nylon actually fit?
 ====================================================================================================
-FITS   recovery bay     need 350.5 mm, have 357.3 mm (  +6.8 mm)  2 compartments, 81% full
+FITS   recovery bay     need 347.8 mm, have 357.3 mm (  +9.5 mm)  2 compartments, 80% full
   inner diameter           74.8 mm
   contents:
-    main                    902 cm3 -> 240.8 mm of tube
-    drogue                  367 cm3 ->  97.7 mm of tube
-  required length         350.5 mm (4.41 cal)
+    main                    896 cm3 -> 239.4 mm of tube
+    drogue                  361 cm3 ->  96.3 mm of tube
+  required length         347.8 mm (4.38 cal)
   available length        357.3 mm (4.50 cal)
-  margin                   +6.8 mm
-  fill fraction              81 % of geometric volume  (limit 85 %)
+  margin                   +9.5 mm
+  fill fraction              80 % of geometric volume  (limit 85 %)
   NOTE: canopies use vendor pack volumes; still estimated from bulk density: main harness, main protector, links/swivel, drogue harness, drogue protector, links/swivel
 
   sensitivity to canopy packing density:
@@ -41,7 +41,7 @@ FITS   recovery bay     need 350.5 mm, have 357.3 mm (  +6.8 mm)  2 compartments
           450 kg/m3       342 mm       4.31
           500 kg/m3       321 mm       4.05
 
-The bay is 4.50 cal and it FITS, with 7 mm to spare. That is worth stating
+The bay is 4.50 cal and it FITS, with 10 mm to spare. That is worth stating
 plainly because it was not always the answer: 4.5 was a number someone typed, nothing had
 ever checked it, and the first version of this check said it was 11 mm SHORT.
 
@@ -62,8 +62,8 @@ What is still an estimate, and what to do about it:
      the exact list. They are a smaller share of the volume than the canopies were, and
      they pack far more predictably, so the remaining uncertainty is narrower than what
      you started with. Retire them the same way if you want the number tight.
-  2. THE VENDOR FIGURES ASSUME A TIGHT PACK, in their own words. Treat 4.41 cal as the
-     optimistic end. 7 mm of margin on a tight-pack number is real but it is not
+  2. THE VENDOR FIGURES ASSUME A TIGHT PACK, in their own words. Treat 4.38 cal as the
+     optimistic end. 10 mm of margin on a tight-pack number is real but it is not
      generous, and a canopy you have to fight into the tube on the pad is a canopy you
      will pack badly.
   3. MEASURE ONCE YOU OWN IT. Pack the real main, slide it into a tube of known ID, read

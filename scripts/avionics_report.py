@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from design import avionics, venting
+from design import avionics, joints, venting
 from design.configure import baseline, evaluate
 
 MM = 1000.0
@@ -42,8 +42,12 @@ def main() -> None:
     nav = next(t for t in ev.rocket.tubes if t.name == "nav bay")
     d, length = nav.inner_diameter, nav.length
 
-    full = avionics.check_packing(d, length, avionics.NAV_BAY_STACK)
-    was = avionics.check_packing(d, length, avionics.DEFAULT_STACK)
+    bays = joints.budgets(ev.rocket, baseline().wall_thickness)
+    navb = bays["nav bay"]
+    full = avionics.check_packing(navb.min_bore, navb.usable_length,
+                                  avionics.NAV_BAY_STACK, end_closures=0)
+    was = avionics.check_packing(navb.min_bore, navb.usable_length,
+                                 avionics.DEFAULT_STACK, end_closures=0)
     nose_fit = avionics.check_nose_packing(
         ev.rocket.nose, forward_limit=baseline().nose_ballast_station + 0.020)
 
@@ -107,9 +111,9 @@ def main() -> None:
     say(f"  {full}")
     say(f"  {was}      before the move")
     say()
-    say(f"  available = {length * MM:.0f} mm of bay less two "
-        f"{avionics.END_CLOSURE_THICKNESS * MM:.0f} mm end closures = "
-        f"{full.available_length * MM:.0f} mm of sled")
+    say(f"  available = {length * MM:.0f} mm of tube less one "
+        f"{joints.BULKHEAD_ALLOWANCE * MM:.0f} mm bulkhead = "
+        f"{full.available_length * MM:.0f} mm of sled, at {navb.min_bore * MM:.1f} mm bore")
     say()
     say("  STILL SHORT BY 14 mm, AND STILL NOT YET A REASON TO CHANGE GEOMETRY.")
     say()
@@ -133,23 +137,77 @@ def main() -> None:
     say("  4. LENGTHEN THE NAV BAY. 1.6 -> 2.0 cal is +32 mm and it touches every number in")
     say("     the vehicle. Last for that reason, not first.")
 
-    rule("THE THING THIS CHECK CANNOT SEE, AND IT IS LARGER THAN THE SHORTFALL")
+    rule("THE SHOULDER QUESTION -- SETTLED, and it went the good way")
     say()
-    say("  THE NOSE SHOULDER IS NOT IN THIS MODEL AT ALL. `docs/04` carries a 1 caliber")
-    say(f"  (79 mm) shoulder on a {length * MM:.0f} mm nav bay, and a shoulder inserts INTO the")
-    say("  forward end of the tube it joins. Which tube's length it spends is a question")
-    say("  nobody has answered, and the two answers are 79 mm apart:")
+    say("  This report used to end by saying the nose shoulder was unmodelled and worth more")
+    say("  than the shortfall: a 1 caliber shoulder on a 127 mm bay, and nobody had decided")
+    say("  which tube's length it spent. The two readings were 79 mm apart.")
     say()
-    say("    * if the sled has to sit AFT of the shoulder, the bay loses 79 mm rather than")
-    say(f"      the {avionics.END_CLOSURE_THICKNESS * MM:.0f} mm this check charges, and it is short by ~80 mm, not 14;")
-    say("    * if the sled runs UP INSIDE the shoulder -- which is how many high-power")
-    say("      av-bays are actually built -- the bay GAINS most of that 79 mm and fits with")
-    say("      room to spare.")
+    say("  BOTH READINGS WERE WRONG, because the question had a false premise. A shoulder is")
+    say("  a TUBE. So is a coupler. What is inside it is still bay. Neither costs LENGTH --")
+    say("  what each costs is local DIAMETER over its span:")
     say()
-    say("  This check assumes neither. It charges a plain end closure at both ends, which is")
-    say("  the arrangement nobody has drawn. **The 14 mm shortfall is the smallest open")
-    say("  question about this bay, not the largest one.** Settle the shoulder before")
-    say("  spending an afternoon on the packing efficiency.")
+    say(f"      coupler / shoulder bore = {navb.full_bore * MM:.1f} - 2 x "
+        f"{baseline().wall_thickness * MM:.1f} = {navb.narrow_bore * MM:.1f} mm")
+    say()
+    say("  What costs length is a BULKHEAD, and bulkheads were already counted. So:")
+    say()
+    for b in bays.values():
+        say(f"    {b}")
+    say()
+    say(f"  The nav bay gains {(navb.usable_length - 0.103) * MM:.0f} mm of length (one bulkhead, not two -- the")
+    say("  forward closure belongs to the nose module) and loses 3.6 mm of sled width to")
+    say("  the shoulder bore. Net, the shortfall goes 14 -> 9 mm.")
+    say()
+    say("  The framing is what had been wrong, not any number. \"Which bay does the")
+    say("  shoulder's length come out of\" is a complete-sounding question whose two answers")
+    say("  were both false, which is correction 28 one joint further forward.")
+
+    rule("THE NOSE AS A SWAPPABLE MODULE -- and what a future payload may weigh")
+    say()
+    say("  Putting the tracker and the radio in the nose was a packing fix. Keeping them")
+    say("  there on purpose is a different decision: the nose becomes the INSTRUMENTATION")
+    say("  MODULE, and the point of one is that it comes off. After GV-2 has measured the")
+    say("  control derivatives, the same nose can carry a payload instead.")
+    say()
+    say("  That needs three things to be true, and the third is the one nobody expects:")
+    say()
+    for name, iface in avionics.NOSE_MODULE_INTERFACES.items():
+        say(f"    {name:26s} {iface}")
+    say()
+    say("    -> ONE electrical interface for the whole module. A payload that needs nothing")
+    say("       leaves it unmated. The tracker having its own battery is not a nicety; an")
+    say("       independent tracker sharing the flight computer's battery is not independent.")
+    say()
+    say("    -> ITS MASS IS PART OF THE STABILITY SOLUTION. 105 g at station 300 mm sits")
+    say(f"       forward of the {ev.masses.dry_cg * MM:.0f} mm CG, so it is doing the same job as the nose")
+    say("       ballast. Swap it for something heavier and the margin moves:")
+    say()
+    say(f"  {'nose payload':>14s} {'SM min':>8s} {'SM max':>8s}   verdict")
+    say("  " + "-" * 50)
+    for m, lo, hi, ok in avionics.payload_envelope(evaluate, baseline(), 0.300):
+        tag = "ok" if ok else "SM over 3.0 -- over-stable"
+        mark = "  <- instrumentation" if abs(m - 0.105) < 1e-9 else ""
+        say(f"  {m * 1000:11.0f} g {lo:8.2f} {hi:8.2f}   {tag}{mark}")
+    say()
+    say("  SO: ANYTHING UP TO ABOUT 300 g GOES IN WITH NO OTHER CHANGE, and past that the")
+    say("  vehicle turns over-stable rather than unstable -- it weathercocks and gives up")
+    say("  crossrange, which is a performance loss and not a safety one. The nose ballast is")
+    say("  the trim knob either way: 100 g at station 191 mm with provision for 300 g")
+    say("  (docs/00 D10), and it was always meant to be set after weighing the real vehicle.")
+    say()
+    nose = ev.rocket.nose
+    free_all = avionics.nose_payload_volume(nose, 0.200, nose.length)
+    free_now = avionics.nose_payload_volume(nose, 0.282, nose.length)
+    say(f"  Room: {free_all * 1e6:.0f} cm3 between station 200 mm (clear of the ballast) and the")
+    say(f"  nose base, of which the instrumentation sled uses {free_now * 1e6:.0f} cm3 at 282-318 mm.")
+    say("  A payload gets the lot once the tracker and radio come out.")
+    say()
+    say("  THE ONE DRAWBACK, stated rather than buried: the GNSS antenna stays in the NAV")
+    say("  BAY, at the forward end of its sled, under the shoulder -- configure.py puts the")
+    say("  nav bay forward for exactly that reason. A dense payload sitting directly ahead of")
+    say("  it is between that antenna and the sky. Nothing here models RF; if the payload is")
+    say("  metallic, check the fix before the flight rather than after it.")
 
     rule("WHAT THE STACK MEANS FOR VENTING")
     say()

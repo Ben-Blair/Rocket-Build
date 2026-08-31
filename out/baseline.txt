@@ -6,7 +6,7 @@ BASELINE VEHICLE
   motor               J449BS  (1260 N s, class J, needs L2)
   wet / dry mass      6.18 / 5.55 kg
   feasible            YES
-  WARNING             nav bay 127 mm needs 117 mm of sled on estimated envelopes, short by 14 mm (was 152 mm before the tracker and radio went to the nose); 6 of 6 parts are guesses until D7 closes. See scripts/avionics_report.py
+  WARNING             nav bay 115 mm usable needs 124 mm of sled on estimated envelopes, short by 9 mm (was 162 mm before the tracker and radio went to the nose); 6 of 6 parts are guesses until D7 closes. See scripts/avionics_report.py
 
 ============================================================================================
 GEOMETRY  (stations measured from nose tip)
@@ -202,18 +202,31 @@ FIN FLUTTER
 ============================================================================================
 RECOVERY -- the aft gas seal
 ============================================================================================
-  ejection charge     1.19 g black powder, 3 x 2-56 nylon shear pins
+  ejection charge     1.18 g black powder, 3 x 2-56 nylon shear pins
   design pressure     246 kPa (1082 N on the disc); joint releases at 123 kPa
-  stuck-joint case    1668 kPa (7329 N) -- the same charge in the packed free volume, and this is what sizes the disc
-  bulkhead            G-10 4.8 mm, 39 g; plate 4.0x, feed-through 2.2x, bond 12.1x
+  stuck-joint case    1658 kPa (7287 N) -- the same charge in the packed free volume, and this is what sizes the disc
+  bulkhead            G-10 4.8 mm, 39 g; plate 4.0x, feed-through 2.2x, bond 12.2x
   main opening shock  1338 N through the U-bolt (5.6x) -- 14x vehicle weight at a 1.0 shock factor
   governed by         the feed-through hole
   aft gas seal check  OK
   internal bulkhead   G-10 4.8 mm, 39 g; plate 4.0x, feed-through 2.2x -- NO shear pins protect it
   bulkhead allowance  10.8 mm assembled against recovery.BULKHEAD_THICKNESS 12.0 mm
   internal bhd check  OK
-  packing             FITS   recovery bay     need 350.5 mm, have 357.3 mm (  +6.8 mm)  2 compartments, 81% full
+  packing             FITS   recovery bay     need 347.8 mm, have 347.8 mm (  +0.1 mm)  2 compartments, 82% full
      Full argument: python scripts/seal_report.py
+
+============================================================================================
+JOINTS -- what the couplers cost each bay
+============================================================================================
+  nav bay           127.0 mm tube ->  115.0 mm usable, bore 74.8 mm (70.2 over 79 mm)
+  canard module     142.9 mm tube ->  130.9 mm usable, bore 74.8 mm (70.2 over 79 mm)
+  recovery bay      357.3 mm tube ->  357.3 mm usable, bore 74.8 mm (70.2 over 79 mm)
+  booster           416.3 mm tube ->  404.3 mm usable, bore 74.8 mm (70.2 over 79 mm)
+  A coupler or a shoulder is a TUBE and its bore is usable, so it costs DIAMETER
+  over its span, not LENGTH. Only bulkheads cost length. That is what settled the
+  nose shoulder question -- see design/joints.py.
+  For anything that PACKS the narrowed bore is a volume penalty, so the recovery
+  bay is checked against its full-bore equivalent length, not its tube length.
 
 ============================================================================================
 VENTING and the NAV BAY
@@ -222,10 +235,10 @@ VENTING and the NAV BAY
   canard module vent  2 x dia 2.0 mm through its OWN WALL -- so the module is not in the sense volume
   lag model asks for  1.53 mm2 against the 24.1 mm2 convention drills. Lag does not size these holes
   venting check       OK
-  nav bay packing     NO FIT nav bay          need 116.8 mm, have 103.0 mm ( -13.8 mm)  short by 14 mm
-    before the move   NO FIT nav bay          need 151.7 mm, have 103.0 mm ( -48.7 mm)  short by 49 mm
+  nav bay packing     NO FIT nav bay          need 124.5 mm, have 115.0 mm (  -9.4 mm)  short by 9 mm
+    before the move   NO FIT nav bay          need 161.7 mm, have 115.0 mm ( -46.6 mm)  short by 47 mm
   nose stack          FITS   nose stack        35.4 mm sled at station 282-318 mm, 59.1 mm wide  2 parts, aft of the ballast
-  the move is worth   35 mm of sled and moves 105 g from station 381 to 300 mm
+  the move is worth   37 mm of sled and moves 105 g from station 381 to 300 mm
   ON ESTIMATED ENVELOPES -- 6 of 6 parts are guesses because D7 is open. Read
      correction 5 before touching geometry. python scripts/avionics_report.py
 

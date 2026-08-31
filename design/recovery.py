@@ -189,9 +189,18 @@ CONDUIT_OUTER_DIAMETER = 0.005  # m, thin-wall tube, carries 2 x 24 AWG with roo
 CONDUIT_DENSITY = 1400.0  # kg/m^3, thin-wall PETG or glass tube -- a few grams either way
 
 # A U-bolt standing proud of a bulkhead is rigid and the canopy packs AROUND it, so it takes
-# its own volume out of the compartment rather than compressing with the fabric. Measured off
-# an M5 U-bolt: about 25 x 20 x 12 mm of swept envelope including the harness loop.
-UBOLT_ENVELOPE_VOLUME = 6.0e-6  # m^3
+# its own volume out of the compartment rather than compressing with the fabric.
+#
+# THIS WAS 6.0e-6 AND THAT WAS A BOUNDING BOX, which is the error correction 23 records in
+# another form: a 25 x 20 x 12 mm envelope for an M5 U-bolt describes a solid block, and a
+# U-bolt is a wire loop with a hole in the middle that the harness threads through. The
+# fabric goes round the rod, not round the box.
+#
+# Rod: about 65 mm of 5 mm bar bent into the U, 1.3 cm3. Backing plate 25 x 20 x 3, 1.5 cm3.
+# Call it 3.0 cm3 and note that it is still the loosest number in this calculation -- but it
+# is now loose about the right object. The difference is 2.7 mm of recovery bay, which is
+# the entire margin, so it was worth getting right rather than staying "conservative".
+UBOLT_ENVELOPE_VOLUME = 3.0e-6  # m^3
 
 # VENDOR PACK VOLUMES -- these replace the density estimate for the two canopies, which is
 # the single biggest source of uncertainty in this whole calculation. Published figures,

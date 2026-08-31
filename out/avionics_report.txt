@@ -6,8 +6,8 @@ THE NAV BAY -- where the boards go, and whether they go
   station               318 -> 445 mm from the nose tip
   bay length            127.0 mm (1.60 cal)
   bore                  74.8 mm
-  sled width            59.8 mm (80% of the bore)
-  usable height         44.9 mm, NOT 74.8
+  sled width            56.2 mm (80% of the bore)
+  usable height         42.1 mm, NOT 74.8
 
   THE LAST LINE IS THE WHOLE MODELLING POINT. A flat sled in a round tube can only
   use the rectangle inscribed in the circle, and nothing goes in the corners it
@@ -62,10 +62,10 @@ THE NOSE -- where the tracker and the radio went, Aug 2026
 THE VERDICT, ON ESTIMATED ENVELOPES
 ============================================================================================
 
-  NO FIT nav bay          need 116.8 mm, have 103.0 mm ( -13.8 mm)  short by 14 mm
-  NO FIT nav bay          need 151.7 mm, have 103.0 mm ( -48.7 mm)  short by 49 mm      before the move
+  NO FIT nav bay          need 124.5 mm, have 115.0 mm (  -9.4 mm)  short by 9 mm
+  NO FIT nav bay          need 161.7 mm, have 115.0 mm ( -46.6 mm)  short by 47 mm      before the move
 
-  available = 127 mm of bay less two 12 mm end closures = 103 mm of sled
+  available = 127 mm of tube less one 12 mm bulkhead = 115 mm of sled, at 70.2 mm bore
 
   STILL SHORT BY 14 mm, AND STILL NOT YET A REASON TO CHANGE GEOMETRY.
 
@@ -74,11 +74,11 @@ THE VERDICT, ON ESTIMATED ENVELOPES
   lengthened on the strength of it, and the shortfall turned out not to exist. Every
   envelope above is that same kind of estimate -- no part here has been chosen.
 
-  The move was worth 35 mm of the 49 mm gap. What is left:
+  The move was worth 37 mm of the 47 mm gap. What is left:
 
   1. CLOSE D7 AND MEASURE. Six datasheets replace six guesses, and 14 mm is well
      inside what a 70% packing efficiency guess is worth -- at 0.80 the stack fits
-     with +0.8 cm2 to spare. This is the only thing that settles it, and it is
+     with +5.5 cm2 to spare. This is the only thing that settles it, and it is
      ten minutes of work per part.
   2. THE NOSE SHOULDER IS UNMODELLED AND IT IS BIGGER THAN 14 mm -- see below.
   3. ONE END CLOSURE, NOT TWO. The bay's aft face is shared with the canard
@@ -88,24 +88,80 @@ THE VERDICT, ON ESTIMATED ENVELOPES
      the vehicle. Last for that reason, not first.
 
 ============================================================================================
-THE THING THIS CHECK CANNOT SEE, AND IT IS LARGER THAN THE SHORTFALL
+THE SHOULDER QUESTION -- SETTLED, and it went the good way
 ============================================================================================
 
-  THE NOSE SHOULDER IS NOT IN THIS MODEL AT ALL. `docs/04` carries a 1 caliber
-  (79 mm) shoulder on a 127 mm nav bay, and a shoulder inserts INTO the
-  forward end of the tube it joins. Which tube's length it spends is a question
-  nobody has answered, and the two answers are 79 mm apart:
+  This report used to end by saying the nose shoulder was unmodelled and worth more
+  than the shortfall: a 1 caliber shoulder on a 127 mm bay, and nobody had decided
+  which tube's length it spent. The two readings were 79 mm apart.
 
-    * if the sled has to sit AFT of the shoulder, the bay loses 79 mm rather than
-      the 12 mm this check charges, and it is short by ~80 mm, not 14;
-    * if the sled runs UP INSIDE the shoulder -- which is how many high-power
-      av-bays are actually built -- the bay GAINS most of that 79 mm and fits with
-      room to spare.
+  BOTH READINGS WERE WRONG, because the question had a false premise. A shoulder is
+  a TUBE. So is a coupler. What is inside it is still bay. Neither costs LENGTH --
+  what each costs is local DIAMETER over its span:
 
-  This check assumes neither. It charges a plain end closure at both ends, which is
-  the arrangement nobody has drawn. **The 14 mm shortfall is the smallest open
-  question about this bay, not the largest one.** Settle the shoulder before
-  spending an afternoon on the packing efficiency.
+      coupler / shoulder bore = 74.8 - 2 x 2.3 = 70.2 mm
+
+  What costs length is a BULKHEAD, and bulkheads were already counted. So:
+
+    nav bay           127.0 mm tube ->  115.0 mm usable, bore 74.8 mm (70.2 over 79 mm)
+    canard module     142.9 mm tube ->  130.9 mm usable, bore 74.8 mm (70.2 over 79 mm)
+    recovery bay      357.3 mm tube ->  357.3 mm usable, bore 74.8 mm (70.2 over 79 mm)
+    booster           416.3 mm tube ->  404.3 mm usable, bore 74.8 mm (70.2 over 79 mm)
+
+  The nav bay gains 12 mm of length (one bulkhead, not two -- the
+  forward closure belongs to the nose module) and loses 3.6 mm of sled width to
+  the shoulder bore. Net, the shortfall goes 14 -> 9 mm.
+
+  The framing is what had been wrong, not any number. "Which bay does the
+  shoulder's length come out of" is a complete-sounding question whose two answers
+  were both false, which is correction 28 one joint further forward.
+
+============================================================================================
+THE NOSE AS A SWAPPABLE MODULE -- and what a future payload may weigh
+============================================================================================
+
+  Putting the tracker and the radio in the nose was a packing fix. Keeping them
+  there on purpose is a different decision: the nose becomes the INSTRUMENTATION
+  MODULE, and the point of one is that it comes off. After GV-2 has measured the
+  control derivatives, the same nose can carry a payload instead.
+
+  That needs three things to be true, and the third is the one nobody expects:
+
+    telemetry radio            one connector to the flight computer -- flight data downlink
+    GPS tracker, independent   none; own battery, own antenna, independent by design
+
+    -> ONE electrical interface for the whole module. A payload that needs nothing
+       leaves it unmated. The tracker having its own battery is not a nicety; an
+       independent tracker sharing the flight computer's battery is not independent.
+
+    -> ITS MASS IS PART OF THE STABILITY SOLUTION. 105 g at station 300 mm sits
+       forward of the 794 mm CG, so it is doing the same job as the nose
+       ballast. Swap it for something heavier and the margin moves:
+
+    nose payload   SM min   SM max   verdict
+  --------------------------------------------------
+            0 g     1.99     2.48   ok
+           50 g     2.05     2.54   ok
+          105 g     2.11     2.60   ok  <- instrumentation
+          200 g     2.22     2.71   ok
+          300 g     2.33     2.82   ok
+          500 g     2.53     3.02   SM over 3.0 -- over-stable
+
+  SO: ANYTHING UP TO ABOUT 300 g GOES IN WITH NO OTHER CHANGE, and past that the
+  vehicle turns over-stable rather than unstable -- it weathercocks and gives up
+  crossrange, which is a performance loss and not a safety one. The nose ballast is
+  the trim knob either way: 100 g at station 191 mm with provision for 300 g
+  (docs/00 D10), and it was always meant to be set after weighing the real vehicle.
+
+  Room: 469 cm3 between station 200 mm (clear of the ballast) and the
+  nose base, of which the instrumentation sled uses 155 cm3 at 282-318 mm.
+  A payload gets the lot once the tracker and radio come out.
+
+  THE ONE DRAWBACK, stated rather than buried: the GNSS antenna stays in the NAV
+  BAY, at the forward end of its sled, under the shoulder -- configure.py puts the
+  nav bay forward for exactly that reason. A dense payload sitting directly ahead of
+  it is between that antenna and the sky. Nothing here models RF; if the payload is
+  metallic, check the fix before the flight rather than after it.
 
 ============================================================================================
 WHAT THE STACK MEANS FOR VENTING

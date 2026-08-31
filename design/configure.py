@@ -16,7 +16,7 @@ from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
 
-from . import aero, avionics, control, mass as mass_mod, recovery, trajectory
+from . import aero, avionics, control, joints, mass as mass_mod, recovery, trajectory
 from .geometry import BodyTube, FinSet, NoseCone, Rocket
 from .motors import GENERIC, Motor, load_eng
 from .packaging import SERVOS
@@ -298,8 +298,16 @@ def evaluate(
     # assumed constant for a long time and nothing checked it. A canopy that does not fit
     # is not a soft failure: it is a rocket that cannot be assembled on the pad, found on
     # launch day.
+    # THE BAY LENGTH HANDED TO THIS CHECK IS NOT THE TUBE LENGTH. `design/joints.py` settles
+    # what the couplers cost: a coupler is a tube and its bore is still usable, so it is not
+    # a length penalty -- but the bore over that span is 70.2 mm rather than 74.8, and for
+    # something that PACKS that is a volume penalty. `equivalent_length` restates the bay as
+    # the full-bore cylinder of the same volume, which is the only honest way to hand a bore
+    # profile to a length-based check.
+    bays = joints.budgets(rocket, p.wall_thickness)
     rec_tube = next(t for t in rocket.tubes if t.name == "recovery bay")
-    packing = recovery.check_packing(rec_tube.inner_diameter, rec_tube.length)
+    packing = recovery.check_packing(
+        rec_tube.inner_diameter, bays["recovery bay"].equivalent_length)
     if not packing.fits:
         violations.append(
             f"recovery bay {rec_tube.length * 1000:.0f} mm, needs "
@@ -319,14 +327,14 @@ def evaluate(
     # So it does not flip `feasible`. It also does not get to be silent, because a check
     # that cannot fail is not evidence of anything.
     warnings: list[str] = []
-    nav_tube = next(t for t in rocket.tubes if t.name == "nav bay")
+    nav = bays["nav bay"]
     nav_pack = avionics.check_packing(
-        nav_tube.inner_diameter, nav_tube.length, avionics.NAV_BAY_STACK)
+        nav.min_bore, nav.usable_length, avionics.NAV_BAY_STACK, end_closures=0)
     if not nav_pack.fits:
         was = avionics.check_packing(
-            nav_tube.inner_diameter, nav_tube.length, avionics.DEFAULT_STACK)
+            nav.min_bore, nav.usable_length, avionics.DEFAULT_STACK, end_closures=0)
         warnings.append(
-            f"nav bay {nav_tube.length * 1000:.0f} mm needs "
+            f"nav bay {nav.usable_length * 1000:.0f} mm usable needs "
             f"{nav_pack.required_length * 1000:.0f} mm of sled on estimated envelopes, "
             f"short by {-nav_pack.margin * 1000:.0f} mm (was "
             f"{was.required_length * 1000:.0f} mm before the tracker and radio went to the "

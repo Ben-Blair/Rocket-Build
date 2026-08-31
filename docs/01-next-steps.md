@@ -93,11 +93,21 @@ Read this first if you are picking the project back up.
     (correction 28). The canard module vents through **its own wall**, so it is not in the
     altimeter's sense volume and the wiring pass-through is potted solid.
   - **The nav bay has a packing check now** (`design/avionics.py`,
-    `scripts/avionics_report.py`) and **it still does not pass**. 152 mm of sled wanted
-    against 103 available; **the tracker and the telemetry radio moved into the nose**
-    (correction 30), which bought 35 mm of the 49 mm gap and leaves it **14 mm short** on
-    estimated envelopes. Read correction 27 before doing anything more — this is
-    correction 5's exact trap, and it is an `evaluate()` **warning**, not a violation.
+    `scripts/avionics_report.py`) and **it still does not pass**. The tracker and the
+    telemetry radio moved into the nose (correction 30) and the shoulder question is settled
+    (correction 31); between them the gap went 47 mm → **9 mm short** on estimated
+    envelopes. Read correction 27 before doing anything more — this is correction 5's exact
+    trap, and it is an `evaluate()` **warning**, not a violation.
+- **The joints are modelled** (correction 31). `design/joints.py` — all four of them, which
+  `tube_section.py` has wanted since it was written. **A coupler is a tube and its bore is
+  usable**, so it costs local diameter and not bay length; only bulkheads cost length. That
+  settled the nose shoulder, and it also took the recovery bay from **+6.8 mm to +0.1 mm**,
+  because for anything that *packs* the narrowed bore is a volume penalty. **The recovery
+  bay now has no margin at all** — see correction 31.
+- **The nose is the instrumentation module, and it is meant to come off** (correction 32).
+  Tracker and telemetry radio live there, self-contained, on one connector. A future payload
+  of **up to about 300 g needs no other change**; past that the vehicle goes over-stable
+  rather than unstable, and the nose ballast is the trim knob.
 - **The canard module has no open engineering item.** What is left in it is CAD — the
   seal's geometry, the pass-through hole, the two vent holes — and the Step 3 drawing.
 - **Step 4 is next**: avionics. Decisions D7 (flight computer) and D8 (state estimation)
@@ -126,7 +136,7 @@ these, because they moved once already when the altimeter went into the budget
 on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
 so instead of hiding it.
 
-Thirty corrections are worth knowing about. The first four changed the design; two of the
+Thirty-two corrections are worth knowing about. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
@@ -738,6 +748,94 @@ that silently recurs:
    of that 79 mm and fits with room to spare. `avionics.py` assumes neither; it charges a
    plain end closure at both ends, which is the arrangement nobody has drawn. **The 14 mm is
    the smallest open question about this bay, not the largest one.**
+
+31. **A coupler is a tube, and what is inside it is still bay.** Correction 30 left the nose
+   shoulder as the largest open question about the nav bay: `docs/04` carries a 1 caliber —
+   79.4 mm — shoulder on a 127 mm bay, and nobody had decided which tube's length it spent.
+   The two readings were **79 mm apart**, and the bad one made the bay short by ~80 mm.
+
+   **Both readings were wrong, because the question had a false premise.** A shoulder is a
+   hollow tube. So is a coupler. Neither consumes bay *length* — what each costs is local
+   *diameter* over its span, `74.8 − 2 × 2.3 = 70.2 mm`. What costs length is a **bulkhead**,
+   and bulkheads were already being counted. *"Which bay does the shoulder's length come out
+   of"* is a complete-sounding question with two false answers, which is correction 28 one
+   joint further forward.
+
+   `design/joints.py` now models **all four joints**, because the shoulder turned out to be
+   one instance of something general and because `tube_section.py` has carried *"the
+   tube-to-tube joints either side of the module — couplers are a mass line in `mass.py` and
+   nothing more"* since it was written. Each joint's **kind is now a stated decision** —
+   which ones come apart, and on what — rather than something everyone assumed they knew.
+
+   | bay | tube | usable | bore |
+   |---|---|---|---|
+   | nav bay | 127.0 mm | **115.0 mm** | 74.8 (70.2 over 79 mm) |
+   | canard module | 142.9 mm | 130.9 mm | 74.8 (70.2 over 79 mm) |
+   | recovery bay | 357.3 mm | 357.3 mm | 74.8 (70.2 over 79 mm) |
+   | booster | 416.3 mm | 404.3 mm | 74.8 (70.2 over 79 mm) |
+
+   For the nav bay it went the good way: one bulkhead instead of two (the forward closure
+   belongs to the nose module), so +12 mm of length against −3.6 mm of sled width, and the
+   shortfall goes **14 → 9 mm**.
+
+   **For the recovery bay it went the other way, and this is the part to act on.** A sled is
+   rigid and takes the narrow bore as its width; a *parachute packs*, so for it the narrowed
+   bore is a **volume** penalty. `BayBudget.equivalent_length` restates the bay as the
+   full-bore cylinder of the same volume — 357.3 → **347.8 mm** — and the margin goes
+   **+6.8 → +0.1 mm.** That is not a pass, it is a coincidence. The sensitivities:
+
+   | change | margin moves |
+   |---|---|
+   | fill limit 0.85 → 0.87 | +7.7 mm |
+   | fill limit 0.85 → 0.82 | **−12.1 mm** |
+   | coupler engagement 1.0 → 0.75 cal | +2.5 mm |
+   | internal bulkhead 12 → 10 mm | +2.1 mm |
+
+   **Pack the real canopy and measure it.** `recovery.py` has said since it was written that
+   this is the only thing that settles the packing, and it has now stopped being advice.
+
+   One number moved on the way past, and it moved *because* it was wrong rather than
+   conservative: the U-bolt envelope was **6.0 cm³, and that was a bounding box** — a
+   25 × 20 × 12 mm block describing a wire loop with a hole in the middle that the harness
+   threads through. Rod plus backing plate is 3.0 cm³. Correction 23's lesson in another
+   costume, and worth 2.7 mm of a bay that has 0.1.
+
+32. **The nose is the instrumentation module, and the point of one is that it comes off.**
+   Correction 30 put the tracker and the radio in the nose to fix a packing problem. Keeping
+   them there on purpose is a different decision, and it is the right one: after GV-2 has
+   measured the control derivatives the campaign stops needing telemetry, and the same nose
+   can carry a payload instead.
+
+   **Self-contained is a requirement with numbers, not an aspiration.** Three things decide
+   it and the third is the one nobody expects:
+
+   - **Its own battery.** The tracker already has one — an "independent" tracker sharing the
+     flight computer's battery is not independent. The radio needs one too, or the module is
+     a subassembly on the end of a power lead.
+   - **One electrical interface.** The tracker needs nothing from the vehicle; the radio
+     needs flight data, which is one connector at the joint. A payload that needs nothing
+     leaves it unmated.
+   - **Its mass is part of the stability solution.** 105 g at station 300 mm sits forward of
+     the 794 mm CG, so it is doing the nose ballast's job.
+
+   | nose payload | SM min | SM max | |
+   |---|---|---|---|
+   | 0 g | 1.99 | 2.48 | ok |
+   | 105 g | 2.11 | 2.60 | the instrumentation |
+   | 300 g | 2.33 | 2.82 | ok |
+   | 500 g | 2.53 | 3.02 | over-stable, SM > 3.0 |
+
+   **Up to about 300 g goes in with no other change**, and past that the vehicle goes
+   *over*-stable rather than unstable — it weathercocks and gives up crossrange, a
+   performance loss and not a safety one. The nose ballast trims either way. Room: **469 cm³**
+   between station 200 mm (clear of the ballast) and the nose base, of which the
+   instrumentation uses 155 cm³.
+
+   **The one drawback, stated rather than buried:** the GNSS antenna stays in the nav bay at
+   the forward end of its sled, under the shoulder — `configure.py` puts the nav bay forward
+   for exactly that reason. A dense payload sitting directly ahead of it is between that
+   antenna and the sky. Nothing in this project models RF; if the payload is metallic, check
+   the fix on the ground before the flight.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.

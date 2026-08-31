@@ -17,7 +17,7 @@ were gathered August 2026.
 | Item | Spec | Qty | Mass | Price | |
 |---|---|---|---|---|---|
 | Body tube, G12 fiberglass | 3 in, 79.4 mm OD / 74.8 mm ID, 2.3 mm wall. Need 1043 mm; buy one 48 in (1219 mm) length | 1 | 1.075 kg | ~$130 | |
-| Nose cone, fiberglass | 3 in, 4:1 tangent ogive, 318 mm, with shoulder | 1 | 0.180 kg | ~$75 | |
+| Nose cone, fiberglass | 3 in, 4:1 tangent ogive, 318 mm, **1 cal hollow shoulder** — its bore is usable nav bay, see `design/joints.py` | 1 | 0.180 kg | ~$75 | the instrumentation module; meant to come off |
 | Coupler tube, fiberglass | 3 in, for 3 bay joints | 1 length | in structure | ~$50 | |
 | Bulkheads and centering rings | G10 or birch ply, 3 in | set | 0.300 kg | ~$35 | |
 
@@ -192,10 +192,18 @@ computer, and the nose shoulder is the one place a fibreglass airframe stops shi
 antenna. An independent tracker with its own battery in its own compartment is what
 "independent" is supposed to mean.
 
+**And the nose is a MODULE, meant to come off** (correction 32). After GV-2 the campaign
+stops needing telemetry and the same nose can carry a payload: **up to about 300 g with no
+other change**, in **469 cm³** between station 200 mm and the nose base. Two build rules
+follow and neither is optional if the swap is to be real — **the module carries its own
+battery**, and it has **exactly one connector** to the vehicle (the radio's data link; the
+tracker needs nothing). The one drawback is RF: the GNSS antenna stays in the nav bay under
+the shoulder, so a dense payload sits between it and the sky.
+
 **AND THE BAY STILL DOES NOT FIT.** `design/avionics.py` is the packing check the nav bay
-never had; `python scripts/avionics_report.py` is the argument. It wants **117 mm of sled
-against 103 mm available** — down from 152 mm before the move, so **14 mm short** rather
-than 49.
+never had; `python scripts/avionics_report.py` is the argument. It wants **124 mm of sled
+against 115 mm available at a 70.2 mm bore** — so **9 mm short**, down from 47 mm before the
+tracker and radio moved to the nose.
 
 Every envelope in that check is an estimate for a part nobody has chosen, so this is a
 **warning and not a violation**, and correction 5 is why: an estimate-driven shortfall was
@@ -207,11 +215,10 @@ faces, not volume — the bay looks two-thirds empty by volume and is not.
 
 Two more things about this bay:
 
-- **THE NOSE SHOULDER IS UNMODELLED AND IT IS WORTH MORE THAN THE SHORTFALL.** §1 carries a
-  1 caliber (79 mm) shoulder, and a shoulder inserts *into* the tube it joins. Nobody has
-  decided whether the sled sits aft of it (the bay loses 79 mm, and is short by ~80) or runs
-  up inside it (the bay gains most of 79 mm, and fits easily). **Settle this before spending
-  any time on the packing efficiency.**
+- **The nose shoulder is settled** (docs/01 correction 31). A shoulder is a hollow tube and
+  its bore is usable, so it costs *diameter* — 74.8 → 70.2 mm over its 79 mm — and not
+  length. The sled runs up inside it. The bay gets 115 mm of usable length at 70.2 mm bore,
+  and the shortfall is **9 mm**. `design/joints.py` models all four joints.
 - **The firing circuits leave this bay going aft**, cross the canard module, and cross the
   aft gas seal, because there is no room for an av-bay next to the charges. See docs/05.
 - **The static ports go here and only here**, 3 × ⌀3.2 mm. The canard module vents through

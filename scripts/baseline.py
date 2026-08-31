@@ -13,7 +13,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design import (
-    aero, avionics, control, flutter, hinge, seal, trajectory, tube_section, venting,
+    aero, avionics, control, flutter, hinge, joints, seal, trajectory, tube_section,
+    venting,
 )
 from design.configure import baseline, build_vehicle, evaluate
 from design import recovery
@@ -329,6 +330,15 @@ def main() -> None:
     print(f"  packing             {ev.packing}")
     print("     Full argument: python scripts/seal_report.py")
 
+    rule("JOINTS -- what the couplers cost each bay")
+    for b in joints.budgets(r, BASELINE.wall_thickness).values():
+        print(f"  {b}")
+    print("  A coupler or a shoulder is a TUBE and its bore is usable, so it costs DIAMETER")
+    print("  over its span, not LENGTH. Only bulkheads cost length. That is what settled the")
+    print("  nose shoulder question -- see design/joints.py.")
+    print("  For anything that PACKS the narrowed bore is a volume penalty, so the recovery")
+    print("  bay is checked against its full-bore equivalent length, not its tube length.")
+
     rule("VENTING and the NAV BAY")
     nav = next(t for t in ev.rocket.tubes if t.name == "nav bay")
     nav_free = avionics.free_volume(nav.inner_diameter, nav.length)
@@ -347,8 +357,12 @@ def main() -> None:
           f"against the {nav_bay.area * 1e6:.1f} mm2 convention drills. Lag does not size these holes")
     print(f"  venting check       {'OK' if vchk.ok else 'VIOLATIONS: ' + '; '.join(vchk.violations)}")
 
-    nav_pack = avionics.check_packing(nav.inner_diameter, nav.length, avionics.NAV_BAY_STACK)
-    was = avionics.check_packing(nav.inner_diameter, nav.length, avionics.DEFAULT_STACK)
+    bays = joints.budgets(r, BASELINE.wall_thickness)
+    navb = bays["nav bay"]
+    nav_pack = avionics.check_packing(navb.min_bore, navb.usable_length,
+                                      avionics.NAV_BAY_STACK, end_closures=0)
+    was = avionics.check_packing(navb.min_bore, navb.usable_length,
+                                 avionics.DEFAULT_STACK, end_closures=0)
     nose_fit = avionics.check_nose_packing(
         r.nose, forward_limit=BASELINE.nose_ballast_station + 0.020)
     print(f"  nav bay packing     {nav_pack}")

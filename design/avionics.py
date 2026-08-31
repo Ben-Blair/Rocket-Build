@@ -291,3 +291,88 @@ def check_nose_packing(nose, components: list[Component] | None = None,
     return NoseFit(False, forward_limit, aft, 0.0, aft - forward_limit,
                    (forward_limit + aft) / 2.0, footprint,
                    "does not fit anywhere aft of the ballast station")
+
+
+# ---------------------------------------------------------------------------------------
+# The nose as a swappable module
+# ---------------------------------------------------------------------------------------
+#
+# WHY THIS SECTION EXISTS. Putting the tracker and the radio in the nose was a packing fix
+# (docs/01 correction 30). Keeping them there on purpose is a different decision: it makes
+# the nose the vehicle's INSTRUMENTATION MODULE, and the point of an instrumentation module
+# is that it comes off. Once GV-2 has measured the control derivatives and the campaign
+# stops needing telemetry, the same nose can carry a payload instead.
+#
+# That only works if the module is genuinely self-contained, and "self-contained" is a
+# requirement with a number attached rather than an aspiration. Three things decide it, and
+# the third is the one that bites:
+#
+#   1. ITS OWN BATTERY. The tracker already has one -- an independent tracker that shares a
+#      battery with the flight computer is not independent. The radio needs one too, or it
+#      is not a module, it is a subassembly on the end of a power lead.
+#   2. ONE ELECTRICAL INTERFACE, OR NONE. The tracker needs nothing from the vehicle. The
+#      radio needs flight data, which is one connector at the joint -- so the module has
+#      exactly one interface and a payload that needs none simply leaves it unmated.
+#   3. ITS MASS IS PART OF THE STABILITY SOLUTION. This is the one nobody expects. 105 g at
+#      station 300 mm is forward of a 794 mm CG, so it is doing the same job as the nose
+#      ballast, and a payload of a different mass moves the static margin. `payload_envelope`
+#      below is what that costs.
+
+NOSE_MODULE_INTERFACES = {
+    "telemetry radio": "one connector to the flight computer -- flight data downlink",
+    "GPS tracker, independent": "none; own battery, own antenna, independent by design",
+}
+
+
+def payload_envelope(evaluate_fn, params, station: float,
+                     masses: tuple[float, ...] = (0.0, 0.05, 0.105, 0.2, 0.3, 0.5),
+                     baseline_mass: float = 0.105) -> list[tuple[float, float, float, bool]]:
+    """Static margin against nose payload mass: (mass, SM min, SM max, within limits).
+
+    Answers "if I take the instrumentation out and put something else there, what can it
+    weigh". Swept rather than solved, because the trajectory has to be re-run for each point
+    and the answer is a table a person reads, not a number a script consumes.
+
+    THE BALLAST IS THE OTHER HALF OF THIS ANSWER and it is not swept here. 100 g sits at
+    station 191 mm with provision for 300 g (docs/00 D10), and it was always meant to be set
+    after weighing the finished vehicle. A payload that pushes the margin out of band can be
+    trimmed back with it -- so read this table as "what does it cost", not "what is allowed".
+    """
+    from dataclasses import replace as _replace
+    from . import mass as mass_mod
+
+    out: list[tuple[float, float, float, bool]] = []
+    original = dict(mass_mod.DEFAULT_AVIONICS_BUDGET)
+    try:
+        for m in masses:
+            budget = dict(original)
+            # Replace the two nose lines with a single payload line of the swept mass.
+            for k in list(budget):
+                if k in mass_mod.NOSE_AVIONICS:
+                    budget.pop(k)
+            budget["nose_payload"] = m
+            mass_mod.NOSE_AVIONICS.add("nose_payload")
+            mass_mod.DEFAULT_AVIONICS_BUDGET = budget
+            ev = evaluate_fn(params)
+            out.append((m, ev.flight.min_static_margin, ev.flight.max_static_margin,
+                        ev.feasible))
+    finally:
+        mass_mod.DEFAULT_AVIONICS_BUDGET = original
+        mass_mod.NOSE_AVIONICS.discard("nose_payload")
+    return out
+
+
+def nose_payload_volume(nose, forward_station: float, aft_station: float) -> float:
+    """Internal volume of the nose cavity between two stations, m^3.
+
+    What a future payload actually has to fit in. Integrated rather than approximated as a
+    cylinder, because the whole point of `NoseCone.radius_at()` is that a cone is not one.
+    """
+    import math
+    steps = 200
+    total = 0.0
+    dx = (aft_station - forward_station) / steps
+    for i in range(steps):
+        x = forward_station + (i + 0.5) * dx
+        total += math.pi * nose.inner_radius_at(x) ** 2 * dx
+    return total
