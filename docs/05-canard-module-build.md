@@ -131,7 +131,8 @@ frames were dropped — and the bay is printable now. **It is the last open item
 load path and it has a number on it**: the housing collar carries 3.700 mm of the 6.0 mm
 bearing, worth **3.4× → 14.5×** on the bearing seat. See "How this actually gets built"
 and "The printed bay".
-Forward wiring pass-through and aft gas seal are still open. The mate connectors the hinges
+The aft gas seal is SIZED as of Aug 2026 (see "The aft gas seal" below); the forward wiring
+pass-through is still open as geometry, and it is the module's vent. The mate connectors the hinges
 need exist in pairs on each hinge axis (`canardHingeConnectors`), the rigid groups either
 side of each hinge exist, and **the mates are in** — see above.
 `scripts/make_module_assembly.py` still
@@ -561,7 +562,8 @@ locates the tang on the hinge axis at the correct chordwise station costs an hou
 time and removes the only real risk in the approach. Keep epoxy off the ⌀6 journal; that
 surface has to turn in the bearing.
 
-**Still unmodelled, deliberately:** the panel bonding jig and the aft gas seal. The bay and
+**Still unmodelled, deliberately:** the panel bonding jig. The aft gas seal was on this list
+until Aug 2026 and is now sized -- geometry still to draw. The bay and
 its collar were on this list until Aug 2026 and are now real geometry — see "The printed
 bay" below. The bought servo horn is off the list for a different reason: it does not fit.
 
@@ -660,12 +662,122 @@ envelope; `design/bay.py` now prints a clearance table on every run so it cannot
 
 ### What is still open
 
-**The coupling.** There is 0.515 mm between the servo's output face and the bearing, and
-outboard of that the hole is the ⌀6 bearing bore. No bought 15T ⌀4 horn hub is under
-⌀7.4 × 4 mm. **No bay geometry fixes this** — see docs/01 correction 19.
+**The coupling — CLOSED, Aug 2026.** This section carried it as open on the strength of
+correction 19: there is 0.515 mm between the servo's output face and the bearing, and no
+bought 15T ⌀4 horn hub is under ⌀7.4 × 4 mm. The way out was neither cutting a spline nor
+buying one — **cast it**, in anaerobic retaining compound, in a plain ⌀4.100 × 3.20 drilled
+socket. See docs/01 correction 21 and `design/hinge.py`. Cut in the CAD.
 
-**The aft gas seal.** A bulkhead between this module and the recovery bay, sealing a bore
-this part deliberately leaves open for wiring. Never sized.
+**The aft gas seal — SIZED, Aug 2026.** `design/seal.py`, `scripts/seal_report.py`,
+verdict in `scripts/baseline.py`. See "The aft gas seal" below. It is a **G-10 disc, 4.8 mm,
+39 g**, and it is not the part this heading described.
+
+**The forward wiring pass-through.** Still open as *geometry* — no hole is drawn — but it is
+no longer an open *decision*: it is also the canard module's vent, and it has to be, because
+the only other face vents into the volume the ejection charge fires in. See below.
+
+## The aft gas seal
+
+Added August 2026. Model in `design/seal.py`, argument in `out/seal_report.txt`
+(regenerate with `python scripts/seal_report.py --write`), verdict carried by
+`scripts/baseline.py` so it cannot silently regress.
+
+**It is not a gasket, and calling it one for six months is why it was never sized.** The
+heading above described a part whose job is to be gas-tight. Its actual job is to be the
+**piston the ejection charge pushes on to separate the airframe**, and then the **anchor the
+main parachute pulls on when it opens**. Gas tightness is its third requirement. This is
+correction 2 and correction 11 again — a part named after its smallest load, sized against
+the number in its name.
+
+### What it carries
+
+| | |
+|---|---|
+| bore, and so the piston area | ⌀74.8 mm, **4394 mm²** |
+| forward compartment (holds the main) | 1041.5 cm³ geometric, **156.2 cm³ free** — 15%, the rest is canopy |
+| shear pins | 3 × 2-56 nylon, 441 N, + 100 N of friction allowance |
+| joint releases at | **123 kPa** (17.9 psi) |
+| black powder charge | **1.17 g**, sized on the geometric volume at a 2.0× separation factor |
+| design case — joint releases | 246 kPa, **1082 N** on the disc |
+| **stuck case — same charge, free volume** | **1642 kPa, 7213 N** |
+| main opening shock, through the U-bolt | 768 N at a 1.0 shock factor, **1306 N** at 1.7 |
+
+**The stuck case is what sizes the disc, and the reason is not caution.** The shear pins are
+the intended fuse. A bulkhead sized for the pressure that opens the joint is sized for the
+day everything works; size it for the whole charge with nothing moving and the pins are
+guaranteed to be the first thing that gives. That is the failure you want, and it costs two
+sheet sizes and about 23 g.
+
+### The part
+
+**G-10 sheet, 4.8 mm, 39 g**, bonded into the aft end of the module with a fillet either
+side. On its aft face: the charge well, a two-pole terminal block, and the harness U-bolt
+**with a backing plate**. Feed-through: **2 × ⌀4.0 mm at R 22.6 mm**, potted.
+
+| | |
+|---|---|
+| plate bending, simply supported | 118 MPa, **4.1×** |
+| same, edge clamped | 75 MPa — reported, deliberately **not** used |
+| feed-through, Kt 2.0 | 196 MPa, **2.45×** |
+| U-bolt point load | 84 MPa, 5.7× |
+| glue line | 2.84 MPa, 12.3× |
+| centre deflection, stuck case | 1.32 mm (0.20 mm at design pressure) |
+
+**The hole is what sets the thickness.** Size the plate alone and the answer is 4.0 mm,
+where the feed-through then runs at **1.70×** against a 2.0× requirement. The feature the
+part is *named for* is the one that governs it, and a bulkhead sized as though it were a
+bulkhead is not a sized feed-through.
+
+Three modelling choices are worth carrying forward because each one was nearly made the
+comfortable way:
+
+- **Simply supported, not clamped.** A disc bonded in with a fillet is between the two and
+  they differ by 1.6×. Assuming the fillet into the answer is exactly how correction 15's
+  joint reported 2.5× while sitting at 1.69×.
+- **Kt 2.0, not 3.0.** 3.0 is the circular hole in a plate under *in-plane tension*. This
+  plate is in *bending*, where the classical thin-plate value is about 1.8. Being wrongly
+  conservative is not free: at Kt 3.0 the hole sizes the disc at 6.4 mm and the extra sheet
+  buys nothing that exists.
+- **The hole is placed on one model and checked against the other.** R 22.6 mm is where a
+  *clamped* plate's radial stress passes through zero. A *simply supported* plate has no
+  such radius, so the placement is free but buys almost nothing — and the margin is quoted
+  from the simply supported field. The first version of this report used the clamped field
+  for both and printed 15×.
+- **Pot the feed-through on the FORWARD face.** RTV is good to about 315 °C and the gas
+  leaves the charge at 1837 K. The disc is the heat shield, so the sealant belongs behind
+  it. Potting the exposed face gives you a part that passes on the bench and sooties the
+  nav bay in flight.
+
+### The vent path — why the two open items were one item
+
+This document listed "forward wiring pass-through" and "aft gas seal" as two open items.
+They are one decision seen from both ends. The module has to breathe — sealed at ground
+pressure it carries about 15 kPa outward at apogee — and it has two faces it could breathe
+through. **It must not be the aft one**, because the volume on the other side of that face
+is where the charge fires. So the module vents **forward**, through the wiring pass-through,
+into the nav bay.
+
+That has a consequence nobody had written down: **the canard module's free volume becomes
+part of the altimeter's static volume.** A leak past this seal does not merely put soot in
+the module — it puts ejection gas into the pressure sense volume of the altimeter that fires
+the charges, while it is firing them. And the nav bay's static ports, when somebody sizes
+them, have to be sized for two bays.
+
+### Three things this opened, none of them this part
+
+1. **The drogue's firing circuit has nowhere to run.** This disc closes the *forward*
+   compartment, so the main's charge terminates on its aft face, millimetres from where the
+   wires come through. The drogue's charge is on the far side of the internal bulkhead, and
+   the only path to it is through a compartment packed with the main. The standard high-power
+   answer — an av-bay between the two compartments — needs ~60 mm of tube and two more
+   bulkheads against **13.0 mm** of recovery-bay margin, so it does not fit, which is also
+   *why* the altimeter is in the nav bay and why this hole is not optional. A ⌀5 mm conduit
+   bonded along the tube wall costs **1.2 mm** of that 13.0 mm. That is the recommendation.
+2. **The internal bulkhead is a 12.0 mm length allowance in `recovery.py` and nothing else.**
+   It is a pressure boundary with a charge on *both* faces and it has had none of the
+   treatment this disc just got.
+3. **The nav bay has never had a packing check**, and the recovery bay's is what found an
+   11 mm error in itself (correction 5). See docs/04 §5.
 
 ## Drawing 1 — the Step 3 dimensioned drawing
 

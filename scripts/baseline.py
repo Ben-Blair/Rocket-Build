@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from design import aero, control, flutter, hinge, trajectory, tube_section
+from design import aero, control, flutter, hinge, seal, trajectory, tube_section
 from design.configure import baseline, build_vehicle, evaluate
 from design.packaging import (
     SERVO_GEOMETRY, SERVOS, check_direct_drive, check_flat_mount, torque_margin,
@@ -289,6 +289,27 @@ def main() -> None:
   Shear modulus is the weak input here -- published G10 spans 3 to 7 GPa and the result
   goes as sqrt(G), so read these as +/-25%. Surface-mounting the fins instead of
   through-the-wall invalidates the estimate entirely.""")
+
+    rule("RECOVERY -- the aft gas seal")
+    sl = seal.from_evaluation(ev)
+    schk = seal.check_seal(sl)
+    print(f"  ejection charge     {sl.design.charge * 1e3:.2f} g black powder, "
+          f"{sl.joint.n_pins} x {sl.joint.pin} shear pins")
+    print(f"  design pressure     {sl.design.pressure / 1e3:.0f} kPa "
+          f"({sl.design.force:.0f} N on the disc); joint releases at "
+          f"{sl.joint.release_pressure / 1e3:.0f} kPa")
+    print(f"  stuck-joint case    {sl.stuck.pressure / 1e3:.0f} kPa "
+          f"({sl.stuck.force:.0f} N) -- the same charge in the packed free volume, and "
+          f"this is what sizes the disc")
+    print(f"  bulkhead            G-10 {sl.bulkhead.thickness * 1000:.1f} mm, "
+          f"{sl.bulkhead.mass * 1e3:.0f} g; plate {sl.plate_margin:.1f}x, "
+          f"feed-through {sl.hole_margin:.1f}x, bond {sl.bond_margin:.1f}x")
+    print(f"  main opening shock  {sl.shock_infinite_mass:.0f} N through the U-bolt "
+          f"({sl.shock_margin:.1f}x) -- {sl.shock / (sl.descent_mass * 9.81):.0f}x vehicle "
+          f"weight at a 1.0 shock factor")
+    print(f"  governed by         {sl.governed_by}")
+    print(f"  aft gas seal check  {'OK' if schk.ok else 'VIOLATIONS: ' + '; '.join(schk.violations)}")
+    print("     Full argument: python scripts/seal_report.py")
 
     rule("OPENROCKET ENTRY VALUES")
     print(f"""  Nose cone

@@ -124,3 +124,11 @@ STRUCTURAL_EPOXY_SHEAR = 25.0e6         # Pa
 # 80 MPa is the igus iglidur G class; iglidur J is 35 MPa and iglidur X is ~150 MPa.
 BEARING_PRESSURE_LIMIT = 80.0e6  # Pa
 BUSHING_MODULUS = 3.0e9          # Pa, iglidur G class
+
+# Poisson's ratio, in-plane, for the G-10 laminate. Needed the moment anything is modelled
+# as a PLATE rather than as a beam or a bearing surface -- circular-plate bending stress
+# carries (3 + nu) and (1 + nu) terms. Published G-10 runs 0.12-0.20 depending on weave and
+# direction; 0.15 is the middle of that and the result is insensitive to it (the span moves
+# the plate stress by under 2%), which is worth knowing before anyone goes looking for a
+# better number. See design/seal.py, which is the first plate in this project.
+G10_POISSON = 0.15

@@ -74,10 +74,19 @@ Read this first if you are picking the project back up.
 - **The coupling is closed** (correction 21). The shaft's inboard end takes a plain
   ⌀4.100 × 3.20 drilled socket, bonded onto the servo spline with anaerobic retaining
   compound that cures into the tooth valleys and becomes the female spline. No broaching, no
-  bought adapter, and it comes apart with heat. Cut in the CAD. **The aft gas seal is now
-  the only open item in the canard module.**
+  bought adapter, and it comes apart with heat. Cut in the CAD.
+- **The aft gas seal is sized, and it was never a seal** (correction 25). `design/seal.py`,
+  `scripts/seal_report.py`, verdict in `scripts/baseline.py`, write-up in `docs/05`. A
+  **G-10 disc, 4.8 mm, 39 g** — sized not against gas tightness but against being the piston
+  the ejection charge pushes on (7213 N in the stuck-joint case) and the anchor the main
+  pulls on (1306 N). **The canard module now has no open engineering item**; what is left in
+  it is CAD — the seal's geometry and the forward pass-through's hole — and the Step 3
+  drawing. Three things it opened are recorded below and none of them is this part.
 - **Step 4 is next**: avionics. Decisions D7 (flight computer) and D8 (state estimation)
-  are open and drive the largest, least specified line in the budget.
+  are open and drive the largest, least specified line in the budget. Two things found while
+  sizing the seal belong to it: the **mass budget is missing the dual-deploy altimeter** the
+  BOM lists (correction 26), and the **nav bay has never had a packing check** the way the
+  recovery bay has.
 
 Current vehicle: 79.4 mm OD fiberglass, 1361 mm, canards 0.85 cal / aft fins 1.55 cal
 interdigitated 45°, **both sets swept 35.4°**, Cesaroni J449 Blue Streak, 4× KST X08 Plus
@@ -95,7 +104,7 @@ cost of flutter margin (1.78 against 1.97) and servo torque (2.3× against 2.8×
 is retained on margin, and because the Onshape module is built to it — but that is a choice,
 and §7 now says so instead of hiding it.
 
-Seventeen corrections are worth knowing about. The first four changed the design; two of the
+Twenty-six corrections are worth knowing about. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
@@ -504,6 +513,73 @@ that silently recurs:
      regenerated `OK`, kept its part count and its part names, and grew four ⌀12 spikes 22 mm
      long straight out through the airframe. Only the volume check caught it — which is why
      `verify()` compares volume against `design/bay.py` rather than counting parts.
+
+25. **The aft gas seal was never a seal, and the hole in it is what sized it.** `docs/05`
+   carried "a bulkhead between this module and the recovery bay, sealing a bore this part
+   deliberately leaves open for wiring. Never sized" for six months. Read that and the part
+   sounds like a gasket — something whose requirement is gas tightness. It is the **piston
+   the ejection charge pushes on to separate the airframe**, and then the **anchor the main
+   parachute pulls on when it opens**. Gas tightness is its third requirement. Same error as
+   correction 2 and correction 11: **a part named after its smallest load, and then sized
+   against the number in its name.**
+
+   The load case that governs is not the nominal flight. A 1.17 g charge sized on the
+   compartment's geometric volume, released into the **15% of that volume the parachute
+   leaves free** with the joint not yet moving, is **1642 kPa and 7213 N** — seven times the
+   design pressure. That is the stuck-joint case, and it sizes the disc for a reason that is
+   not caution: **the shear pins are the intended fuse, so the bulkhead has to be stronger
+   than the fuse**, or the wrong part fails first. It costs two sheet sizes and 23 g.
+
+   **The feed-through governs, not the plate.** At 4.0 mm the disc passes at 2.8× and the
+   wire hole fails at 1.70×. The part is 4.8 mm because of the feature it is *named for*,
+   and a bulkhead sized as though it were a bulkhead is not a sized feed-through.
+
+   Three modelling choices, each nearly made the comfortable way, and the first two are the
+   transferable part:
+   - **Simply supported, not clamped.** A bonded disc is between them and they differ by
+     1.6×; assuming the fillet into the answer is how correction 15's joint reported 2.5×
+     while sitting at 1.69×.
+   - **The hole is placed on one model and checked against the other.** R 22.6 mm is where a
+     *clamped* plate's radial stress passes through zero; a *simply supported* plate has no
+     such radius. The first version of this used the clamped field for both and printed
+     **15×** where the honest number is 2.45×. **Using the favourable model where it helps
+     and the conservative one where it does not is not conservatism, it is a bug**, and it
+     is worth more attention than any single margin here.
+   - **Kt 2.0, not 3.0.** 3.0 is a hole in a plate under *in-plane tension*; this plate is in
+     *bending*, where the thin-plate value is about 1.8. Being wrongly conservative is not
+     free — at 3.0 the disc goes to 6.4 mm to buy a margin against a stress that is not there.
+
+   **And the two open items in `docs/05` were one item.** The module has to breathe, and it
+   has two faces it could breathe through; it must not be the aft one, because that is where
+   the charge fires. So it vents **forward** through the wiring pass-through — which makes
+   **the canard module part of the altimeter's static volume**. A leak past this seal does
+   not put soot in a bay, it puts ejection gas into the pressure sensor that fires the
+   charges, while it is firing them.
+
+   Three things it opened, none of them this part: the **drogue's firing circuit** has no
+   path except through a packed compartment (a ⌀5 mm bonded conduit costs 1.2 mm of the
+   recovery bay's 13.0 mm margin, and is the recommendation); the **internal bulkhead** is a
+   12.0 mm length allowance in `recovery.py` and nothing else, with a charge on *both* faces;
+   and the **nav bay static ports** now have two bays of volume behind them.
+
+26. **The BOM and the mass budget disagree by exactly one dual-deploy altimeter.** Found by
+   asking a question that had nothing to do with structures — *where does the custom PCB
+   go?* `docs/04` §5 lists nine avionics lines totalling **620 g**, including a 60 g
+   commercial altimeter. `mass.py`'s `DEFAULT_AVIONICS_BUDGET` lists nine lines totalling
+   **560 g**, and the missing one is that altimeter. Every other line agrees to the gram.
+
+   It is not a rounding difference and the altimeter is not optional: it is the independent
+   commercial part that fires the charges, it is what the seal in correction 25 is wired to,
+   and flying deployment off the custom PCB alone is a different safety argument than the
+   one these documents make. **Nothing has been changed** — 60 g at station 0.381 m is
+   forward of the 0.800 m CG so it moves static margin *up*, but it is still a vehicle-level
+   change to every number in §1, and correction 20 is the precedent for flagging rather than
+   applying. Decide it with D7.
+
+   The transferable part is where it came from. Nothing in this repo cross-checks
+   `docs/04` against `design/mass.py`; they are two lists maintained by hand, which is the
+   exact condition that produced correction 4. **A question from outside the analysis found
+   it in one minute, and no check inside the analysis would ever have.**
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D7/D8/D9.

@@ -176,6 +176,25 @@ Step 4 scope — listed for budget completeness, not yet specified (D7, D8 open)
 **Separate the servo supply from the IMU supply.** Four servos slewing on a shared bus next
 to a MEMS gyro is a known way to corrupt attitude data.
 
+**This table and `design/mass.py` disagree by 60 g, and it is the altimeter** (docs/01
+correction 26). The nine lines here total 620 g; `DEFAULT_AVIONICS_BUDGET` totals 560 g and
+has no altimeter line. Every other line agrees to the gram. The altimeter is not optional —
+it is the independent commercial part that fires the ejection charges, and it is what the
+aft gas seal's feed-through is wired to (docs/05). Nothing has been changed yet: 60 g at
+station 0.381 m is forward of the CG so it moves static margin *up*, but it is a
+vehicle-level change and belongs with D7.
+
+**Where all of this physically goes: the nav bay**, 127 mm of 74.8 mm ID at station
+318–445 mm, forward of the canard module and behind the nose cone. That is deliberate —
+`configure.py` puts it there for GNSS sky view and to keep the antenna away from the servo
+power wiring. Two consequences that are easy to miss:
+
+- **The nav bay has never had a packing check.** The recovery bay got one and it is the
+  reason correction 5 exists. 560–620 g of sled in 558 cm³ is about 1000 kg/m³ average
+  density, which is dense for electronics and worth verifying before the sled is cut.
+- **The firing circuits leave this bay going aft**, cross the canard module, and cross the
+  aft gas seal — because there is no room for an av-bay next to the charges. See docs/05.
+
 ## 6. Recovery
 
 | Item | Spec | Qty | Mass | Price | |
@@ -185,6 +204,20 @@ to a MEMS gyro is a known way to corrupt attitude data.
 | Shock cord, quick links, swivels | Tubular nylon / Kevlar | set | 0.220 kg | ~$60 | |
 | Nomex protectors | | 2 | 0.070 kg | ~$30 | |
 | Ejection charge hardware, shear pins | | set | 0.060 kg | ~$25 | |
+
+### Deployment hardware — the aft gas seal
+
+Sized Aug 2026; `design/seal.py`, argument in `out/seal_report.txt`, docs/05.
+
+| Item | Spec | Qty | Mass | Price | |
+|---|---|---|---|---|---|
+| Aft gas seal disc | **G-10 sheet, 4.8 mm**, cut to 74.8 mm | 1 | 0.039 kg | ~$15 | thickness set by the wire hole, not the plate |
+| Harness U-bolt + backing plate | M5 stainless, with a backing plate — the plate is structure | 1 | 0.030 kg | ~$8 | |
+| Charge well + 2-pole terminal block | Bulkhead-mount, aft face | 2 | — | ~$10 | in `ejection_hardware_charges` |
+| Shear pins | **3 × 2-56 nylon** per separation joint | pack | — | ~$6 | the intended fuse; buy spares, they are consumed |
+| High-temp RTV, potting | 315 °C service, **forward face only** | 1 | — | ~$10 | |
+| Wiring conduit | ⌀5 mm thin-wall, ~240 mm, drogue circuit through the main compartment | 1 | 0.010 kg | ~$5 | costs 1.2 mm of the bay's 13.0 mm margin |
+| Black powder | **1.17 g** per main charge, sized at a 2.0× separation factor | — | — | ~$20 | **ground test twice; the calculation is not the arbiter** |
 
 Descent 100 s, landing 5.0 m/s at 50 ft·lbf, ~0.93 km walk in a 15 mph wind. Ground-test
 ejection charges twice before flying.
