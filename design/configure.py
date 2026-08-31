@@ -396,6 +396,23 @@ def evaluate(
         warnings.append(
             f"the nose cannot hold the relocated stack: {nose_fit.reason}")
 
+    # D7 closed with parts lighter than the budget guessed: the custom board integrates the
+    # GNSS and IMU that had their own lines, and a real StratoLoggerCF is 10.8 g against a
+    # budgeted 60. NOT applied, for correction 20's reason -- it is a vehicle-level change,
+    # 114 g at station 0.381 m is forward of the CG so removing it costs static margin, and
+    # the board's own 45 g is a LAYOUT TARGET rather than a built part. D8 will move the
+    # sensor set again. Flagged so it cannot be forgotten, which is the whole point.
+    bay_budget_kg = sum(v for k, v in mass_mod.DEFAULT_AVIONICS_BUDGET.items()
+                        if k not in mass_mod.NOSE_AVIONICS)
+    selected_kg = sum(c.mass for c in avionics.NAV_BAY_STACK) + 0.080 + 0.150
+    if abs(bay_budget_kg - selected_kg) > 0.020:
+        warnings.append(
+            f"nav bay budget {bay_budget_kg * 1000:.0f} g against {selected_kg * 1000:.0f} g "
+            f"of D7-selected parts (+80 g wiring, +150 g sled) -- the budget is "
+            f"{(bay_budget_kg - selected_kg) * 1000:.0f} g heavy since D7 closed. Not "
+            f"applied: it is forward of the CG, so it costs static margin, and the board's "
+            f"mass is a layout target. Settle it with D8")
+
     # Control assessment at the highest-q point after burnout, where authority is best.
     coast = [pt for pt in flight.points if pt.t >= flight.burnout_time]
     pitch = roll_a = roll_i = None

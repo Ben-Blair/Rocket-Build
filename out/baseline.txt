@@ -6,7 +6,7 @@ BASELINE VEHICLE
   motor               J449BS  (1260 N s, class J, needs L2)
   wet / dry mass      6.14 / 5.52 kg
   feasible            YES
-  WARNING             nav bay 115 mm usable needs 124 mm of sled on estimated envelopes, short by 9 mm (was 162 mm before the tracker and radio went to the nose); 6 of 6 parts are guesses until D7 closes. See scripts/avionics_report.py
+  WARNING             nav bay budget 515 g against 401 g of D7-selected parts (+80 g wiring, +150 g sled) -- the budget is 114 g heavy since D7 closed. Not applied: it is forward of the CG, so it costs static margin, and the board's mass is a layout target. Settle it with D8
 
 ============================================================================================
 GEOMETRY  (stations measured from nose tip)
@@ -233,15 +233,15 @@ JOINTS -- what the couplers cost each bay
 ============================================================================================
 VENTING and the NAV BAY
 ============================================================================================
-  static ports        3 x dia 3.2 mm in the NAV BAY only (24.1 mm2, lag 0.012 m)
+  static ports        3 x dia 3.2 mm in the NAV BAY only (24.1 mm2, lag 0.013 m)
   canard module vent  2 x dia 2.0 mm through its OWN WALL -- so the module is not in the sense volume
-  lag model asks for  1.53 mm2 against the 24.1 mm2 convention drills. Lag does not size these holes
+  lag model asks for  1.59 mm2 against the 24.1 mm2 convention drills. Lag does not size these holes
   venting check       OK
-  nav bay packing     NO FIT nav bay          need 124.5 mm, have 115.0 mm (  -9.4 mm)  short by 9 mm
+  nav bay packing     FITS   nav bay          need 110.4 mm, have 115.0 mm (  +4.6 mm)  4 components on two faces at 70%
     before the move   NO FIT nav bay          need 161.7 mm, have 115.0 mm ( -46.6 mm)  short by 47 mm
   nose stack          FITS   nose stack        35.4 mm sled at station 282-318 mm, 59.1 mm wide  2 parts, aft of the ballast
-  the move is worth   37 mm of sled and moves 105 g from station 381 to 300 mm
-  ON ESTIMATED ENVELOPES -- 6 of 6 parts are guesses because D7 is open. Read
+  the move is worth   51 mm of sled and moves 105 g from station 381 to 300 mm
+  ON ESTIMATED ENVELOPES -- 3 of 4 parts are guesses because D7 is open. Read
      correction 5 before touching geometry. python scripts/avionics_report.py
 
 ============================================================================================

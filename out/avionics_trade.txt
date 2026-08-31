@@ -1,0 +1,109 @@
+
+============================================================================================
+D7 -- THE THREE ARCHITECTURES
+============================================================================================
+
+  nav bay: 115.0 mm of sled at a 70.2 mm bore (design/joints.py)
+
+     architecture                    mass    cost  weeks     sled     fit
+  --------------------------------------------------------------------------
+  A  Dev board + breakouts          185 g $   260   1.0   107.1 mm    FITS
+  B  TeleMega + guidance board      168 g $   520   1.5   109.6 mm    FITS
+  C  Custom STM32 board             171 g $   400   8.0   110.4 mm    FITS  <- SELECTED
+
+  A. Breakouts on a protoboard. Flying in a week, and every line of the interesting software -- filter, HIL, controller -- is identical to option C
+  B. TeleMega collapses altimeter + telemetry + tracker + GNSS into one board. Costs a HAM licence, and it puts tracking back in the NAV BAY -- which undoes the swappable nose module of correction 32
+  C. Schematic, layout, fab, assembly, bring-up. SELECTED for the guided vehicle -- see docs/06. The deployment altimeter stays commercial and independent
+
+============================================================================================
+THE 9 mm SHORTFALL WAS AN ARTEFACT, AND THAT IS THE FIRST RESULT
+============================================================================================
+
+  Before this trade the nav bay was 9 mm short and the four listed ways out ran
+  from 'measure the parts' to 'lengthen a frozen airframe'. Every option above
+  FITS, and the reason is one line item:
+
+    guessed 'flight computer PCB'   70 x 40 mm = 28.0 cm2
+    real Teensy 4.1                 61 x 17.8 mm = 10.9 cm2
+
+  The guess was two and a half times the part. **This is correction 5 replaying,
+  and it vindicates not having lengthened the bay** -- an estimate-driven
+  shortfall, acted on, that was not in the hardware. The rule held twice now.
+
+  Two envelopes moved the other way and are worth stating so this does not read
+  as good news only: the StratoLoggerCF is 50.8 x 21.3 mm against a guessed
+  45 x 18, and a GNSS patch antenna is bigger than the receiver behind it.
+
+============================================================================================
+PACKAGING DOES NOT SELECT THE ARCHITECTURE -- and that is worth knowing
+============================================================================================
+
+     architecture                  sled needed    margin
+  --------------------------------------------------------
+  A  Dev board + breakouts            107.1 mm    +7.9 mm
+  B  TeleMega + guidance board        109.6 mm    +5.5 mm
+  C  Custom STM32 board               110.4 mm    +4.6 mm
+
+  A CUSTOM BOARD IS NOT AUTOMATICALLY THE SMALL ONE. The intuition says one
+  integrated PCB beats a dev board plus three breakouts; it does not, because the
+  breakouts are postage stamps and the Teensy is narrow. Option C needs MORE sled
+  than option A on these envelopes.
+
+  So the packaging argument for a custom board -- which was the engineering case
+  for taking on eight weeks of hardware risk -- is not there. **The case for
+  option C is a career case, and it is a legitimate one, but it should be made
+  honestly rather than dressed as a packaging win.**
+
+============================================================================================
+WHAT THE BOARD HAS TO DO -- derived from this vehicle, not from a tutorial
+============================================================================================
+
+  GYRO FULL SCALE: at least +/-2000 deg/s
+      why    steady roll at 8 deg of canard is 1783 deg/s -- 89% of a +/-2000 dps part's range, and roll acceleration is 36695 deg/s^2
+      slack  TIGHT. This is the one requirement a tutorial would not produce, and a +/-1000 dps IMU -- which many are -- saturates in normal operation. Either pick a wider part or cap the roll command; do not discover it in flight
+
+  ACCELEROMETER FULL SCALE: at least +/-16 g
+      why    peak axial is 8.3 g, and motor ignition and ejection are transients on top of that
+      slack  comfortable at +/-16, and docs/02 already picked the motor partly to keep this under a clipping limit
+
+  CONTROL LOOP RATE: at least 86 Hz
+      why    pitch mode is 4.30 Hz and a digital loop wants 20x the mode it is closing
+      slack  trivial for any STM32; an F405 at 168 MHz is three orders of margin
+
+  SERVO DRIVE: 4 channels, 333 Hz update
+      why    four KST X08 Plus at 667 deg/s slew; the actuator must not be the dominant lag in the loop
+      slack  needs 4 timer channels, which is nothing on an F4 -- but they must be on a SEPARATE SUPPLY from the IMU (docs/01, 'things that will bite you')
+
+  LOGGING: at least 100 Hz for 150 s
+      why    apogee at 17 s and the usable control window is 11.7 s; the whole flight to landing is about 120 s
+      slack  onboard flash is enough; an SD socket is easier to get data off
+
+  DEPLOYMENT: NOT on this board
+      why    an independent commercial altimeter fires the charges (docs/04 section 5), and design/seal.py's feed-through is wired to it
+      slack  a safety argument and a range-approval one, and it also means a board bug loses the mission rather than the vehicle
+
+
+============================================================================================
+THE ONE THAT IS TIGHT
+============================================================================================
+
+  Steady roll rate at 8 deg of canard deflection is 1783 deg/s.
+  Roll acceleration is 36695 deg/s^2.
+
+  A +/-2000 deg/s gyro -- the top of the range on most 6-axis parts -- is at
+  89% of full scale there, and plenty of IMUs are +/-1000.
+
+  **A saturated rate gyro in a roll loop is not a degraded measurement, it is a
+  wrong one**, and the controller cannot tell. Three ways out, and the first is
+  free:
+
+    1. CAP THE ROLL COMMAND. Roll needs far less deflection than pitch -- the
+       vehicle's roll inertia is tiny. At 2 deg the rate is about a quarter of
+       this. baseline.py already notes roll control needs less deflection.
+    2. PICK A WIDER PART. Some IMUs go to +/-4000 deg/s; it is a line in a
+       datasheet and costs nothing at design time -- if you check before layout.
+    3. MEASURE IT ON GV-2 FIRST. That flight exists to turn Cl_delta from an
+       assumption into a measurement, and this number is downstream of Cl_delta,
+       which docs/01 calls the weakest part of the whole analysis.
+
+  Do 1 and 2. They are both free and they are not exclusive.

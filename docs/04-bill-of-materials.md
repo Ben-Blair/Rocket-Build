@@ -163,8 +163,9 @@ Step 4 scope — listed for budget completeness, not yet specified (D7, D8 open)
 
 | Item | Qty | Mass | Price | |
 |---|---|---|---|---|
-| Dual-deploy altimeter (StratoLoggerCF / Eggtimer / Raven) | 1 | 0.060 kg | ~$70–160 | |
-| Flight computer / custom controller PCB | 1 | 0.060 kg | ~$150 | |
+| Dual-deploy altimeter — **PerfectFlite StratoLoggerCF** | 1 | **0.011 kg** | ~$70 | 50.8 × 21.3 × 12.7 mm, 20 Hz logging. **Fires the charges; independent of the flight computer in every stage** |
+| Flight computer — **custom STM32F405 board** (guided vehicle) | 1 | 0.045 kg | ~$400 | D7 RESOLVED, docs/06. 70 × 45 mm is a **layout target**, not a measurement |
+| Flight computer — **Teensy 4.1 + breakouts** (L1/L2 cert logger) | 1 | 0.015 kg | ~$40 | 61 × 17.8 mm. Stage 1; also the HIL target and the reference implementation |
 | GNSS receiver + antenna | 1 | 0.030 kg | ~$40 | |
 | IMU daughterboard | 1 | 0.020 kg | ~$30 | |
 | Battery, 2S LiPo 1500 mAh | 1 | 0.090 kg | ~$20 | |
@@ -288,7 +289,8 @@ weighing the built vehicle, not before. See `00-requirements.md` §7.1.
 | **Full campaign** | **~$2,670** |
 
 Excludes shipping, hazmat fees on motors, and any spare vehicle. The single largest line is
-avionics, and it is the least specified — expect it to move once D7 and D8 close.
+avionics. **D7 is now closed** (docs/06) and three envelopes are off datasheets; expect the
+line to move again when D8 settles the sensor set.
 
 ## Mass reconciliation
 

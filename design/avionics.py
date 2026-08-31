@@ -94,7 +94,10 @@ class Component:
 #
 # It did NOT make the nav bay fit. See `NAV_BAY_STACK`'s verdict; it went 152 -> 117 mm
 # against 103, which is a 14 mm shortfall instead of a 49 mm one.
-NAV_BAY_STACK: list[Component] = [
+# SUPERSEDED BY D7, kept as the record of what the bay was checked against before any part
+# was chosen. `selected_nav_bay_stack()` below is what the vehicle actually carries now; the
+# difference between the two is correction 35, and it is 2.5x on one line item.
+GUESSED_NAV_BAY_STACK: list[Component] = [
     Component("flight computer PCB", 0.060, 0.070, 0.040, 0.015,
               note="custom board; D7 sets this"),
     Component("deployment altimeter", 0.060, 0.045, 0.018, 0.010,
@@ -118,7 +121,7 @@ NOSE_STACK: list[Component] = [
 
 # Kept so that the old arrangement can still be evaluated, and because a report that can
 # only show the answer it arrived at is not showing an argument.
-DEFAULT_STACK: list[Component] = NAV_BAY_STACK + NOSE_STACK
+DEFAULT_STACK: list[Component] = GUESSED_NAV_BAY_STACK + NOSE_STACK
 
 RELOCATED = {c.name for c in NOSE_STACK}
 
@@ -376,3 +379,173 @@ def nose_payload_volume(nose, forward_station: float, aft_station: float) -> flo
         x = forward_station + (i + 0.5) * dx
         total += math.pi * nose.inner_radius_at(x) ** 2 * dx
     return total
+
+
+# =======================================================================================
+# D7 -- THE FLIGHT COMPUTER TRADE
+# =======================================================================================
+#
+# `docs/00-requirements.md` states D7 as "COTS + custom controller board / full custom" and
+# has carried it as TBD since the requirements were written. It is the largest and least
+# specified line in the budget, it is the only thing that turns this file's six estimated
+# envelopes into measurements, and `docs/01` step 6 wants the avionics flying as a PASSIVE
+# LOGGER in the L1 and L2 cert flights -- which are monthly and weather-dependent, so it is
+# the one open decision with a calendar attached.
+#
+# WHAT THIS SECTION IS FOR. Not to make the choice -- that is Ben's, like every other D
+# decision -- but to price the three architectures against constraints this project has
+# already computed, and in particular against the one nobody else can answer: WILL IT FIT.
+# The nav bay is 9 mm short on guesses, and the three options differ by more than 9 mm.
+#
+# ENVELOPES ARE MARKED. `measured=True` means it came off a datasheet or a vendor page and
+# the source is in the note; everything else is still the kind of estimate correction 5
+# warns about. Read the `estimated` list in the report before believing any total.
+
+# --- verified parts --------------------------------------------------------------------
+TEENSY_41 = Component(
+    "Teensy 4.1", 0.015, 0.061, 0.0178, 0.008, measured=True,
+    note="61.0 x 17.8 mm (2.4 x 0.7 in), 600 MHz Cortex-M7, SD socket. pjrc.com; "
+         "the 15 g is a retailer shipping weight and is almost certainly high")
+STRATOLOGGER_CF = Component(
+    "StratoLoggerCF", 0.0108, 0.0508, 0.0213, 0.0127, measured=True,
+    note="2.0 x 0.84 x 0.5 in, 0.38 oz, 20 Hz logging, dual deploy. perfectflite.com")
+TELEMEGA = Component(
+    "Altus Metrum TeleMega", 0.030, 0.0826, 0.0318, 0.015,
+    note="1.25 x 3.25 in board is VERIFIED; mass estimated. 6 pyro, GPS, telemetry, IMU, "
+         "baro. Telemetry needs a HAM licence")
+
+# --- estimated parts, all of them still correction 5 material ---------------------------
+IMU_BREAKOUT = Component("IMU breakout", 0.008, 0.0254, 0.0178, 0.006,
+                         note="1.0 x 0.7 in, the standard breakout footprint")
+BARO_BREAKOUT = Component("barometer breakout", 0.006, 0.0254, 0.0178, 0.005,
+                          note="1.0 x 0.7 in")
+GNSS_MODULE = Component("GNSS module + patch antenna", 0.030, 0.030, 0.030, 0.010,
+                        note="wants sky view; the patch antenna sets the footprint")
+BATTERY_2S = Component("battery, 2S 1500 mAh", 0.090, 0.070, 0.035, 0.015)
+BEC = Component("servo power BEC", 0.025, 0.030, 0.020, 0.010)
+STM32_BOARD = Component(
+    "custom STM32 guidance board", 0.045, 0.070, 0.045, 0.012,
+    note="ONE board: STM32F405, IMU, baro, GNSS, flash, 4x servo drive. The envelope is a "
+         "LAYOUT TARGET, not a measurement -- it is the only line here a design decision "
+         "can shrink, and the only one whose accuracy is under Ben's control")
+
+
+@dataclass(frozen=True)
+class Option:
+    """One D7 architecture."""
+
+    key: str
+    name: str
+    nav_bay: list[Component]
+    cost: float  # USD, order of magnitude
+    build_weeks: float  # calendar weeks of hardware work before it can log a flight
+    note: str
+    replaces_nose: bool = False
+
+    @property
+    def mass(self) -> float:
+        return sum(c.mass for c in self.nav_bay)
+
+
+OPTIONS: list[Option] = [
+    Option(
+        "A", "Dev board + breakouts",
+        [TEENSY_41, IMU_BREAKOUT, BARO_BREAKOUT, GNSS_MODULE, BATTERY_2S, BEC,
+         STRATOLOGGER_CF],
+        cost=260.0, build_weeks=1.0,
+        note="Breakouts on a protoboard. Flying in a week, and every line of the "
+             "interesting software -- filter, HIL, controller -- is identical to option C"),
+    Option(
+        "B", "TeleMega + guidance board",
+        [TELEMEGA, TEENSY_41, IMU_BREAKOUT, BATTERY_2S, BEC],
+        cost=520.0, build_weeks=1.5, replaces_nose=True,
+        note="TeleMega collapses altimeter + telemetry + tracker + GNSS into one board. "
+             "Costs a HAM licence, and it puts tracking back in the NAV BAY -- which undoes "
+             "the swappable nose module of correction 32"),
+    Option(
+        "C", "Custom STM32 board",
+        [STM32_BOARD, BATTERY_2S, BEC, STRATOLOGGER_CF],
+        cost=400.0, build_weeks=8.0,
+        note="Schematic, layout, fab, assembly, bring-up. SELECTED for the guided vehicle "
+             "-- see docs/06. The deployment altimeter stays commercial and independent"),
+]
+
+SELECTED = "C"
+CERT_FLIGHT_OPTION = "A"
+
+
+# ---------------------------------------------------------------------------------------
+# What the BOARD has to do, derived from this vehicle rather than from a tutorial
+# ---------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class BoardRequirement:
+    name: str
+    value: str
+    why: str
+    slack: str = ""
+
+
+def board_requirements(ev) -> list[BoardRequirement]:
+    """The electrical requirements that fall out of the flight model.
+
+    EVERY ONE OF THESE IS COMPUTED, not looked up. That is the point: a flight computer
+    specified from a tutorial gets a 6-axis IMU and a 100 Hz loop because that is what
+    tutorials say, and this vehicle has at least one requirement that no tutorial would
+    produce -- see the gyro line, which is the only one here that is genuinely tight.
+    """
+    f, pitch, roll = ev.flight, ev.pitch, ev.roll_interdig
+    loop = pitch.pitch_natural_freq_hz * 20.0
+    roll_rate = roll.steady_roll_rate_deg_s
+    return [
+        BoardRequirement(
+            "gyro full scale", f"at least +/-2000 deg/s",
+            f"steady roll at 8 deg of canard is {roll_rate:.0f} deg/s -- {roll_rate / 2000 * 100:.0f}% "
+            f"of a +/-2000 dps part's range, and roll acceleration is "
+            f"{roll.roll_accel_deg_s2:.0f} deg/s^2",
+            "TIGHT. This is the one requirement a tutorial would not produce, and a "
+            "+/-1000 dps IMU -- which many are -- saturates in normal operation. Either "
+            "pick a wider part or cap the roll command; do not discover it in flight"),
+        BoardRequirement(
+            "accelerometer full scale", "at least +/-16 g",
+            f"peak axial is {f.max_acceleration_g:.1f} g, and motor ignition and ejection "
+            f"are transients on top of that",
+            "comfortable at +/-16, and docs/02 already picked the motor partly to keep "
+            "this under a clipping limit"),
+        BoardRequirement(
+            "control loop rate", f"at least {loop:.0f} Hz",
+            f"pitch mode is {pitch.pitch_natural_freq_hz:.2f} Hz and a digital loop wants "
+            f"20x the mode it is closing",
+            "trivial for any STM32; an F405 at 168 MHz is three orders of margin"),
+        BoardRequirement(
+            "servo drive", "4 channels, 333 Hz update",
+            f"four KST X08 Plus at {60 / 0.09:.0f} deg/s slew; the actuator must not be "
+            f"the dominant lag in the loop",
+            "needs 4 timer channels, which is nothing on an F4 -- but they must be on a "
+            "SEPARATE SUPPLY from the IMU (docs/01, 'things that will bite you')"),
+        BoardRequirement(
+            "logging", "at least 100 Hz for 150 s",
+            f"apogee at {f.apogee_time:.0f} s and the usable control window is "
+            f"{ev.control_seconds:.1f} s; the whole flight to landing is about 120 s",
+            "onboard flash is enough; an SD socket is easier to get data off"),
+        BoardRequirement(
+            "deployment", "NOT on this board",
+            "an independent commercial altimeter fires the charges (docs/04 section 5), "
+            "and design/seal.py's feed-through is wired to it",
+            "a safety argument and a range-approval one, and it also means a board bug "
+            "loses the mission rather than the vehicle"),
+    ]
+
+
+def selected_nav_bay_stack() -> list[Component]:
+    """What the nav bay actually carries, now that D7 is closed.
+
+    Reads the selected option rather than restating its parts, so the packing check and the
+    D7 trade cannot describe different vehicles -- which is the failure `configure.py` was
+    written to prevent and the one `GUESSED_NAV_BAY_STACK` above is the fossil of.
+    """
+    return next(o for o in OPTIONS if o.key == SELECTED).nav_bay
+
+
+# The name the rest of the project imports. It is the SELECTED stack now; it was the guessed
+# one until D7 closed, and that swap is what made the nav bay fit.
+NAV_BAY_STACK: list[Component] = selected_nav_bay_stack()

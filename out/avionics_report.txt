@@ -12,7 +12,7 @@ THE NAV BAY -- where the boards go, and whether they go
   THE LAST LINE IS THE WHOLE MODELLING POINT. A flat sled in a round tube can only
   use the rectangle inscribed in the circle, and nothing goes in the corners it
   cannot reach. Add the component volumes up and the bay looks half empty --
-  109 cm3 of boards in 558 cm3 of tube. The binding quantity is FOOTPRINT ON
+  94 cm3 of boards in 558 cm3 of tube. The binding quantity is FOOTPRINT ON
   TWO FACES, and the bay's length is what that footprint has to fit into.
 
 ============================================================================================
@@ -21,15 +21,13 @@ THE STACK
 
   component                       mass       L x W x H mm     cm2  note
   ------------------------------------------------------------------------------------------
-  flight computer PCB             60 g    70 x  40 x  15    28.0  custom board; D7 sets this
-  deployment altimeter            60 g    45 x  18 x  10     8.1  commercial, independent of the PCB -- fires the charges
-  GNSS receiver + antenna         30 g    35 x  35 x  10    12.3  wants sky view; forward end of the sled
-  IMU daughterboard               20 g    25 x  20 x   8     5.0  isolate from servo noise
+  custom STM32 guidance board     45 g    70 x  45 x  12    31.5  ONE board: STM32F405, IMU, baro, GNSS, flash, 4x servo drive. The envelope is a LAYOUT TARGET, not a measurement -- it is the only line here a design decision can shrink, and the only one whose accuracy is under Ben's control
   battery, 2S 1500 mAh            90 g    70 x  35 x  15    24.5  
   servo power BEC                 25 g    30 x  20 x  10     6.0  
+  StratoLoggerCF                  11 g    51 x  21 x  13    10.8  2.0 x 0.84 x 0.5 in, 0.38 oz, 20 Hz logging, dual deploy. perfectflite.com
   wiring loom                     80 g     along one edge    14.0
   ------------------------------------------------------------------------------------------
-  TOTAL FOOTPRINT                                            97.9 cm2
+  TOTAL FOOTPRINT                                            86.8 cm2
 
 ============================================================================================
 THE NOSE -- where the tracker and the radio went, Aug 2026
@@ -62,7 +60,7 @@ THE NOSE -- where the tracker and the radio went, Aug 2026
 THE VERDICT, ON ESTIMATED ENVELOPES
 ============================================================================================
 
-  NO FIT nav bay          need 124.5 mm, have 115.0 mm (  -9.4 mm)  short by 9 mm
+  FITS   nav bay          need 110.4 mm, have 115.0 mm (  +4.6 mm)  4 components on two faces at 70%
   NO FIT nav bay          need 161.7 mm, have 115.0 mm ( -46.6 mm)  short by 47 mm      before the move
 
   available = 127 mm of tube less one 12 mm bulkhead = 115 mm of sled, at 70.2 mm bore
@@ -74,11 +72,11 @@ THE VERDICT, ON ESTIMATED ENVELOPES
   lengthened on the strength of it, and the shortfall turned out not to exist. Every
   envelope above is that same kind of estimate -- no part here has been chosen.
 
-  The move was worth 37 mm of the 47 mm gap. What is left:
+  The move was worth 51 mm of the 47 mm gap. What is left:
 
   1. CLOSE D7 AND MEASURE. Six datasheets replace six guesses, and 14 mm is well
      inside what a 70% packing efficiency guess is worth -- at 0.80 the stack fits
-     with +5.5 cm2 to spare. This is the only thing that settles it, and it is
+     with +16.5 cm2 to spare. This is the only thing that settles it, and it is
      ten minutes of work per part.
   2. THE NOSE SHOULDER IS UNMODELLED AND IT IS BIGGER THAN 14 mm -- see below.
   3. ONE END CLOSURE, NOT TWO. The bay's aft face is shared with the canard
@@ -167,9 +165,9 @@ THE NOSE AS A SWAPPABLE MODULE -- and what a future payload may weigh
 WHAT THE STACK MEANS FOR VENTING
 ============================================================================================
 
-  free air in the bay   344 cm3 (geometric less the boards)
+  free air in the bay   359 cm3 (geometric less the boards)
   static ports          3 x dia 3.2 mm, 24.1 mm2
-  lag, 177 m/s up       0.012 m
+  lag, 177 m/s up       0.013 m
   lag, 19 m/s down      0.0001 m
 
   This is the ONLY volume the altimeter senses. The canard module vents through
@@ -180,11 +178,8 @@ WHAT THE STACK MEANS FOR VENTING
 STILL A GUESS
 ============================================================================================
 
-  6 of 6 nav bay envelopes are estimates:
-    flight computer PCB
-    deployment altimeter
-    GNSS receiver + antenna
-    IMU daughterboard
+  3 of 4 nav bay envelopes are estimates:
+    custom STM32 guidance board
     battery, 2S 1500 mAh
     servo power BEC
 

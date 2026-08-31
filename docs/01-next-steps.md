@@ -118,10 +118,15 @@ Read this first if you are picking the project back up.
   before trusting that clean result.**
 - **The canard module has no open engineering item.** What is left in it is CAD — the
   pass-through hole, the two vent holes — and the Step 3 drawing.
-- **Step 4 is next**: avionics. Decisions D7 (flight computer) and D8 (state estimation)
-  are open, drive the largest and least specified line in the budget, and now also decide
-  whether the nav bay is long enough. **Closing D7 is the single highest-value thing left**:
-  nine datasheets replace nine guesses and turn correction 27 from a warning into a fact.
+- **D7 is CLOSED** (correction 35). A **custom STM32F405 board** flies the guided vehicle
+  and a **Teensy + breakout stack** flies the L1/L2 certs as a passive logger — staged in
+  that order, because the cert launches are monthly and eight weeks of PCB work would spend
+  them. Deployment stays on an independent commercial altimeter in both stages.
+  `docs/06-avionics-selection.md`, `scripts/avionics_trade.py`. **And it dissolved the nav
+  bay warning**: every architecture fits, because the guessed flight computer was 2.5× the
+  size of the real part.
+- **Step 4 is next**: D8 (state estimation) is the remaining open decision and is where most
+  of the interesting engineering lives. It follows from the board's sensor set.
 
 Current vehicle: 79.4 mm OD fiberglass, 1361 mm, canards 0.85 cal / aft fins 1.55 cal
 interdigitated 45°, **both sets swept 35.4°**, Cesaroni J449 Blue Streak, 4× KST X08 Plus
@@ -144,7 +149,7 @@ these, because they moved once already when the altimeter went into the budget
 on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
 so instead of hiding it.
 
-Thirty-four corrections are worth knowing about. The first four changed the design; two of the
+Thirty-five corrections are worth knowing about. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
@@ -928,8 +933,54 @@ that silently recurs:
    sits 240 mm aft in a recovery bay nothing has modelled, and a part placed where it is not
    is worse than a part that is missing, because it looks finished.
 
+35. **D7 is closed, the packaging argument for it was wrong, and the gyro nearly was too.**
+   Three architectures priced against the nav bay: a Teensy plus breakouts, an Altus Metrum
+   TeleMega plus a guidance board, and a custom STM32 board. **Selected: the custom board for
+   the guided vehicle, staged behind a breakout stack that flies the cert flights.**
+
+   **The reason is a career one and this is written down as such.** The stated goal is to
+   show defense employers hardware capability, and a board taken from requirements through
+   layout, bring-up and flight is a far stronger artifact than a soldered protoboard — STM32
+   especially, since it is what ArduPilot and PX4 run on. That is a legitimate input to a
+   capstone decision. It is not an engineering justification, and **the engineering argument
+   people reach for does not survive the numbers**: a custom board is *not* the small one.
+
+   | | sled needed | margin |
+   |---|---|---|
+   | A. Dev board + breakouts | 107.1 mm | +7.9 mm |
+   | B. TeleMega + guidance board | 109.6 mm | +5.5 mm |
+   | C. Custom STM32 board | 110.4 mm | +4.6 mm |
+
+   The breakouts are postage stamps and a Teensy is 17.8 mm wide, so **option C needs more
+   sled than option A.** Packaging does not select the architecture here, and pretending it
+   did would have been the comfortable version of this decision.
+
+   **Staged, because the schedule lands somewhere expensive.** Step 6 flies the avionics as a
+   passive logger in the L1 and L2 certs; those launches are monthly and weather-dependent,
+   and eight weeks of board work spends them for nothing. A breakout stack exists in a week
+   and **every line of the interesting software is identical** — filter, HIL, controller and
+   safety logic do not care what the sensors are soldered to. It also becomes the HIL target
+   and the reference implementation, which is what makes board bring-up tractable.
+
+   **THE NAV BAY WARNING DISSOLVED, and the cause is one line item.** The guessed "flight
+   computer PCB" was 70 × 40 mm = 28.0 cm² against a real Teensy 4.1 at 61 × 17.8 = 10.9 cm².
+   Two and a half times the part. **Correction 5 replaying, and it vindicates not having
+   lengthened the airframe** — an estimate-driven shortfall, nearly acted on, that was not in
+   the hardware. Twice now. Two envelopes moved the other way and are recorded so it does not
+   read as good news only: the StratoLoggerCF is larger than guessed, and a GNSS patch
+   antenna is bigger than the receiver behind it.
+
+   **And one derived requirement is genuinely tight.** `board_requirements()` computes the
+   electrical spec from the flight model rather than from a tutorial, and steady roll rate at
+   8° of canard is **1783 °/s — 89% of a ±2000 °/s gyro's full scale**, with many IMUs at
+   ±1000. **A saturated rate gyro in a roll loop is not a degraded measurement, it is a wrong
+   one, and the controller cannot tell.** No tutorial produces that requirement; it would
+   have been found in flight. Fix it twice over, both free: cap the roll command (roll needs
+   far less deflection than pitch — `baseline.py` already says so) and pick an IMU with the
+   range, which is a datasheet line that costs nothing *before* layout.
+
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
-access), the cert milestone dates in §2.1, and D1/D7/D8/D9.
+access), the cert milestone dates in §2.1, and D1/D8/D9. **D7 is closed** — correction 35.
 
 ---
 
