@@ -17,8 +17,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from design import avionics, joints
-from design.configure import baseline, evaluate
+from design import avionics, estimation as est, joints
+from design.configure import (DEFLECTION_LIMIT_DEG, ROLL_COMMAND_CAP_DEG,
+                              baseline, evaluate)
 
 MM = 1000.0
 OUT = Path(__file__).resolve().parents[1] / "out" / "avionics_trade.txt"
@@ -38,7 +39,11 @@ def rule(t: str) -> None:
 
 def main() -> None:
     p = baseline()
-    ev = evaluate(p)
+    # At the DEFLECTION LIMIT, not at `evaluate`'s default. This script used to take the
+    # default and print the answer under an 8 deg heading; steady roll rate is linear in
+    # deflection, so that understated it by a third and made a saturated gyro read as 89%
+    # of full scale. See design/configure.DEFLECTION_LIMIT_DEG.
+    ev = evaluate(p, deflection_deg=DEFLECTION_LIMIT_DEG)
     navb = joints.budgets(ev.rocket, p.wall_thickness)["nav bay"]
 
     rule("D7 -- THE THREE ARCHITECTURES")
@@ -108,30 +113,45 @@ def main() -> None:
             say(f"      slack  {r.slack}")
         say()
 
-    rule("THE ONE THAT IS TIGHT")
+    rule("THE ONE THAT IS TIGHT -- and D8 found it had been quoted at the wrong deflection")
     say()
     roll = ev.roll_interdig
-    say(f"  Steady roll rate at 8 deg of canard deflection is "
-        f"{roll.steady_roll_rate_deg_s:.0f} deg/s.")
+    capped = est.capped_roll_rate(ev)
+    limit = est.uncapped_roll_rate(ev)
+    say("  STEADY ROLL RATE IS LINEAR IN DEFLECTION, and this section used to ignore that.")
+    say("  It evaluated at `evaluate`'s 6 deg default and printed the answer under an 8 deg")
+    say("  heading, which is how a saturated part came to read as comfortable:")
+    say()
+    say(f"  {'deflection':>12s} {'roll rate':>12s} {'of +/-2000 dps':>16s}")
+    say("  " + "-" * 44)
+    for d, label in ((ROLL_COMMAND_CAP_DEG, "roll cap"), (6.0, "the old default"),
+                     (DEFLECTION_LIMIT_DEG, "deflection limit")):
+        rate = est.roll_rate_at(ev, d)
+        flag = "  SATURATED" if rate > 2000.0 else ""
+        say(f"  {d:9.0f} deg {rate:9.0f} deg/s {rate / 2000 * 100:13.0f}% "
+            f"  {label}{flag}")
+    say()
     say(f"  Roll acceleration is {roll.roll_accel_deg_s2:.0f} deg/s^2.")
     say()
-    say(f"  A +/-2000 deg/s gyro -- the top of the range on most 6-axis parts -- is at")
-    say(f"  {roll.steady_roll_rate_deg_s / 2000 * 100:.0f}% of full scale there, and plenty of IMUs are +/-1000.")
-    say()
     say("  **A saturated rate gyro in a roll loop is not a degraded measurement, it is a")
-    say("  wrong one**, and the controller cannot tell. Three ways out, and the first is")
-    say("  free:")
+    say("  wrong one**, and the controller cannot tell. What changed with the arithmetic is")
+    say("  which way out is optional:")
     say()
-    say("    1. CAP THE ROLL COMMAND. Roll needs far less deflection than pitch -- the")
-    say("       vehicle's roll inertia is tiny. At 2 deg the rate is about a quarter of")
-    say("       this. baseline.py already notes roll control needs less deflection.")
+    say(f"    1. CAP THE ROLL COMMAND -- NOT OPTIONAL. At {ROLL_COMMAND_CAP_DEG:.0f} deg the rate is "
+        f"{capped:.0f} deg/s, {capped / 2000 * 100:.0f}% of full")
+    say(f"       scale; at the {DEFLECTION_LIMIT_DEG:.0f} deg deflection limit it is {limit:.0f} deg/s and a "
+        f"+/-2000 dps part is")
+    say("       out of range. The cap is what keeps the gyro in range, so it is a SENSING")
+    say("       requirement and not only a control one -- and a fault that runs the canards")
+    say("       to the stops takes the attitude estimate with it.")
     say("    2. PICK A WIDER PART. Some IMUs go to +/-4000 deg/s; it is a line in a")
     say("       datasheet and costs nothing at design time -- if you check before layout.")
     say("    3. MEASURE IT ON GV-2 FIRST. That flight exists to turn Cl_delta from an")
     say("       assumption into a measurement, and this number is downstream of Cl_delta,")
     say("       which docs/01 calls the weakest part of the whole analysis.")
     say()
-    say("  Do 1 and 2. They are both free and they are not exclusive.")
+    say("  Do 1 and 2. They are both free and they are not exclusive. D8 adds a third free")
+    say("  pre-layout requirement -- see scripts/estimation_trade.py.")
 
     text = "\n".join(lines)
     print(text)

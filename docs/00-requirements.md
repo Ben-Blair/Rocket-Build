@@ -273,7 +273,7 @@ reports the deflection/geometry region where the net roll moment changes sign.
 | D10 | Nose ballast provision | none / fixed / adjustable | **Adjustable** threaded rod + washers in the nose shoulder. Lets you set margin after weighing the real vehicle (§7) | RESOLVED |
 | D6 | Motor | 102 available 54 mm J/K motors | **Cesaroni Pro54 J449 Blue Streak** (`1261J449-15A`). ~2.7× the crossrange of the J430 while staying at Mach 0.524 and 8.3 g. Ranks **11th** on crossrange alone; chosen on peak g, Mach margin and cost per flight. See `02-motor-selection.md` | RESOLVED |
 | D7 | Flight computer | COTS + custom controller board / full custom | **Custom STM32F405 board for the guided vehicle, breakout stack for the cert flights.** Staged deliberately: the cert launches are monthly and the avionics fly as a passive logger in them, so nothing waits eight weeks for a PCB. Deployment stays on an independent commercial altimeter in both stages. See `06-avionics-selection.md` | RESOLVED |
-| D8 | State estimation | IMU-only / IMU+baro / IMU+baro+GNSS | IMU+baro+GNSS for L3 | TBD |
+| D8 | State estimation | IMU-only / IMU+baro / IMU+baro+GNSS | **IMU + baro + GNSS + MAGNETOMETER on the board, with the estimator staged by guidance level.** The sensor set cannot stage the way D7's hardware did — everything has to be on the schematic at once — so what stages is the software. The magnetometer is the finding: roll angle is unobservable without one, and L1 (hold roll angle) is the minimum success criterion. Closes without D1. See `07-state-estimation.md` | RESOLVED |
 | D9 | Airframe material | cardboard / Blue Tube / fiberglass | fiberglass, at minimum for the canard module | TBD |
 
 ### 6.1 Baseline airframe as computed

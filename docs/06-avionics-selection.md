@@ -13,6 +13,10 @@ flights.** Staged, in that order, and the staging is the decision — not a hedg
 | **Stage 1** | L1 and L2 cert, as a passive logger | Teensy 4.1 + IMU/baro/GNSS breakouts + StratoLoggerCF |
 | **Stage 2** | GV-1 onward | Custom STM32F405 board + StratoLoggerCF |
 
+The board's sensor set is D8's, not D7's: **IMU, magnetometer, baro, GNSS** — see
+`07-state-estimation.md`. The magnetometer was added after D7 closed, because roll angle
+is unobservable without one.
+
 Deployment stays on the **independent commercial altimeter in both stages**. It is not on
 the custom board and it is not on the Teensy.
 
@@ -84,31 +88,50 @@ Every one of these comes out of the flight model, not a tutorial. `board_require
 
 | requirement | value | why |
 |---|---|---|
-| **gyro full scale** | **≥ ±2000 °/s** | steady roll at 8° of canard is **1783 °/s** |
+| **gyro full scale** | **≥ ±2000 °/s**, *and the roll command capped* | see the correction below — 594 °/s at the 2° roll cap, **2378 °/s at the 8° limit** |
+| **IMU output data rate** | **≥ 1 kHz** | not the loop rate: quaternion propagation at 100 Hz drifts 33.3 °/s with a perfect gyro (D8) |
+| **magnetometer** | **required** | roll angle is unobservable without one, and L1 is the minimum success criterion (D8) |
 | accelerometer | ≥ ±16 g | peak axial 8.3 g, plus ignition and ejection transients |
 | loop rate | ≥ 86 Hz | pitch mode 4.30 Hz, and a digital loop wants 20× the mode it closes |
 | servo drive | 4 ch, 333 Hz | four KST X08 Plus at 667 °/s; **separate supply from the IMU** |
 | logging | ≥ 100 Hz for 150 s | apogee at 17 s, whole flight to landing about 120 s |
 | deployment | **not on this board** | independent commercial altimeter fires the charges |
 
-### The one that is tight
+### The one that is tight — and this section was wrong when it was written
 
-**Steady roll rate at full canard deflection is 1783 °/s — 89% of a ±2000 °/s gyro's range,
-and many IMUs are ±1000.**
+It used to say: *"steady roll rate at full canard deflection is 1783 °/s — 89% of a ±2000 °/s
+gyro's range."* **Both halves of that are wrong, and D8 found it.** Steady roll rate is
+*linear* in deflection, and 1783 °/s is the **6°** figure — `evaluate()`'s default, which
+`avionics_trade.py` happened to take — printed under an 8° heading:
+
+| deflection | roll rate | of ±2000 dps | |
+|---|---|---|---|
+| 2° | 594 °/s | 30 % | the roll command cap |
+| 6° | 1783 °/s | 89 % | `evaluate()`'s default — *what this document quoted* |
+| **8°** | **2378 °/s** | **119 % — SATURATED** | the deflection limit |
 
 A saturated rate gyro in a roll loop is not a degraded measurement, it is a wrong one, and
-the controller cannot tell. This is the requirement no tutorial would have produced, and it
-would have been found in flight.
+the controller cannot tell. That part was right. What was wrong is the comfort: **the error
+and the reassurance came from the same place**, because a 33 % understatement is exactly what
+turns a saturated part into a comfortable-looking 89 %.
 
-Three ways out; do the first two, they are free and not exclusive:
+The corrected statement: **a ±2000 dps gyro is adequate only because the roll command is
+capped at 2°.** So the first way out below is not one option of three, it is a requirement:
 
-1. **Cap the roll command.** Roll needs far less deflection than pitch because roll inertia
-   is tiny — `baseline.py` already says so. At 2° the rate is about a quarter of this.
+1. **Cap the roll command — not optional.** Roll needs far less deflection than pitch because
+   roll inertia is tiny, and `ROLL_DEFLECTION_DEG = 2.0` already existed in `baseline.py` as a
+   control convenience. It is now **load-bearing for the sensor**: it is what keeps the gyro
+   in range, and a fault that runs the canards to the stops takes the attitude estimate with
+   it as well as the vehicle.
 2. **Pick a wider part.** Some IMUs reach ±4000 °/s. It is a line in a datasheet and costs
    nothing at design time, *if you check before layout*.
 3. **Measure it on GV-2.** That flight exists to turn `Cl_delta` from an assumption into a
    measurement, and this number is downstream of `Cl_delta` — which `docs/01` calls the
    weakest part of the whole analysis.
+
+Both deflection limits now live in `design/configure.py` and `Evaluation` records the one it
+was evaluated at, so a document cannot quote one caller's answer under another's heading
+again. That is correction 4 recurring — see `docs/01` correction 36.
 
 ## What this closed on the way past
 
@@ -140,8 +163,10 @@ fully instrumented vehicle.
 
 ## Still open
 
-- **D8, state estimation**, follows from this board's sensor set and is where most of the
-  interesting engineering lives.
+- ~~**D8, state estimation.**~~ **CLOSED** — `07-state-estimation.md`. It added a
+  magnetometer to this board and two requirements to the table above, and it found the gyro
+  error corrected in the section before this one. All three were free before layout and
+  unrecoverable after, which is the argument for having closed it before the schematic.
 - **Every envelope in `design/avionics.py` that is not marked `measured`.** Three parts are
   now off datasheets; the rest are still correction 5 material, and the custom board's
   70 × 45 mm is a *layout target* rather than a measurement — the one line here whose

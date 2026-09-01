@@ -419,13 +419,23 @@ IMU_BREAKOUT = Component("IMU breakout", 0.008, 0.0254, 0.0178, 0.006,
                          note="1.0 x 0.7 in, the standard breakout footprint")
 BARO_BREAKOUT = Component("barometer breakout", 0.006, 0.0254, 0.0178, 0.005,
                           note="1.0 x 0.7 in")
+# Added by D8. Roll angle is unobservable without it -- specific force is invariant under
+# rotation about the axis it lies along, and the GNSS velocity vector says where the nose
+# points, not how the vehicle is clocked about it. L1, hold roll angle, is the project's
+# MINIMUM success criterion, and until design/estimation.py went looking nothing had checked
+# that the selected board could support it. It is on the CERT stack too, because the premise
+# of the staging in docs/06 is that every line of the interesting software is identical.
+MAG_BREAKOUT = Component("magnetometer breakout", 0.005, 0.0254, 0.0178, 0.005,
+                         note="1.0 x 0.7 in, MMC5983MA class. About $5 -- see docs/07")
 GNSS_MODULE = Component("GNSS module + patch antenna", 0.030, 0.030, 0.030, 0.010,
                         note="wants sky view; the patch antenna sets the footprint")
 BATTERY_2S = Component("battery, 2S 1500 mAh", 0.090, 0.070, 0.035, 0.015)
 BEC = Component("servo power BEC", 0.025, 0.030, 0.020, 0.010)
 STM32_BOARD = Component(
     "custom STM32 guidance board", 0.045, 0.070, 0.045, 0.012,
-    note="ONE board: STM32F405, IMU, baro, GNSS, flash, 4x servo drive. The envelope is a "
+    note="ONE board: STM32F405, IMU, MAGNETOMETER, baro, GNSS, flash, 4x servo drive. The "
+         "magnetometer is D8's doing and it is the whole reason D8 had to close before the "
+         "schematic -- see docs/07. The envelope is a "
          "LAYOUT TARGET, not a measurement -- it is the only line here a design decision "
          "can shrink, and the only one whose accuracy is under Ben's control")
 
@@ -450,8 +460,8 @@ class Option:
 OPTIONS: list[Option] = [
     Option(
         "A", "Dev board + breakouts",
-        [TEENSY_41, IMU_BREAKOUT, BARO_BREAKOUT, GNSS_MODULE, BATTERY_2S, BEC,
-         STRATOLOGGER_CF],
+        [TEENSY_41, IMU_BREAKOUT, BARO_BREAKOUT, MAG_BREAKOUT, GNSS_MODULE, BATTERY_2S,
+         BEC, STRATOLOGGER_CF],
         cost=260.0, build_weeks=1.0,
         note="Breakouts on a protoboard. Flying in a week, and every line of the "
              "interesting software -- filter, HIL, controller -- is identical to option C"),
@@ -493,18 +503,50 @@ def board_requirements(ev) -> list[BoardRequirement]:
     tutorials say, and this vehicle has at least one requirement that no tutorial would
     produce -- see the gyro line, which is the only one here that is genuinely tight.
     """
+    from . import estimation as est
+    from .configure import DEFLECTION_LIMIT_DEG, ROLL_COMMAND_CAP_DEG
+
     f, pitch, roll = ev.flight, ev.pitch, ev.roll_interdig
     loop = pitch.pitch_natural_freq_hz * 20.0
-    roll_rate = roll.steady_roll_rate_deg_s
+    roll_capped = est.capped_roll_rate(ev)
+    roll_limit = est.uncapped_roll_rate(ev)
+    imu_hz = est.required_imu_rate(roll_limit)
     return [
         BoardRequirement(
-            "gyro full scale", f"at least +/-2000 deg/s",
-            f"steady roll at 8 deg of canard is {roll_rate:.0f} deg/s -- {roll_rate / 2000 * 100:.0f}% "
-            f"of a +/-2000 dps part's range, and roll acceleration is "
+            "gyro full scale", "at least +/-2000 deg/s, AND the roll command capped",
+            f"steady roll rate is LINEAR in deflection: {roll_capped:.0f} deg/s at the "
+            f"{ROLL_COMMAND_CAP_DEG:.0f} deg roll cap "
+            f"({roll_capped / 2000 * 100:.0f}% of a +/-2000 dps part) but "
+            f"{roll_limit:.0f} deg/s at the {DEFLECTION_LIMIT_DEG:.0f} deg deflection limit "
+            f"({roll_limit / 2000 * 100:.0f}% -- SATURATED). Roll acceleration is "
             f"{roll.roll_accel_deg_s2:.0f} deg/s^2",
-            "TIGHT. This is the one requirement a tutorial would not produce, and a "
-            "+/-1000 dps IMU -- which many are -- saturates in normal operation. Either "
-            "pick a wider part or cap the roll command; do not discover it in flight"),
+            "TIGHT, and D8 found this line had been quoting the wrong deflection: 1783 deg/s "
+            "is the 6 deg figure and it was printed under an 8 deg heading, which put the "
+            "vehicle at a comfortable-looking 89% of full scale when the deflection limit "
+            "actually saturates the part. THE ROLL CAP IS WHAT KEEPS THE GYRO IN RANGE -- it "
+            "is a sensing requirement, not only a control one. A +/-1000 dps IMU is out at "
+            "any deflection. See design/estimation.py"),
+        BoardRequirement(
+            "IMU output data rate", f"at least {imu_hz:.0f} Hz",
+            f"first-order quaternion propagation rotates by 2*atan(w*dt/2), not w*dt, and "
+            f"the shortfall is cubic in the step: at 100 Hz and {roll_limit:.0f} deg/s that "
+            f"is {est.integration_drift(roll_limit, 100.0):.1f} deg/s of attitude drift with "
+            f"a PERFECT gyro, against {est.integration_drift(roll_limit, imu_hz):.2f} deg/s "
+            f"at {imu_hz:.0f} Hz",
+            f"TIGHT, and it is NOT the control loop rate below. A board specified to the "
+            f"{loop:.0f} Hz loop rate would sample the IMU ten times too slowly and the "
+            f"arithmetic would lead every sensor error term combined. It sets the SPI clock "
+            f"and the DMA, so it is fixed at layout"),
+        BoardRequirement(
+            "magnetometer", "required, 3-axis, on the board",
+            "roll angle is unobservable without one: specific force is invariant under "
+            "rotation about the axis it lies along, so the accelerometer cannot see roll, "
+            "and the GNSS velocity vector fixes where the nose points rather than how the "
+            "vehicle is clocked about it. L1 -- hold roll angle -- is the MINIMUM success "
+            "criterion (docs/00 section 1.1)",
+            "about $5 and one I2C address before layout, and unbuildable after. docs/01 step "
+            "4.2 already assumed a magnetometer; the board D7 selected did not have one, and "
+            "nothing had checked. Keep it away from the servo bus and the battery leads"),
         BoardRequirement(
             "accelerometer full scale", "at least +/-16 g",
             f"peak axial is {f.max_acceleration_g:.1f} g, and motor ignition and ejection "

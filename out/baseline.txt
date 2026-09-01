@@ -6,7 +6,7 @@ BASELINE VEHICLE
   motor               J449BS  (1260 N s, class J, needs L2)
   wet / dry mass      6.14 / 5.52 kg
   feasible            YES
-  WARNING             nav bay budget 515 g against 401 g of D7-selected parts (+80 g wiring, +150 g sled) -- the budget is 114 g heavy since D7 closed. Not applied: it is forward of the CG, so it costs static margin, and the board's mass is a layout target. Settle it with D8
+  WARNING             nav bay budget 515 g against 401 g of D7-selected parts (+80 g wiring, +150 g sled) -- the budget is 114 g heavy since D7 closed. Not applied: it is forward of the CG, so it costs static margin, and the board's mass is a layout target. D8 did NOT settle this -- nothing but a scale will. docs/01 step 5
 
 ============================================================================================
 GEOMETRY  (stations measured from nose tip)
@@ -241,8 +241,17 @@ VENTING and the NAV BAY
     before the move   NO FIT nav bay          need 161.7 mm, have 115.0 mm ( -46.6 mm)  short by 47 mm
   nose stack          FITS   nose stack        35.4 mm sled at station 282-318 mm, 59.1 mm wide  2 parts, aft of the ballast
   the move is worth   51 mm of sled and moves 105 g from station 381 to 300 mm
-  ON ESTIMATED ENVELOPES -- 3 of 4 parts are guesses because D7 is open. Read
+  ON ESTIMATED ENVELOPES -- 3 of 4 parts are guesses. Read
      correction 5 before touching geometry. python scripts/avionics_report.py
+  state estimation    OK
+  D8 architecture     D. IMU + baro + GNSS + magnetometer, to L3
+  roll rate seen      594 deg/s at the 2 deg roll cap, 2378 deg/s at the 8 deg limit -- the cap is what keeps the gyro in range
+  IMU sample rate     1000 Hz minimum, NOT the 86 Hz control loop rate: quaternion propagation at
+                      100 Hz drifts 33.3 deg/s with a PERFECT gyro
+  attitude, unaided   8.8 deg RSS by apogee, led by 'gyro scale factor at roll rate'
+  D8 carries 7 notes that do not fit here, including the one that matters most:
+     an |a|-magnitude gate on the accelerometer correction opens AT BURNOUT and what it
+     admits is drag along the body axis, not gravity. python scripts/estimation_trade.py
 
 ============================================================================================
 OPENROCKET ENTRY VALUES

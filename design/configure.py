@@ -230,6 +230,11 @@ class Evaluation:
     packing: recovery.PackingResult
     violations: list[str]
     warnings: list[str] = field(default_factory=list)
+    # The deflection every derivative above was evaluated at. Recorded because it was NOT,
+    # and D8 found three callers using three different values while quoting each other's
+    # answers -- see DEFLECTION_LIMIT_DEG. An Evaluation that does not carry its own
+    # deflection cannot be checked against the one a document claims it used.
+    deflection_deg: float = 0.0
 
     @property
     def feasible(self) -> bool:
@@ -246,6 +251,24 @@ NOSE_BALLAST_CLEARANCE = 0.020  # m
 # designed, so it is measured. Kept here rather than imported from seal.py because seal.py
 # imports recovery.py and the cycle is not worth the tidiness.
 INTERNAL_BULKHEAD_STACK = 0.0108  # m
+
+# THE TWO DEFLECTION LIMITS, and they are different numbers for a physical reason.
+#
+# These lived in `scripts/baseline.py` until D8 went looking for the roll rate and found
+# THREE deflections in use across the project: `baseline.py` evaluated at 8 deg,
+# `avionics_trade.py` took `evaluate`'s 6 deg default, and docs/06 quoted the 6 deg answer
+# under an 8 deg label. Steady roll rate is LINEAR in deflection, so that is not a
+# rounding difference -- it is 594, 1783 and 2377 deg/s, and the gyro requirement was
+# written against the middle one. Correction 4 all over again: a constant that lives in
+# a script drifts from the document that quotes it. They live here now.
+#
+# The limit is a PITCH/YAW limit. Pitch needs the authority: it is fighting a stable vehicle
+# with 2.1-2.6 cal of margin. Roll is not -- roll inertia is tiny, the canards are ganged,
+# and full deflection spins the vehicle far faster than any control law wants. The cap is
+# what keeps the rate gyro inside its range (design/estimation.py), so it is a SENSING
+# requirement as much as a control one, and lifting it saturates the gyro.
+DEFLECTION_LIMIT_DEG = 8.0
+ROLL_COMMAND_CAP_DEG = 2.0
 
 LIMITS = dict(
     sm_min=1.4,  # minimum over the flight, which occurs at rail exit (motor loaded)
@@ -400,8 +423,14 @@ def evaluate(
     # GNSS and IMU that had their own lines, and a real StratoLoggerCF is 10.8 g against a
     # budgeted 60. NOT applied, for correction 20's reason -- it is a vehicle-level change,
     # 114 g at station 0.381 m is forward of the CG so removing it costs static margin, and
-    # the board's own 45 g is a LAYOUT TARGET rather than a built part. D8 will move the
-    # sensor set again. Flagged so it cannot be forgotten, which is the whole point.
+    # the board's own 45 g is a LAYOUT TARGET rather than a built part.
+    #
+    # This used to say "settle it with D8". D8 IS NOW CLOSED AND IT DID NOT SETTLE IT, which
+    # is worth being explicit about rather than quietly moving the pointer: D8 added a
+    # magnetometer to a board whose mass was already a target, so the number it would change
+    # is a guess either way. Nothing settles this but a scale. It belongs to docs/01 step 5,
+    # "weigh every component and replace the budget in design/mass.py with measurements" --
+    # and until then flagging beats applying, which is the whole point of it being a warning.
     bay_budget_kg = sum(v for k, v in mass_mod.DEFAULT_AVIONICS_BUDGET.items()
                         if k not in mass_mod.NOSE_AVIONICS)
     selected_kg = sum(c.mass for c in avionics.NAV_BAY_STACK) + 0.080 + 0.150
@@ -411,7 +440,8 @@ def evaluate(
             f"of D7-selected parts (+80 g wiring, +150 g sled) -- the budget is "
             f"{(bay_budget_kg - selected_kg) * 1000:.0f} g heavy since D7 closed. Not "
             f"applied: it is forward of the CG, so it costs static margin, and the board's "
-            f"mass is a layout target. Settle it with D8")
+            f"mass is a layout target. D8 did NOT settle this -- nothing but a scale will. "
+            f"docs/01 step 5")
 
     # Control assessment at the highest-q point after burnout, where authority is best.
     coast = [pt for pt in flight.points if pt.t >= flight.burnout_time]
@@ -453,4 +483,5 @@ def evaluate(
         packing=packing,
         violations=violations,
         warnings=warnings,
+        deflection_deg=deflection_deg,
     )

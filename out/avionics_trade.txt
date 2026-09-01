@@ -7,7 +7,7 @@ D7 -- THE THREE ARCHITECTURES
 
      architecture                    mass    cost  weeks     sled     fit
   --------------------------------------------------------------------------
-  A  Dev board + breakouts          185 g $   260   1.0   107.1 mm    FITS
+  A  Dev board + breakouts          190 g $   260   1.0   112.9 mm    FITS
   B  TeleMega + guidance board      168 g $   520   1.5   109.6 mm    FITS
   C  Custom STM32 board             171 g $   400   8.0   110.4 mm    FITS  <- SELECTED
 
@@ -40,7 +40,7 @@ PACKAGING DOES NOT SELECT THE ARCHITECTURE -- and that is worth knowing
 
      architecture                  sled needed    margin
   --------------------------------------------------------
-  A  Dev board + breakouts            107.1 mm    +7.9 mm
+  A  Dev board + breakouts            112.9 mm    +2.2 mm
   B  TeleMega + guidance board        109.6 mm    +5.5 mm
   C  Custom STM32 board               110.4 mm    +4.6 mm
 
@@ -58,9 +58,17 @@ PACKAGING DOES NOT SELECT THE ARCHITECTURE -- and that is worth knowing
 WHAT THE BOARD HAS TO DO -- derived from this vehicle, not from a tutorial
 ============================================================================================
 
-  GYRO FULL SCALE: at least +/-2000 deg/s
-      why    steady roll at 8 deg of canard is 1783 deg/s -- 89% of a +/-2000 dps part's range, and roll acceleration is 36695 deg/s^2
-      slack  TIGHT. This is the one requirement a tutorial would not produce, and a +/-1000 dps IMU -- which many are -- saturates in normal operation. Either pick a wider part or cap the roll command; do not discover it in flight
+  GYRO FULL SCALE: at least +/-2000 deg/s, AND the roll command capped
+      why    steady roll rate is LINEAR in deflection: 594 deg/s at the 2 deg roll cap (30% of a +/-2000 dps part) but 2378 deg/s at the 8 deg deflection limit (119% -- SATURATED). Roll acceleration is 48927 deg/s^2
+      slack  TIGHT, and D8 found this line had been quoting the wrong deflection: 1783 deg/s is the 6 deg figure and it was printed under an 8 deg heading, which put the vehicle at a comfortable-looking 89% of full scale when the deflection limit actually saturates the part. THE ROLL CAP IS WHAT KEEPS THE GYRO IN RANGE -- it is a sensing requirement, not only a control one. A +/-1000 dps IMU is out at any deflection. See design/estimation.py
+
+  IMU OUTPUT DATA RATE: at least 1000 Hz
+      why    first-order quaternion propagation rotates by 2*atan(w*dt/2), not w*dt, and the shortfall is cubic in the step: at 100 Hz and 2378 deg/s that is 33.3 deg/s of attitude drift with a PERFECT gyro, against 0.34 deg/s at 1000 Hz
+      slack  TIGHT, and it is NOT the control loop rate below. A board specified to the 86 Hz loop rate would sample the IMU ten times too slowly and the arithmetic would lead every sensor error term combined. It sets the SPI clock and the DMA, so it is fixed at layout
+
+  MAGNETOMETER: required, 3-axis, on the board
+      why    roll angle is unobservable without one: specific force is invariant under rotation about the axis it lies along, so the accelerometer cannot see roll, and the GNSS velocity vector fixes where the nose points rather than how the vehicle is clocked about it. L1 -- hold roll angle -- is the MINIMUM success criterion (docs/00 section 1.1)
+      slack  about $5 and one I2C address before layout, and unbuildable after. docs/01 step 4.2 already assumed a magnetometer; the board D7 selected did not have one, and nothing had checked. Keep it away from the servo bus and the battery leads
 
   ACCELEROMETER FULL SCALE: at least +/-16 g
       why    peak axial is 8.3 g, and motor ignition and ejection are transients on top of that
@@ -84,26 +92,35 @@ WHAT THE BOARD HAS TO DO -- derived from this vehicle, not from a tutorial
 
 
 ============================================================================================
-THE ONE THAT IS TIGHT
+THE ONE THAT IS TIGHT -- and D8 found it had been quoted at the wrong deflection
 ============================================================================================
 
-  Steady roll rate at 8 deg of canard deflection is 1783 deg/s.
-  Roll acceleration is 36695 deg/s^2.
+  STEADY ROLL RATE IS LINEAR IN DEFLECTION, and this section used to ignore that.
+  It evaluated at `evaluate`'s 6 deg default and printed the answer under an 8 deg
+  heading, which is how a saturated part came to read as comfortable:
 
-  A +/-2000 deg/s gyro -- the top of the range on most 6-axis parts -- is at
-  89% of full scale there, and plenty of IMUs are +/-1000.
+    deflection    roll rate   of +/-2000 dps
+  --------------------------------------------
+          2 deg       594 deg/s            30%   roll cap
+          6 deg      1783 deg/s            89%   the old default
+          8 deg      2378 deg/s           119%   deflection limit  SATURATED
+
+  Roll acceleration is 48927 deg/s^2.
 
   **A saturated rate gyro in a roll loop is not a degraded measurement, it is a
-  wrong one**, and the controller cannot tell. Three ways out, and the first is
-  free:
+  wrong one**, and the controller cannot tell. What changed with the arithmetic is
+  which way out is optional:
 
-    1. CAP THE ROLL COMMAND. Roll needs far less deflection than pitch -- the
-       vehicle's roll inertia is tiny. At 2 deg the rate is about a quarter of
-       this. baseline.py already notes roll control needs less deflection.
+    1. CAP THE ROLL COMMAND -- NOT OPTIONAL. At 2 deg the rate is 594 deg/s, 30% of full
+       scale; at the 8 deg deflection limit it is 2378 deg/s and a +/-2000 dps part is
+       out of range. The cap is what keeps the gyro in range, so it is a SENSING
+       requirement and not only a control one -- and a fault that runs the canards
+       to the stops takes the attitude estimate with it.
     2. PICK A WIDER PART. Some IMUs go to +/-4000 deg/s; it is a line in a
        datasheet and costs nothing at design time -- if you check before layout.
     3. MEASURE IT ON GV-2 FIRST. That flight exists to turn Cl_delta from an
        assumption into a measurement, and this number is downstream of Cl_delta,
        which docs/01 calls the weakest part of the whole analysis.
 
-  Do 1 and 2. They are both free and they are not exclusive.
+  Do 1 and 2. They are both free and they are not exclusive. D8 adds a third free
+  pre-layout requirement -- see scripts/estimation_trade.py.

@@ -57,33 +57,57 @@ next regeneration carries it forward.
 ```
 design/
   atmosphere.py   US Standard Atmosphere 1976, troposphere
-  recovery.py     dual-deploy sizing, descent time, wind drift
-  geometry.py     nose / tube / fin set definitions, Barrowman CP geometry
-  packaging.py    actuator bay packaging + hinge moment + servo torque margin
   aero.py         Barrowman CNa & CP buildup, component drag buildup
-  mass.py         geometric structural mass + editable subsystem budget, CG
-  motors.py       RASP .eng thrust curve parser + placeholder generic motors
-  trajectory.py   3-DOF RK4 ascent to apogee
-  control.py      canard pitch authority, roll authority, wake interference, crossrange
+  avionics.py     nav bay / nose packing, and the D7 flight computer trade
+  bay.py          the printed canard bay: servo pockets, bearing seats, retainers
   configure.py    parameter set -> full vehicle -> requirement scoring, and the
                   frozen baseline airframe every script imports
+  control.py      canard pitch authority, roll authority, wake interference, crossrange
+  estimation.py   D8: observability per flight phase, attitude error budget, sensor specs
+  flutter.py      fin flutter margin
+  geometry.py     nose / tube / fin set definitions, Barrowman CP geometry
+  hinge.py        the hinge as a load path: shaft, bearing, coupling, root joint
+  joints.py       all four tube joints -- a coupler costs bore, not length
+  mass.py         geometric structural mass + editable subsystem budget, CG
+  materials.py    material allowables, in one place
+  motors.py       RASP .eng thrust curve parser + placeholder generic motors
+  onshape.py      minimal Onshape REST API client
+  onshape_build.py  emits Onshape Part Studio feature JSON
+  packaging.py    actuator bay packaging + hinge moment + servo torque margin
+  recovery.py     dual-deploy sizing, descent time, wind drift, soft-goods packing
+  seal.py         the aft gas seal and the internal bulkhead, sized as pistons
+  trajectory.py   3-DOF RK4 ascent to apogee
+  tube_section.py airframe survival where holes are cut through it
+  venting.py      static ports and bay vents: which volumes the altimeter may sense
 scripts/
-  packaging_report.py   diameter vs servo class table
-  fetch_motors.py       download real .eng thrust curves from ThrustCurve.org
-  motor_trade.py        rank every available L2 motor against the baseline airframe
+  avionics_report.py    nav bay + nose packing report and verdict
+  avionics_trade.py     D7: the three flight computer architectures
+  baseline.py           detailed baseline report + OpenRocket values
+  bay_report.py         printed canard bay geometry and margins
   burn_time_study.py    why burn time is not a control-time knob
+  canard_sweep.py       drives the CAD canards through +/-8 deg, checks clearances
+  estimation_trade.py   D8: the four sensor sets, and what the estimate can know
+  fetch_motors.py       download real .eng thrust curves from ThrustCurve.org
+  hinge_report.py       hinge stack loads, fits and buildability
+  make_*.py             build geometry in Onshape from the design modules
+  motor_trade.py        rank every available L2 motor against the baseline airframe
+  openrocket_check.py   automated cross-check against OpenRocket's engine
+  packaging_report.py   diameter vs servo class table
+  place_*.py            place built parts into Onshape Assembly 1
   recovery_study.py     descent, drift and the recovery footprint constraint
   robustness.py         Monte Carlo on static margin; sets the aft fin size
+  seal_report.py        the aft gas seal argument and check
   sweep.py              design space sweep against requirements
-  baseline.py           detailed baseline report + OpenRocket values
-  make_cad_profiles.py  DXF planforms and bay section for CAD import
+  verify_cad.py         cross-check the design numbers against the Onshape model
 docs/
   00-requirements.md    requirements, constraints, scoping, regulatory actions
-  01-next-steps.md      ordered plan with concrete deliverables
+  01-next-steps.md      ordered plan, the state of play, and 36 corrections
   02-motor-selection.md L2 motor trade study and decision
   03-openrocket-correlation.md  automated cross-check against OpenRocket's engine
   04-bill-of-materials.md       frozen parts list, masses and costs
   05-canard-module-build.md     CAD build sheet for the canard module
+  06-avionics-selection.md      D7: the flight computer, and why it is staged
+  07-state-estimation.md        D8: what the flight computer can know, and when
 ```
 
 ## How this fits with OpenRocket and RocketPy

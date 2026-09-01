@@ -13,10 +13,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design import (
-    aero, avionics, control, flutter, hinge, joints, seal, trajectory, tube_section,
-    venting,
+    aero, avionics, control, estimation, flutter, hinge, joints, seal, trajectory,
+    tube_section, venting,
 )
-from design.configure import baseline, build_vehicle, evaluate
+from design.configure import (
+    DEFLECTION_LIMIT_DEG, ROLL_COMMAND_CAP_DEG, baseline, build_vehicle, evaluate,
+)
 from design import recovery
 from design.packaging import (
     SERVO_GEOMETRY, SERVOS, check_direct_drive, check_flat_mount, torque_margin,
@@ -30,12 +32,13 @@ MOTOR = BASELINE.motor
 
 # Servo is part of the frozen design now -- see design/configure.py.
 SERVO_CHOICE = BASELINE.servo
-DEFLECTION_LIMIT_DEG = 8.0
 # Free air in the canard module -- tube volume less the servos, printed bay, shafts and
 # bearings. An estimate; it only has to be good enough to size a vent convention oversizes.
 CANARD_MODULE_FREE_VOLUME = 570e-6  # m^3
-# Roll control needs far less deflection than pitch/yaw, because roll inertia is tiny.
-ROLL_DEFLECTION_DEG = 2.0
+# Roll control needs far less deflection than pitch/yaw, because roll inertia is tiny --
+# and D8 found that it is also what keeps the rate gyro inside its range, so both limits now
+# live in design/configure.py rather than here. See design/estimation.py.
+ROLL_DEFLECTION_DEG = ROLL_COMMAND_CAP_DEG
 GEAR_RATIO = 1.0
 
 
@@ -378,8 +381,32 @@ def main() -> None:
     print(f"  the move is worth   {(was.required_length - nav_pack.required_length) * 1000:.0f} mm "
           f"of sled and moves 105 g from station 381 to {nose_fit.centroid * 1000:.0f} mm")
     print(f"  ON ESTIMATED ENVELOPES -- {len(nav_pack.estimated)} of "
-          f"{len(nav_pack.components)} parts are guesses because D7 is open. Read")
+          f"{len(nav_pack.components)} parts are guesses. Read")
     print("     correction 5 before touching geometry. python scripts/avionics_report.py")
+
+    est_chk = estimation.check_estimation(ev)
+    est_budget = estimation.attitude_error_budget(ev)
+    arch = estimation.selected_architecture()
+    print(f"  state estimation    {'OK' if est_chk.ok else 'VIOLATIONS: ' + '; '.join(est_chk.violations)}")
+    print(f"  D8 architecture     {arch.key}. {arch.name}, to {arch.max_level}")
+    print(f"  roll rate seen      {estimation.capped_roll_rate(ev):.0f} deg/s at the "
+          f"{ROLL_COMMAND_CAP_DEG:.0f} deg roll cap, "
+          f"{estimation.uncapped_roll_rate(ev):.0f} deg/s at the "
+          f"{DEFLECTION_LIMIT_DEG:.0f} deg limit -- the cap is what keeps the gyro in range")
+    print(f"  IMU sample rate     {est_budget.imu_rate_hz:.0f} Hz minimum, NOT the "
+          f"{ev.pitch.pitch_natural_freq_hz * 20:.0f} Hz control loop rate: quaternion "
+          f"propagation at")
+    print(f"                      100 Hz drifts "
+          f"{estimation.integration_drift(estimation.uncapped_roll_rate(ev), 100.0):.1f} "
+          f"deg/s with a PERFECT gyro")
+    print(f"  attitude, unaided   {est_budget.total_at_apogee:.1f} deg RSS by apogee, led by "
+          f"'{est_budget.dominant.source}'")
+    print(f"  D8 carries {len(est_chk.notes)} notes that do not fit here, including the one that "
+          f"matters most:")
+    print("     an |a|-magnitude gate on the accelerometer correction opens AT BURNOUT and "
+          "what it")
+    print("     admits is drag along the body axis, not gravity. python "
+          "scripts/estimation_trade.py")
 
     rule("OPENROCKET ENTRY VALUES")
     print(f"""  Nose cone

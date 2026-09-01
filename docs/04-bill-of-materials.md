@@ -159,15 +159,17 @@ the cable bosses sit. Regenerate with `python scripts/baseline.py`.
 
 ## 5. Avionics
 
-Step 4 scope — listed for budget completeness, not yet specified (D7, D8 open).
+Step 4 scope. **D7 and D8 are both closed** (docs/06, docs/07), so the sensor set is
+settled even though most envelopes are still estimates.
 
 | Item | Qty | Mass | Price | |
 |---|---|---|---|---|
 | Dual-deploy altimeter — **PerfectFlite StratoLoggerCF** | 1 | **0.011 kg** | ~$70 | 50.8 × 21.3 × 12.7 mm, 20 Hz logging. **Fires the charges; independent of the flight computer in every stage** |
-| Flight computer — **custom STM32F405 board** (guided vehicle) | 1 | 0.045 kg | ~$400 | D7 RESOLVED, docs/06. 70 × 45 mm is a **layout target**, not a measurement |
+| Flight computer — **custom STM32F405 board** (guided vehicle) | 1 | 0.045 kg | ~$400 | D7 RESOLVED, docs/06. Carries IMU, **magnetometer**, baro, GNSS. 70 × 45 mm is a **layout target**, not a measurement |
 | Flight computer — **Teensy 4.1 + breakouts** (L1/L2 cert logger) | 1 | 0.015 kg | ~$40 | 61 × 17.8 mm. Stage 1; also the HIL target and the reference implementation |
 | GNSS receiver + antenna | 1 | 0.030 kg | ~$40 | |
-| IMU daughterboard | 1 | 0.020 kg | ~$30 | |
+| IMU daughterboard | 1 | 0.020 kg | ~$30 | ≥ ±2000 dps gyro, ≥ ±16 g accel, **≥ 1 kHz ODR** — the rate is D8's, and it is not the loop rate |
+| **Magnetometer** | 1 | 0.005 kg | ~$5 | **D8, docs/07.** The only sensor that observes roll angle; L1 is defined on roll angle. Keep it off the servo bus |
 | Battery, 2S LiPo 1500 mAh | 1 | 0.090 kg | ~$20 | |
 | Servo power BEC | 1 | 0.025 kg | ~$15 | |
 | Telemetry radio | 1 | 0.045 kg | ~$50 | **in the nose**, station 282–318 mm |
@@ -289,8 +291,11 @@ weighing the built vehicle, not before. See `00-requirements.md` §7.1.
 | **Full campaign** | **~$2,670** |
 
 Excludes shipping, hazmat fees on motors, and any spare vehicle. The single largest line is
-avionics. **D7 is now closed** (docs/06) and three envelopes are off datasheets; expect the
-line to move again when D8 settles the sensor set.
+avionics. **D7 and D8 are both closed** (docs/06, docs/07) and three envelopes are off
+datasheets. D8 added one part — a ~$5 magnetometer — so the line did not move, and the
+sensor set will not move again on its own. What is still open is that most of these
+envelopes and masses are estimates: the number that matters is what a scale says, not what
+a decision says. See docs/01 step 5.
 
 ## Mass reconciliation
 

@@ -125,8 +125,20 @@ Read this first if you are picking the project back up.
   `docs/06-avionics-selection.md`, `scripts/avionics_trade.py`. **And it dissolved the nav
   bay warning**: every architecture fits, because the guessed flight computer was 2.5× the
   size of the real part.
-- **Step 4 is next**: D8 (state estimation) is the remaining open decision and is where most
-  of the interesting engineering lives. It follows from the board's sensor set.
+- **D8 is CLOSED** (correction 36). **IMU + baro + GNSS + magnetometer**, with the
+  **estimator staged by guidance level** rather than the sensor set — D7 could stage the
+  hardware because a PCB takes eight weeks; D8 cannot, because every sensor has to be on the
+  schematic at once. `docs/07-state-estimation.md`, `design/estimation.py`,
+  `scripts/estimation_trade.py`, and a verdict in `baseline.py`. It closes **without D1**.
+  Four findings, and all four are free before layout and unrecoverable after: **the |a| gate
+  this document prescribed opens at burnout and admits drag as gravity**; **the IMU must
+  sample at 1 kHz, which is not the 86 Hz control loop rate**; **roll angle was observed by
+  nothing on D7's board**, and L1 is defined on roll angle; and **D7's gyro figure was
+  computed at 6° and printed under an 8° heading** — the real number at the deflection limit
+  saturates a ±2000 dps part. **Step 4.2 below is corrected; do not build from the old
+  version.**
+- **Step 4 is next in the plan**, and D8 has settled what it is built from. What is left is
+  firmware: the filter, the HIL rig, the controller and the safety logic.
 
 Current vehicle: 79.4 mm OD fiberglass, 1361 mm, canards 0.85 cal / aft fins 1.55 cal
 interdigitated 45°, **both sets swept 35.4°**, Cesaroni J449 Blue Streak, 4× KST X08 Plus
@@ -149,7 +161,7 @@ these, because they moved once already when the altimeter went into the budget
 on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
 so instead of hiding it.
 
-Thirty-five corrections are worth knowing about. The first four changed the design; two of the
+Thirty-six corrections are worth knowing about. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
@@ -972,15 +984,70 @@ that silently recurs:
 
    **And one derived requirement is genuinely tight.** `board_requirements()` computes the
    electrical spec from the flight model rather than from a tutorial, and steady roll rate at
-   8° of canard is **1783 °/s — 89% of a ±2000 °/s gyro's full scale**, with many IMUs at
-   ±1000. **A saturated rate gyro in a roll loop is not a degraded measurement, it is a wrong
-   one, and the controller cannot tell.** No tutorial produces that requirement; it would
-   have been found in flight. Fix it twice over, both free: cap the roll command (roll needs
-   far less deflection than pitch — `baseline.py` already says so) and pick an IMU with the
-   range, which is a datasheet line that costs nothing *before* layout.
+   8° of canard is ~~**1783 °/s — 89% of a ±2000 °/s gyro's full scale**~~ — **THIS FIGURE IS
+   WRONG AND CORRECTION 36(d) SUPERSEDES IT.** 1783 °/s is the 6° rate printed under an 8°
+   heading; the true figure at the limit is **2378 °/s, which SATURATES a ±2000 dps part.**
+   Left in place rather than edited, because the shape of the error is the lesson and the
+   conclusion below survives it — the conclusion is in fact stronger. **A saturated rate gyro
+   in a roll loop is not a degraded measurement, it is a wrong one, and the controller cannot
+   tell.** No tutorial produces that requirement; it would have been found in flight. Fix it
+   twice over, both free: cap the roll command (roll needs far less deflection than pitch —
+   `baseline.py` already says so; correction 36 makes this **mandatory**, not one option of
+   two) and pick an IMU with the range, which is a datasheet line that costs nothing *before*
+   layout.
+
+36. **D8 is closed, and every one of its findings is free before layout and unrecoverable
+   after.** `docs/07-state-estimation.md`, `design/estimation.py`,
+   `scripts/estimation_trade.py`. The decision is **IMU + baro + GNSS + magnetometer, with
+   the estimator staged by guidance level** — D7 staged the hardware, D8 cannot, because
+   every sensor has to be on the schematic at once. Four things came out of it:
+
+   **(a) The accelerometer gate this document prescribed passes its worst data.** Step 4.2
+   said "gated on acceleration magnitude so boost does not corrupt attitude." It does reject
+   boost. Then it **opens at burnout** — 1.06 g at t = 2.85 s — and stays open 1.1 s, and
+   what it admits is **drag along the body axis, not gravity**. A coasting rocket is in free
+   fall; the only specific force on it is aerodynamic and it lies along the body axis, so the
+   filter is handed a body-axis vector labelled "down" at exactly the moment the guidance
+   loop opens. The heuristic is from multirotor AHRS work where a vehicle really does sit at
+   1 g. **This vehicle never sees gravity again after rail exit.** Step 4.2 below is
+   corrected. Same shape as corrections 1 and 28: a rule that sounds complete and silently
+   admits the wrong answer.
+
+   **(b) The IMU sample rate is not the control loop rate, and it is ten times higher.**
+   `board_requirements()` derived 86 Hz from the pitch mode and a reader builds 100 Hz. But
+   attitude is *propagated*: first-order quaternion propagation rotates by 2·atan(ω·dt/2),
+   not ω·dt, and the shortfall is cubic in the step. At 100 Hz and the roll rate the
+   deflection limit allows, that is **33.3 °/s of drift with a perfect gyro** — more than the
+   entire sensor error budget, from arithmetic. 1 kHz brings it to 0.34 °/s. It sets the SPI
+   clock and the DMA, so it is fixed at layout.
+
+   **(c) Roll angle was observed by nothing on the board D7 selected.** Specific force is
+   invariant under rotation about the axis it lies along, so the accelerometer cannot see
+   roll; the GNSS velocity vector says where the nose points, not how the vehicle is clocked
+   about it. **L1 — hold roll angle — is the minimum success criterion.** Step 4.2 had
+   *already assumed* a magnetometer; `STM32_BOARD` did not have one, and nothing had checked.
+   **The document and the hardware had disagreed for as long as both existed.** A
+   magnetometer is ~$5 and one I2C address before layout. Applied.
+
+   **(d) And the gyro requirement in correction 35 was computed at the wrong deflection.**
+   Steady roll rate is **linear** in deflection, and the project was using three values:
+   594 °/s at the 2° roll cap, 1783 °/s at `evaluate()`'s 6° default, 2378 °/s at the 8°
+   deflection limit. `docs/06` printed the 6° answer under an 8° heading — so the real figure
+   at the limit is **119% of a ±2000 dps part, saturated, not the comfortable 89%**. **The
+   error and the reassurance came from the same place.** The corrected statement: a ±2000 dps
+   gyro is adequate *only because the roll command is capped at 2°*, which makes the cap
+   load-bearing for the sensor and not merely a control convenience. `DEFLECTION_LIMIT_DEG`
+   and `ROLL_COMMAND_CAP_DEG` now live in `design/configure.py` and `Evaluation` records the
+   deflection it was evaluated at. **This is correction 4 recurring** — a constant that lives
+   in a script drifts from the document that quotes it.
+
+   The pattern is the result: **four requirements in a row that no tutorial would produce,
+   all of them sensing requirements, all of them set at layout.** That is the argument for
+   closing D8 before the schematic rather than during firmware.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
-access), the cert milestone dates in §2.1, and D1/D8/D9. **D7 is closed** — correction 35.
+access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —
+corrections 35 and 36.
 
 ---
 
@@ -1099,10 +1166,18 @@ order, and do not skip the ground testing.
 1. **Sensors and logging.** IMU + barometer + GNSS, logging to flash at ≥ 100 Hz. Get
    this flying as a passive payload in your L1 and L2 cert rockets. By the time it flies
    in the guided vehicle, the sensor stack should already have real flight data behind it.
-2. **State estimation.** An attitude filter that survives 9 g of axial acceleration and
-   high angular rates. Quaternion state, gyro propagation, accelerometer and magnetometer
-   corrections gated on acceleration magnitude so boost does not corrupt attitude. This is
-   where most of your interesting engineering lives.
+2. **State estimation.** **D8 is closed and it corrected this paragraph — read
+   `docs/07-state-estimation.md` before writing any of it.** An attitude filter that survives
+   9 g of axial acceleration and high angular rates. Quaternion state propagated at **≥ 1 kHz
+   — not the 86 Hz control loop rate**, because at 100 Hz the propagation arithmetic alone
+   drifts 33 °/s at this vehicle's roll rate. **Gate the corrections on FLIGHT PHASE, never
+   on acceleration magnitude.** This paragraph used to say "gated on acceleration magnitude
+   so boost does not corrupt attitude", and that gate opens at burnout and admits drag along
+   the body axis as if it were gravity — a ballistic vehicle never sees gravity after rail
+   exit, so **the accelerometer is a pad-alignment sensor and an event detector and nothing
+   else**. In flight the aiding is the **magnetometer** (roll angle — the only sensor that
+   observes it) and the **GNSS velocity vector** (pitch/yaw, under small α, which is what
+   static margin buys you). This is still where most of your interesting engineering lives.
 3. **Hardware-in-the-loop simulation.** Feed the flight computer synthetic sensor data
    generated from the model in this repo, and check that the loop commands what you
    expect. This is the single highest-value piece of software in the project: it is how

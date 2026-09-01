@@ -1,0 +1,325 @@
+
+============================================================================================
+D8 -- THE FOUR ARCHITECTURES
+============================================================================================
+
+     sensor set                                 parts highest level            check
+  ------------------------------------------------------------------------------------
+  A  IMU only                                 $    12 L1 (null rate)            FAIL
+  B  IMU + baro                               $    20 L1 + apogee logic         FAIL
+  C  IMU + baro + GNSS                        $    45 L3, except roll angle     FAIL
+  D  IMU + baro + GNSS + magnetometer         $    50 L3                          OK  <- SELECTED
+
+  A. Nulls roll RATE and nothing else. Cannot hold roll ANGLE -- nothing observes it -- and
+     cannot hold attitude, because after rail exit the accelerometer never sees gravity
+     again. Enough for GV-3 if L1 is read as rate-nulling, and that reading is a narrower
+     minimum success criterion than docs/00 states
+  B. Baro buys events -- apogee, altitude, a cross-check against the StratoLoggerCF -- and
+     buys nothing at all for attitude. Worth having for the safety logic in docs/01 step
+     4.5, which is not an estimation argument
+  C. GNSS is the only in-flight attitude reference this vehicle has, via the velocity
+     vector under small alpha, and the only source of target-relative position. It still
+     leaves roll angle unobserved, which is the state L1 is defined on
+  D. SELECTED. Adds the only sensor that observes roll angle, for about $5 and one I2C
+     address -- if it is on the schematic. docs/01 step 4.2 already ASSUMED a magnetometer;
+     the board D7 selected did not have one, and nothing had checked
+
+  What FAILS above is not a packaging verdict, it is an observability one:
+    A:
+       - roll angle is unobservable in 'IMU only': no magnetometer, and specific force is
+         invariant under rotation about the axis it lies along. L1 -- hold roll angle -- is
+         the project's minimum success criterion
+       - pitch/yaw attitude has no in-flight reference in 'IMU only': the accelerometer
+         cannot supply one (see the gate note below), so the GNSS velocity vector is the
+         only aiding this vehicle has
+       - 'IMU only' has no attitude aiding at all, and unaided propagation reaches 8.8 deg
+         by apogee against a 5.0 deg budget
+    B:
+       - roll angle is unobservable in 'IMU + baro': no magnetometer, and specific force is
+         invariant under rotation about the axis it lies along. L1 -- hold roll angle -- is
+         the project's minimum success criterion
+       - pitch/yaw attitude has no in-flight reference in 'IMU + baro': the accelerometer
+         cannot supply one (see the gate note below), so the GNSS velocity vector is the
+         only aiding this vehicle has
+       - 'IMU + baro' has no attitude aiding at all, and unaided propagation reaches 8.8
+         deg by apogee against a 5.0 deg budget
+    C:
+       - roll angle is unobservable in 'IMU + baro + GNSS': no magnetometer, and specific
+         force is invariant under rotation about the axis it lies along. L1 -- hold roll
+         angle -- is the project's minimum success criterion
+
+============================================================================================
+THE DECISION: THE SENSOR SET DOES NOT STAGE, THE SOFTWARE DOES
+============================================================================================
+
+  D7 staged the HARDWARE, because a PCB takes eight weeks and the cert launches are
+  monthly. D8 cannot stage the same way: every sensor has to be on the schematic at
+  once or it is not on the board at all. So what stages is the ESTIMATOR, and each
+  flight in the docs/01 step 6 campaign gets exactly one new thing to work.
+
+  level   flies          estimator                                                     
+  --------------------------------------------------------------------------------------
+  L0/L1   GV-1 .. GV-3   pad gyro-bias calibration; gyro-only rate estimate; NO
+                         attitude aiding in flight
+  L2      GV-4           quaternion propagation at the IMU rate; GNSS-velocity attitude
+                         aiding under small alpha; magnetometer for roll angle
+  L3      GV-5           adds GNSS position dead-reckoned forward through the latency;
+                         baro for apogee and the safety logic
+
+  **This is also why D8 closes without D1 being closed.** The guidance level is
+  still a decision; the board is not waiting on it.
+
+============================================================================================
+FINDING 1 -- THE ACCELEROMETER GATE docs/01 PRESCRIBES PASSES ITS WORST DATA
+============================================================================================
+
+  docs/01 step 4.2: 'accelerometer and magnetometer corrections gated on
+  acceleration magnitude so boost does not corrupt attitude.' The gate does reject
+  boost. Here is what it does next:
+
+    t (s)   |a| (g)   v (m/s)   phase                           
+  ------------------------------------------------------------------
+     0.50     8.596      34.4   boost -- gate CLOSED, correctly 
+     1.00     8.621      72.0   boost -- gate CLOSED, correctly 
+     2.00     7.730     143.0   boost -- gate CLOSED, correctly 
+     2.85     1.056     176.4   coast -- GATE OPEN              
+     2.90     1.051     175.4   coast -- GATE OPEN              
+     3.50     0.901     163.9   coast -- GATE OPEN              
+     5.00     0.618     138.2   coast -- below the band         
+     7.00     0.372     109.3   coast -- below the band         
+    10.00     0.159      72.9   coast -- below the band         
+    13.00     0.051      41.8   coast -- below the band         
+    16.00     0.008      17.1   coast -- below the band         
+
+  The gate opens at t = 2.85 s -- at burnout -- and stays open for
+  1.1 s, peaking at 1.06 g.
+
+  **THE VECTOR IT ADMITS IS DRAG ALONG THE BODY AXIS, NOT GRAVITY.** A coasting
+  rocket is in free fall; the only specific force on it is aerodynamic, and that
+  force lies along the body axis. So the filter is handed a body-axis vector
+  labelled 'down' at exactly the moment the guidance loop opens, and a vehicle
+  15 deg off vertical is told it is vertical.
+
+  The heuristic comes from multirotor AHRS work, where a vehicle really does sit at
+  1 g in cruise and |a| ~ 1 g really does mean 'this is gravity'. **A ballistic
+  vehicle never sees gravity again after it leaves the rail.** Same shape as
+  correction 1 and correction 28: a rule that sounds complete, is locally true, and
+  silently produces the wrong answer.
+
+  FIX: gate on flight PHASE, never on |a|. The accelerometer is a pad-alignment
+  sensor and an event detector, and nothing else. It is free -- it removes code.
+
+============================================================================================
+FINDING 2 -- 100 Hz INTEGRATION DRIFTS FASTER THAN THE GYRO DOES
+============================================================================================
+
+  board_requirements() derives ONE rate -- the control loop rate, 20x the pitch
+  mode, 86 Hz. A reader builds a 100 Hz system. But attitude is
+  PROPAGATED, not sampled: q <- q * (1, w*dt/2) renormalised rotates by
+  2*atan(|w|*dt/2), not by |w|*dt, and the shortfall is cubic in the step.
+
+    IMU rate   rot/step    drift @ 594   drift @ 2378
+                  (deg) deg/s (capped)  deg/s (limit)
+  ------------------------------------------------------
+       100 Hz      23.78          0.532         33.260
+       200 Hz      11.89          0.133          8.474
+       500 Hz       4.76          0.021          1.363
+      1000 Hz       2.38          0.005          0.341
+      2000 Hz       1.19          0.001          0.085
+
+  At 100 Hz and the 2378 deg/s the deflection limit allows, each step is a
+  23.8 degree rotation and the small-angle assumption underneath the
+  propagation is simply false. **33.3 deg/s -- with a PERFECT gyro.** Over the
+  11.7 s control window that is more than the whole sensor error budget.
+
+  FIX: sample the IMU at 1000 Hz. The error is cubic, so it costs almost
+  nothing -- but it is a DIFFERENT REQUIREMENT from the control loop rate, it sets
+  the SPI clock and the DMA, and it is fixed at layout. The estimator is allowed to
+  run faster than the controller; nothing said it had to.
+
+============================================================================================
+FINDING 3 -- ROLL ANGLE WAS OBSERVED BY NOTHING ON THE SELECTED BOARD
+============================================================================================
+
+  An estimator cannot average its way to a state nothing measures. Per phase:
+
+  state                  pad              boost            coast            descent         
+  ----------------------------------------------------------------------------------------
+  roll angle             mag              mag              mag              mag             
+  body rates             gyro             gyro             gyro             gyro            
+  pitch/yaw attitude     accel            -                GNSS velocity    -               
+  altitude               baro             -                baro + GNSS      baro            
+  position               GNSS             -                GNSS, lagged     GNSS            
+
+  'pitch/yaw attitude' propagates open-loop through: boost, descent
+  'altitude' propagates open-loop through: boost
+  'position' propagates open-loop through: boost
+
+  ROLL ANGLE is the one with no aiding sensor in ANY phase on D7's board.
+  Specific force is invariant under rotation about the axis it lies along, so the
+  accelerometer cannot see roll; and the GNSS velocity vector fixes where the nose
+  points, not how the vehicle is clocked about it.
+
+  **L1 -- hold roll angle -- is the project's MINIMUM success criterion** (docs/00
+  section 1.1, and GV-3 in the step 6 campaign). docs/01 step 4.2 already assumed a
+  magnetometer. STM32_BOARD did not have one, and nothing had checked.
+
+  FIX: put a magnetometer on the schematic. About $5 and one I2C address before
+  layout; unbuildable after. Keep it away from the servo bus and the battery leads.
+
+  Note what pitch/yaw attitude is aided BY, because it is not obvious: the GNSS
+  VELOCITY VECTOR, under a small-alpha assumption. That assumption is what
+  2.1-2.6 cal of static margin buys -- the one place in this
+  project where stability margin shows up as a SENSING property rather than a
+  handling one.
+
+============================================================================================
+THE ATTITUDE ERROR BUDGET -- and the ranking is not the one a tutorial predicts
+============================================================================================
+
+  Gyro: ICM-42688-P gyro, propagated at 1000 Hz, roll command
+  capped at 2 deg. UNAIDED -- this is what the estimate does with no
+  correction applied at all, which is the L0/L1 configuration.
+
+  source                                   at burnout    at apogee
+  ------------------------------------------------------------------
+  gyro bias, pad-calibrated                   0.057 deg      0.338 deg
+  angular random walk                         0.005 deg      0.012 deg
+  gyro scale factor at roll rate              0.000 deg      8.671 deg
+  gyro g-sensitivity                          1.187 deg      1.187 deg
+  integration truncation at 1000 Hz           0.000 deg      0.016 deg
+  ------------------------------------------------------------------
+  RSS                                                        8.758 deg
+
+  gyro bias, pad-calibrated:
+      0.020 deg/s residual after averaging on the rail. Free, and mandatory: UNcalibrated
+      it is 0.50 deg/s, or 8.5 deg by apogee
+
+  angular random walk:
+      0.0028 deg/sqrt(s) over sqrt(t). Grows as the square root, so a 17 s flight barely
+      starts it
+
+  gyro scale factor at roll rate:
+      0.5% of 594 deg/s is 3.0 deg/s while rolling, and the vehicle is taken as rolling
+      for 2.9 s of the 11.7 s window. THE DOMINANT TERM, and it is strictly proportional
+      to the roll command -- at the 2378 deg/s the deflection limit allows it would be 35
+      deg
+
+  gyro g-sensitivity:
+      0.05 deg/s/g at 8.3 g for the 2.85 s of boost. Stops accruing at burnout, and it is
+      an error the pad calibration cannot see because the pad is at 1 g
+
+  integration truncation at 1000 Hz:
+      arithmetic, not sensor error -- a PERFECT gyro drifts this much. At 100 Hz and the
+      uncapped 2378 deg/s the same term is 33.3 deg/s, which is 97 deg over the rolling
+      window and would lead every sensor term combined
+
+  **Bias and random walk -- the two terms every AHRS article is about -- are
+  negligible over 17 seconds.** SCALE FACTOR AT HIGH ROLL RATE leads by an order of
+  magnitude, and it leads because of the same roll rate that made D7's gyro line
+  tight. One root cause, and capping the roll command fixes both.
+
+  Pad gyro-bias calibration is mandatory and free: averaging on the rail takes the
+  bias term from 8.5 deg to 0.34 deg by apogee.
+
+============================================================================================
+THE AIDING SENSORS, AND WHAT THEY ARE ACTUALLY FOR
+============================================================================================
+
+  BAROMETER -- not a boost-phase altitude source.
+
+      q (Pa)   alt (m)   port error   sensor noise
+  --------------------------------------------------
+       18556       283       31.7 m         0.13 m
+       11027       617       19.5 m         0.13 m
+        2917      1128        5.4 m         0.14 m
+         127      1367        0.2 m         0.14 m
+
+  At max q (19.2 kPa) a 2% static port error coefficient is
+  383 Pa, and dp/dh there is 11.4 Pa/m: **33 m of altitude error**,
+  against 0.13 m of sensor noise. Two orders of magnitude apart, and the
+  error a datasheet comparison would optimise is the small one.
+
+  Worse, port error scales with q, so it CORRELATES WITH VELOCITY -- it does not
+  look like noise to a filter, it looks like signal, and a filter that trusts baro
+  during boost will happily fuse it. Baro is for coast and descent altitude, apogee
+  detection, and cross-checking the StratoLoggerCF.
+
+  One thing that is genuinely NOT a problem: max Mach is 0.527, so there is no
+  transonic port anomaly. Worth stating, because the absence of a problem is a
+  result too.
+
+  GNSS -- a slow outer-loop sensor, and the only in-flight attitude reference.
+
+    receiver latency        150 ms  ->  26.5 m at 176 m/s
+    half-sample staleness   50 ms  ->   8.8 m at 10 Hz
+    total position lag               35.3 m
+    CEP                              2.0 m
+
+  **35 m of lag against 400 m of achievable crossrange -- 9%.**
+  It is correctable: dead-reckon the fix forward on the IMU, which is what the IMU
+  is for. But only if you know it is there, and the lag is not the CEP -- a
+  datasheet comparison on accuracy alone would have missed it entirely.
+
+  AND THE RECEIVER MAY NOT BE TRACKING AT ALL THROUGH BOOST. Peak axial is
+  8.3 g, and 'airborne <4 g' is the most permissive dynamic platform
+  model u-blox offers. Expect lock loss under boost and reacquisition in early
+  coast -- which is survivable, because the guidance window does not open until
+  burnout, but it means GNSS cannot be part of the boost-phase estimate.
+
+============================================================================================
+WHAT THIS COST, AND THE PATTERN IT MAKES
+============================================================================================
+
+  Three findings, three fixes, and every one of them is free BEFORE the schematic:
+
+    1. delete the |a| gate                      removes code
+    2. sample the IMU at 1000 Hz                a register write, fixed at layout
+    3. add a magnetometer                       about $5, fixed at layout
+
+  D7 found the same shape once already -- gyro full scale, free at design time and
+  unrecoverable after. **That is now four in a row, and the pattern is the point:
+  the requirements this vehicle produces that no tutorial would are all sensing
+  requirements, and they are all set at layout.** Which is the argument for closing
+  D8 before the schematic rather than during firmware, and it is why this document
+  exists at all.
+
+  A fourth thing fell out on the way past and it is a correction to D7, not to D8:
+  the gyro requirement had been computed at 6 deg of deflection and printed under an
+  8 deg heading. Roll rate is linear in deflection, so the real figure at the limit
+  is 2378 deg/s -- 119% of a +/-2000 dps part, SATURATED, not the
+  comfortable 89% docs/06 quoted. The roll command cap was already in baseline.py as
+  a control convenience; it is load-bearing for the SENSOR. See
+  design/configure.DEFLECTION_LIMIT_DEG.
+
+============================================================================================
+THE CHECK baseline.py CARRIES
+============================================================================================
+
+  state estimation    OK
+
+  note  'pitch/yaw attitude' propagates open-loop through boost, descent
+
+  note  'altitude' propagates open-loop through boost
+
+  note  'position' propagates open-loop through boost
+
+  note  an |a| ~ 0.8-1.2 g gate would be OPEN from t = 2.85 s to 3.97 s -- at burnout, for
+        1.1 s, peaking at 1.06 g -- and what it would admit is drag along the BODY AXIS, not
+        gravity
+
+  note  THE ROLL COMMAND CAP IS A SENSING REQUIREMENT, not just a control one. At the 2 deg
+        cap the vehicle rolls at 594 deg/s, 30% of ICM-42688-P gyro's +/-2000. At the 8 deg
+        deflection LIMIT it rolls at 2378 deg/s, which is 119% -- SATURATED. Lifting the
+        cap, or a fault that runs the canards to the stops, takes the gyro out of range
+
+  note  IMU output data rate must be at least 1000 Hz: first-order quaternion propagation at
+        100 Hz drifts 33.3 deg/s at the 2378 deg/s the deflection limit allows, with a
+        PERFECT gyro. THIS IS NOT THE CONTROL LOOP RATE, which is 86 Hz -- a board built to
+        the control loop rate would be built ten times too slow
+
+  note  UNAIDED propagation reaches 8.8 deg RSS by apogee against a 5.0 deg budget, led by
+        'gyro scale factor at roll rate' at 8.7 deg. The aiding is load-bearing, not a
+        refinement. That is already WITH the roll command capped; at the deflection limit
+        the same term is 35 deg
+
