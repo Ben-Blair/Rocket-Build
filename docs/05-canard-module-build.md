@@ -676,25 +676,10 @@ verdict in `scripts/baseline.py`. See "The aft gas seal" below. It is a **G-10 d
 — with the caveat in docs/01 correction 34, because a ⌀74.8 disc in a ⌀74.8 bore could not
 have reported one.
 
-**The module's own vents — BUILT, Aug 2026.** 2 × ⌀2.0 mm at **Z 120.0 mm**, clocked
-**45° / 225°**. `design/venting.py` places them, `scripts/make_module_vents.py` cuts them
-and is safe to re-run, and `scripts/verify_cad.py` now reads the two cylindrical faces back
-out and checks diameter, station and clocking on every run. See "The vent path" below for
-why the aft band.
-
-**The forward wiring pass-through — STILL OPEN, and it is blocked on a part nobody has
-sized.** The decision is made (it is a wire route, **potted solid**, not the module's vent)
-and it has been made since correction 28. What stopped it being drawn in Aug 2026 is more
-basic: **the plate it passes through does not exist.**
-
-`design/joints.py` puts a bulkhead on all four airframe joints. The two *separation* joints
-are sized in `design/seal.py` — the aft gas seal and, applied a second time, the recovery
-internal bulkhead. The two *access* joints are not sized by anything: the nav bay / canard
-module plate that carries this pass-through, and the nose's aft face. Both already consume
-bay length in `joints.budgets()`, so they are **priced as allowances while not existing as
-parts** — correction 20's shape and correction 33's, and `seal.py`'s own "what this does
-not do" list named only the booster bulkhead, so the omission read as coverage. A hole
-cannot be drawn through a plate that has never been drawn.
+**The forward wiring pass-through — DECIDED, Aug 2026.** Still open as *geometry* (no hole
+is drawn) but no longer an open decision: it is a wire route and is **potted solid**. It is
+not the module's vent — the module vents through its own wall, 2 × ⌀2 mm. See "The vent path"
+below, which corrects what this document said first.
 
 ## The aft gas seal
 
@@ -781,35 +766,7 @@ cylinder, and the third surface is the wall** — which on this module already h
 bores through it.
 
 **The module vents overboard: 2 × ⌀2 mm through its own wall.** Then none of the rest
-follows.
-
-**Where, settled Aug 2026.** The size and the surface were decided here; the station and
-the clocking were not, and a hole cannot be drawn from a size. They are now
-`venting.MODULE_VENT_STATION` and `MODULE_VENT_CLOCKING_DEG`, guarded in `baseline.py`
-against the real bay, seal and canard geometry:
-
-| | |
-|---|---|
-| station | **Z 120.0 mm** from the module forward face |
-| clocking | **45° and 225°** — opposed, each bisecting a canard gap |
-| size | 2 × ⌀2.0 mm, 6.28 mm² |
-
-**The aft band was chosen for the leak path, not for the flow field.** Two bands of wall
-have nothing bonded behind them — forward of the printed bay (Z < 53.13) and aft of it
-(Z > 94.63). `design/seal.py`'s stated intent is that a leak past the aft gas seal *"goes
-overboard instead of into the sensor that fires the charges"*, and for that to be true the
-gas has to **reach** a vent. Vent only the forward band and the escape path for hot, sooty
-ejection gas runs the full length of the module — across four servos, the printed bay and
-every wire in the vehicle. Vent the aft band and it is a couple of centimetres of empty
-tube. **The seal's argument was written as though the module had a vent somewhere; where
-turns out to be load-bearing for it.**
-
-And the Cp argument that governs the nav bay's static ports does not apply here at all —
-this bay feeds no sensor, so there is nothing for a local pressure error to corrupt. That
-is why this could be settled without the panel-method model `venting.py` says the project
-does not have. Clearances: 25.4 mm aft of the bay bond, 12.1 mm forward of the seal
-fillet, 14.8 mm aft of the canard root TE, and 51.7 mm from the hinge bores so the two
-stress concentrations do not stack. The altimeter's sense volume is the nav bay alone; the wiring pass-through is
+follows. The altimeter's sense volume is the nav bay alone; the wiring pass-through is
 **potted solid** around the wires, which is a better seal than one that has to pass air; and
 a leak past this disc goes outside instead of into the sensor that fires the charges.
 
@@ -877,6 +834,24 @@ dimensions placed and verified against the model: **142.9** (module length), **3
   points and you get the distance along the view; click outside them and you get the
   perpendicular one, which is usually 0. And the placement click must land OUTSIDE the
   view's bounding box or Onshape reads it as selecting the view and silently cancels.
+
+**The Drawings API was tried, and it is not the way — Aug 2026.** Worth recording so
+nobody spends the afternoon twice. `POST /drawings/.../modify` with
+`onshapeCreateAnnotations` IS enabled on this account and DOES create dimensions; the
+schema is in the Onshape memory notes. It fails on three things together. The edge id has
+to be the `jsongeometry` **`uniqueId`** and not the `deterministicId` — and even with one
+that resolves, plus `snapPointType`, the dimension attaches to the **wrong geometry**
+(asked for the 27.00 tip chord, got the 67.49 root chord, from two very different
+coordinate inputs). There is **no read-back** — `/annotations`, `/dimensions` and
+`/sheets` all 404 — and **no working delete**, so every wrong dimension has to be picked
+off by hand in the browser. Nothing in the API says where a view sits on the sheet either.
+**Creating without reading back or deleting is iterating blind on the one document the
+part gets made from**, so these stay a mouse job, exactly as the note below says.
+
+What the API IS good for here: `GET /drawings/.../views/{viewId}/jsongeometry` returns
+every edge with its `uniqueId` and its start/end in metres in the view's own frame. That
+is how the table below was checked against the model — the front view really does carry
+root LE at 37.71, root TE at 105.20, tip chord 27.00, LE sweep 47.90 and semispan 66.99.
 
 **Dimensions still to place.** The values are regenerated from `design/configure.py`, so
 they cannot drift from the analysis. Each is a two-pick plus a placement:
