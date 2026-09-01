@@ -206,6 +206,25 @@ def main() -> None:
     print(f"  {'features not OK':34s} {len(bad):3d}  {bad or 'ok'}")
     ok &= not orphans and not bad
 
+    # The module vents. Checked on GEOMETRY and not on mass, because two dia 2 mm holes
+    # through a 2.3 mm wall are 26.7 mg -- inside every mass tolerance in this file, so a
+    # vent that lands at the wrong station or the wrong clocking is invisible to every
+    # other check here. That is not hypothetical: the first cut regenerated OK, kept the
+    # part count and passed the mass guard while sitting at Z 68.270 instead of 120.000,
+    # because the sketch's DISTANCE constraint solved the circle back to where it copied
+    # it from. See scripts/make_module_vents.py.
+    from design import venting as venting_mod
+    import scripts.make_module_vents as mv  # noqa: E402
+    try:
+        mv.verify_holes()
+        print(f"  module vents                       {venting_mod.MODULE_VENT_COUNT} x dia "
+              f"{venting_mod.MODULE_VENT_DIAMETER * MM:.1f} mm at Z "
+              f"{venting_mod.MODULE_VENT_STATION * MM:.1f} mm, "
+              f"{'/'.join(f'{a:.0f}' for a in venting_mod.MODULE_VENT_CLOCKING_DEG)} deg  ok")
+    except RuntimeError as e:
+        ok = False
+        print(f"  module vents                       DISAGREES: {e}")
+
     # The collar rim check, restated against the model's own tube.
     print(f"\n  collar boss rim R {b.collar_rim_radius * MM:.3f} against a tube bored to "
           f"R {s.tube_inner_radius * MM:.3f} -- checked on RADIUS, which is the thing an "

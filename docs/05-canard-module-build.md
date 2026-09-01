@@ -676,10 +676,25 @@ verdict in `scripts/baseline.py`. See "The aft gas seal" below. It is a **G-10 d
 — with the caveat in docs/01 correction 34, because a ⌀74.8 disc in a ⌀74.8 bore could not
 have reported one.
 
-**The forward wiring pass-through — DECIDED, Aug 2026.** Still open as *geometry* (no hole
-is drawn) but no longer an open decision: it is a wire route and is **potted solid**. It is
-not the module's vent — the module vents through its own wall, 2 × ⌀2 mm. See "The vent path"
-below, which corrects what this document said first.
+**The module's own vents — BUILT, Aug 2026.** 2 × ⌀2.0 mm at **Z 120.0 mm**, clocked
+**45° / 225°**. `design/venting.py` places them, `scripts/make_module_vents.py` cuts them
+and is safe to re-run, and `scripts/verify_cad.py` now reads the two cylindrical faces back
+out and checks diameter, station and clocking on every run. See "The vent path" below for
+why the aft band.
+
+**The forward wiring pass-through — STILL OPEN, and it is blocked on a part nobody has
+sized.** The decision is made (it is a wire route, **potted solid**, not the module's vent)
+and it has been made since correction 28. What stopped it being drawn in Aug 2026 is more
+basic: **the plate it passes through does not exist.**
+
+`design/joints.py` puts a bulkhead on all four airframe joints. The two *separation* joints
+are sized in `design/seal.py` — the aft gas seal and, applied a second time, the recovery
+internal bulkhead. The two *access* joints are not sized by anything: the nav bay / canard
+module plate that carries this pass-through, and the nose's aft face. Both already consume
+bay length in `joints.budgets()`, so they are **priced as allowances while not existing as
+parts** — correction 20's shape and correction 33's, and `seal.py`'s own "what this does
+not do" list named only the booster bulkhead, so the omission read as coverage. A hole
+cannot be drawn through a plate that has never been drawn.
 
 ## The aft gas seal
 

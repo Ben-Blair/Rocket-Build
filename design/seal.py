@@ -63,6 +63,21 @@ WHAT THIS MODULE DOES NOT DO.
     allowance in `recovery.py` and nothing more.
   * It does not size the booster's forward bulkhead, which closes the drogue compartment's
     aft end. That one is part of the motor mount structure and belongs with it.
+  * IT DOES NOT SIZE EITHER ACCESS BULKHEAD, and until Aug 2026 this list did not say so,
+    which made the omission read as coverage. `design/joints.py` puts a bulkhead on all
+    four joints. Two of them are separation joints and both are sized here. The other two
+    are ACCESS joints and neither has ever been sized by anything:
+
+      - the NOSE'S AFT FACE, which closes the instrumentation cavity. It is what a future
+        payload of up to ~300 g (correction 32) would hang from, and the nose is designed
+        to lift away whole.
+      - the NAV BAY / CANARD MODULE plate, which carries the potted wiring pass-through.
+
+    Both already consume bay length in `joints.budgets()`, so they are priced as allowances
+    while not existing as parts -- correction 20's shape, and correction 33's. Neither is
+    in the CAD, which is why the wiring pass-through cannot be drawn: THE PLATE IT PASSES
+    THROUGH IS NOT THERE. They are lighter cases than the two sized here (no charge fires
+    on either) but "lighter" is not "zero", and neither has a number.
 """
 
 from __future__ import annotations

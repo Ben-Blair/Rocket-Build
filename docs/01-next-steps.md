@@ -116,8 +116,16 @@ Read this first if you are picking the project back up.
   and Onshape's own **Check interference reports none across all 35 instances**. Volumes
   agree with the analytic disc-less-holes to 0.000 mm³. **Read the caveat in correction 34
   before trusting that clean result.**
-- **The canard module has no open engineering item.** What is left in it is CAD — the
-  pass-through hole, the two vent holes — and the Step 3 drawing.
+- **The two module vents are CUT** (correction 37). 2 × ⌀2.0 mm at **Z 120.0 mm**, clocked
+  **45° / 225°**, placed in `design/venting.py` and cut by `scripts/make_module_vents.py`.
+  The station is chosen by the **leak path**, not the flow field — see `docs/05`.
+- **The canard module has one open engineering item after all, and it is not in the
+  module** (correction 37). The forward wiring pass-through cannot be drawn because **the
+  plate it passes through has never been sized**: `joints.py` puts a bulkhead on all four
+  joints, `seal.py` sizes the two separation ones, and **neither access bulkhead — the
+  nav bay / canard module plate, and the nose's aft face — has ever been sized by
+  anything**, while both already spend bay length as allowances. What is otherwise left is
+  the Step 3 drawing.
 - **D7 is CLOSED** (correction 35). A **custom STM32F405 board** flies the guided vehicle
   and a **Teensy + breakout stack** flies the L1/L2 certs as a passive logger — staged in
   that order, because the cert launches are monthly and eight weeks of PCB work would spend
@@ -137,6 +145,12 @@ Read this first if you are picking the project back up.
   computed at 6° and printed under an 8° heading** — the real number at the deflection limit
   saturates a ±2000 dps part. **Step 4.2 below is corrected; do not build from the old
   version.**
+- **Correction 37 is the CAD one**, and it came out of finally trying to draw the last two
+  holes in the canard module. The vents are cut. The pass-through is not, and the reason is
+  the finding: **two of the vehicle's four joint bulkheads have never been sized by any
+  model**, and they were invisible because `joints.budgets()` already charges bay length
+  for them and `seal.py`'s exclusion list named only the booster's. An allowance that
+  nobody turned into a part, for the third time in this project.
 - **Step 4 is next in the plan**, and D8 has settled what it is built from. What is left is
   firmware: the filter, the HIL rig, the controller and the safety logic.
 
@@ -161,7 +175,7 @@ these, because they moved once already when the altimeter went into the budget
 on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
 so instead of hiding it.
 
-Thirty-six corrections are worth knowing about. The first four changed the design; two of the
+Thirty-seven corrections are worth knowing about. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
@@ -1044,6 +1058,50 @@ that silently recurs:
    The pattern is the result: **four requirements in a row that no tutorial would produce,
    all of them sensing requirements, all of them set at layout.** That is the argument for
    closing D8 before the schematic rather than during firmware.
+
+37. **The vents went in; the pass-through could not, because its plate does not exist.**
+   Two jobs were queued as "the last CAD in the canard module". The first is done: the
+   module's 2 × ⌀2.0 mm overboard vents are cut at **Z 120.0 mm, clocked 45° / 225°**
+   (`design/venting.py`, `scripts/make_module_vents.py`). Two things are worth keeping from
+   how they were placed and how they were checked.
+
+   **The station was chosen by the LEAK PATH, not by the flow field.** Two bands of module
+   wall have nothing bonded behind them, forward of the printed bay and aft of it.
+   `seal.py`'s stated intent is that a leak past the aft gas seal *"goes overboard instead
+   of into the sensor that fires the charges"* — and for that to be true the gas has to
+   **reach** a vent. Vent only the forward band and the escape path for hot, sooty ejection
+   gas runs the full length of the module, across four servos and every wire in the
+   vehicle. Vent the aft band and it is a couple of centimetres of empty tube. **The seal's
+   argument was written as though the module had a vent somewhere; *where* turned out to be
+   load-bearing for it**, and the two parts were designed a month apart. Note also that the
+   Cp rule which governs the nav bay's static ports does not govern this bay at all — it
+   feeds no sensor — which is why this could be settled without the panel-method model
+   `venting.py` correctly says the project does not have.
+
+   **And the first cut was wrong in a way only geometry could catch.** It regenerated with
+   featureStatus OK, kept the part count, and passed the mass guard — while sitting at
+   **Z 68.270 instead of Z 120.000**, because the sketch it was copied from pins its circle
+   with a `DISTANCE` constraint and the constraint solved the geometry straight back. Two
+   ⌀2 mm holes are **26.7 mg**, far inside every mass tolerance in `verify_cad.py`, so
+   *no mass or count check in this project could ever have found it*. `verify_holes()` now
+   reads the two cylindrical faces back out of the model and checks diameter, station and
+   clocking on every run. **A check whose resolution is coarser than the thing it is
+   checking is not a weak check, it is not a check.** (An angled datum plane failed the
+   same way and was caught the same way: `cPlane` with `angle` set regenerates OK and comes
+   back with its normal unrotated. The 45° plane is the MID_PLANE of Front and Right, whose
+   bisector contains the rocket axis by construction.)
+
+   **The second job is blocked, and that is the finding.** The forward wiring pass-through
+   has been *decided* since correction 28 — a wire route, potted solid. It cannot be drawn
+   because **the plate it passes through has never been sized.** `design/joints.py` puts a
+   bulkhead on all four joints; `design/seal.py` sizes the two *separation* ones and, as of
+   this correction, says out loud that it sizes neither *access* one — **the nav bay /
+   canard module plate that carries this pass-through, and the nose's aft face that a
+   300 g payload would hang from.** Both already consume bay length in `joints.budgets()`.
+   So they are **priced as allowances while not existing as parts**, which is correction
+   20's shape and correction 33's harness again, and the reason nobody noticed is that
+   `seal.py`'s "what this does not do" list named only the booster's bulkhead — **an
+   incomplete exclusion list reads as coverage.**
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —

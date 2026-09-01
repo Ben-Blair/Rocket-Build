@@ -108,15 +108,23 @@ class MeasuredComponent:
 CANARD_MODULE_CAD = MeasuredComponent(
     name="canard module (CAD assembly, real servos, hinge stack, root tang, 3.2 mm panels, "
          "four hinge bearings, printed bay)",
-    mass=0.298756,
-    station_from_module_face=0.075151,
-    i_transverse=622.187e-6,
-    i_roll=673.225e-6,
+    mass=0.298729,
+    station_from_module_face=0.075147,
+    i_transverse=622.114e-6,
+    i_roll=673.185e-6,
     source="Onshape canard-control module, Assembly 1, Aug 2026, after the root tang of "
            "design/hinge.py, the 3.2 mm laminate panel of design/configure.py, the four "
-           "dia 6/8 x 6 plain bearings placed by scripts/place_bearings.py, and the "
-           "printed bay of design/bay.py built by scripts/make_bay_cad.py",
+           "dia 6/8 x 6 plain bearings placed by scripts/place_bearings.py, the "
+           "printed bay of design/bay.py built by scripts/make_bay_cad.py, and the two "
+           "dia 2 mm overboard vents of design/venting.py cut by "
+           "scripts/make_module_vents.py",
 )
+# THE VENTS MOVED THIS AND THE MOVE IS NOTHING: -26.7 mg, -0.01% on both inertias, CoM
+# forward by 4 microns. Recorded anyway, and re-measured rather than assumed, for the
+# reason verify_cad.py exists -- a tensor that is not re-read after a CAD change is a
+# number the model and the geometry have quietly stopped sharing. The correct result for a
+# vent is that no flight conclusion notices it, which is also what the bearings did
+# (correction 18). It is worth knowing which changes are allowed to be invisible.
 # TWO CHANGES IN THIS NUMBER, pulling opposite ways, and they are worth separating.
 #
 #   +38.6 g  THE PRINTED BAY. PETG-CF at R 35-37 mm, nearly the module's full radius, so
