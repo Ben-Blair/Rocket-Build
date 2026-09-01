@@ -294,7 +294,11 @@ WHAT THIS COSTS, AND WHAT IT DOES NOT
                           bond line each face. Same thickness, same planform,
                           same mass -- a manufacturing change, not a design one.
   the tube                UNCHANGED and not close: worst margin at the hinge
-                          station is the bearing seat, and only because the
-                          housing collar has not been built yet.
-  still open              the housing collar. Blocked on bracket hardware, and
-                          worth 6.7x on the bearing seat when it exists.
+                          station is the bearing seat, and only because these
+                          margins are taken WITHOUT the housing collar.
+  the collar              DESIGNED, not printed. design/bay.py carries it and
+                          Assembly 1 holds it; correction 16 removed the bracket
+                          this line used to be blocked on. The margins above are
+                          deliberately the bare-wall case, because a part that
+                          exists in CAD is not yet a part that carries load -- and
+                          it is worth 6.7x on the bearing seat once one is bonded in.

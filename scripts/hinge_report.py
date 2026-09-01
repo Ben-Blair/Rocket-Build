@@ -359,10 +359,20 @@ def main() -> None:
     say("                          bond line each face. Same thickness, same planform,")
     say("                          same mass -- a manufacturing change, not a design one.")
     say("  the tube                UNCHANGED and not close: worst margin at the hinge")
-    say("                          station is the bearing seat, and only because the")
-    say("                          housing collar has not been built yet.")
-    say("  still open              the housing collar. Blocked on bracket hardware, and")
-    say(f"                          worth {results['with the collar: the full 6.0 mm bearing'].margins['bearing seat crush'] / results['no collar (the vehicle today): the 2.3 mm wall alone'].margins['bearing seat crush']:.1f}x on the bearing seat when it exists.")
+    say("                          station is the bearing seat, and only because these")
+    say("                          margins are taken WITHOUT the housing collar.")
+    # This block used to read "still open: the housing collar. Blocked on bracket
+    # hardware." Both halves were superseded and neither had been retired: correction 16
+    # dropped the commercial servo frame the collar was waiting on, and correction 19 built
+    # the collar as part of the printed bay (design/bay.py, cad/canard_bay.fs). What is
+    # true is narrower and worth stating exactly -- the collar is DESIGNED but no bay has
+    # been printed, so the conservative case is still the one this report leads with.
+    say("  the collar              DESIGNED, not printed. design/bay.py carries it and")
+    say("                          Assembly 1 holds it; correction 16 removed the bracket")
+    say("                          this line used to be blocked on. The margins above are")
+    say("                          deliberately the bare-wall case, because a part that")
+    say(f"                          exists in CAD is not yet a part that carries load -- and")
+    say(f"                          it is worth {results['with the collar: the full 6.0 mm bearing'].margins['bearing seat crush'] / results['no collar (the vehicle today): the 2.3 mm wall alone'].margins['bearing seat crush']:.1f}x on the bearing seat once one is bonded in.")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(_lines) + "\n")

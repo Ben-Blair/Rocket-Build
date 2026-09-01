@@ -853,7 +853,7 @@ they cannot drift from the analysis. Each is a two-pick plus a placement:
 | LE sweep, axial offset | 47.90 | front |
 | panel height, as cut | 66.99 | front |
 | panel root face radius | 40.20 | front |
-| panel thickness | 3.00 | front |
+| panel thickness | 3.20 | front |
 
 Two notes for whoever finishes it. Label which end is the **forward face** — the model runs
 nose-down, because Top is the forward face and +Z runs aft. And mark the panel CP as
