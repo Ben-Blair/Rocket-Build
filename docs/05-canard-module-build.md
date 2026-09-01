@@ -766,7 +766,35 @@ cylinder, and the third surface is the wall** — which on this module already h
 bores through it.
 
 **The module vents overboard: 2 × ⌀2 mm through its own wall.** Then none of the rest
-follows. The altimeter's sense volume is the nav bay alone; the wiring pass-through is
+follows.
+
+**Where, settled Aug 2026.** The size and the surface were decided here; the station and
+the clocking were not, and a hole cannot be drawn from a size. They are now
+`venting.MODULE_VENT_STATION` and `MODULE_VENT_CLOCKING_DEG`, guarded in `baseline.py`
+against the real bay, seal and canard geometry:
+
+| | |
+|---|---|
+| station | **Z 120.0 mm** from the module forward face |
+| clocking | **45° and 225°** — opposed, each bisecting a canard gap |
+| size | 2 × ⌀2.0 mm, 6.28 mm² |
+
+**The aft band was chosen for the leak path, not for the flow field.** Two bands of wall
+have nothing bonded behind them — forward of the printed bay (Z < 53.13) and aft of it
+(Z > 94.63). `design/seal.py`'s stated intent is that a leak past the aft gas seal *"goes
+overboard instead of into the sensor that fires the charges"*, and for that to be true the
+gas has to **reach** a vent. Vent only the forward band and the escape path for hot, sooty
+ejection gas runs the full length of the module — across four servos, the printed bay and
+every wire in the vehicle. Vent the aft band and it is a couple of centimetres of empty
+tube. **The seal's argument was written as though the module had a vent somewhere; where
+turns out to be load-bearing for it.**
+
+And the Cp argument that governs the nav bay's static ports does not apply here at all —
+this bay feeds no sensor, so there is nothing for a local pressure error to corrupt. That
+is why this could be settled without the panel-method model `venting.py` says the project
+does not have. Clearances: 25.4 mm aft of the bay bond, 12.1 mm forward of the seal
+fillet, 14.8 mm aft of the canard root TE, and 51.7 mm from the hinge bores so the two
+stress concentrations do not stack. The altimeter's sense volume is the nav bay alone; the wiring pass-through is
 **potted solid** around the wires, which is a better seal than one that has to pass air; and
 a leak past this disc goes outside instead of into the sensor that fires the charges.
 

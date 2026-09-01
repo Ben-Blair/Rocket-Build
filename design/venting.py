@@ -56,9 +56,11 @@ ceiling.
 
 WHAT THIS DOES NOT DO. It does not model the flow disturbance around the port, which is why
 the upper bound comes from convention rather than from theory. It does not model the
-transient of the ejection event. And it says nothing about port PLACEMENT beyond the one
-rule below, because placement is about the local pressure coefficient and this project has
-no panel-method model of its own airframe.
+transient of the ejection event. And it says nothing about where the NAV BAY's ports go
+beyond the ring rule below, because that placement is about the local pressure coefficient
+and this project has no panel-method model of its own airframe. The CANARD MODULE's vents
+are placed here -- see MODULE_VENT_STATION -- and they can be, precisely because that bay
+feeds no sensor and so no Cp argument is needed to put a hole in it.
 """
 
 from __future__ import annotations
@@ -95,6 +97,83 @@ CONVENTIONAL_PORT_COUNT = 3
 # flow field that is asymmetric whenever the vehicle is at an angle of attack. Three is the
 # minimum that averages; four is easier to lay out on a 90 degree pattern.
 MIN_PORT_COUNT = 3
+
+
+# ======================================================================================
+# WHERE THE CANARD MODULE'S OWN VENTS GO
+#
+# The header of this file says it "says nothing about port PLACEMENT". That was true and it
+# was a gap, not a boundary: the module vent was decided as a SIZE (2 x dia 2 mm) and a
+# SURFACE (its own wall) and then handed to CAD with no station and no clocking, which is
+# not something a hole can be drawn from. Settled here.
+#
+# THE RULE THAT GOVERNS THE NAV BAY DOES NOT GOVERN THIS ONE, and that is the whole reason
+# it can be settled without a panel-method model. The nav bay's ports feed a PRESSURE
+# SENSOR, so they have to sit where local static approximates freestream, and getting that
+# wrong fires a charge at the wrong altitude. The canard module's vent feeds nothing. Its
+# job is that the module not be a sealed volume -- `trapped_differential` below is the
+# entire load case, 8 kPa and about 350 N on a bulkhead. A local Cp error moves a number
+# that nothing reads. So placement here is set by what is INSIDE the tube and by the leak
+# path, both of which are known exactly.
+#
+# STATION. The module tube runs Z 0 -> 142.900 from its forward face. Two bands of wall
+# have nothing bonded behind them: forward of the printed bay (Z < 53.13) and aft of it
+# (Z > 94.63, up to the aft gas seal's fillet at ~135.1). The aft band wins, and the
+# argument is the leak path rather than the flow field.
+#
+# design/seal.py's stated intent is that a leak past the aft gas seal "goes overboard
+# instead of into the sensor that fires the charges". For that to be true the leaked gas
+# has to REACH a vent. Vent the forward band only, and the escape path for hot, sooty
+# ejection gas runs the full length of the module -- across four servos, the printed bay
+# and every wire in the vehicle -- before it finds a hole. Vent the aft band and the path
+# is a couple of centimetres of empty tube. The seal's argument was written as if the
+# module had a vent somewhere; WHERE turns out to be load-bearing for it.
+#
+# Z = 120.0 mm places the ring:
+#   * 25.4 mm aft of the printed bay's aft face -- clear of that bond line
+#   * 12.1 mm forward of the seal's forward fillet -- clear of that one. (That figure came
+#     out of seal.stack_length(), not off a ruler: the first pass here assumed a 4.8 mm disc
+#     plus 3 mm of fillet and got 15.1 mm, when the assembled stack is 10.8. The clearance
+#     is comfortable either way, which is exactly when a wrong number survives.)
+#   * 14.8 mm aft of the canard root trailing edge (Z 105.20), so it is outside the panel's
+#     surface footprint and not under the root bond
+#   * 51.7 mm from the hinge bore station (Z 68.27), so its stress concentration does not
+#     stack with the four dia 8 bores that already remove 13.2% of that section
+MODULE_VENT_STATION = 0.120        # m, from the canard module's FORWARD face
+MODULE_VENT_DIAMETER = 0.002       # m
+MODULE_VENT_COUNT = 2
+
+# CLOCKING. 45 and 225 degrees: diametrically opposed, and each bisecting the gap between
+# two canard panels (the canards sit at 0/90/180/270).
+#
+# Opposed rather than adjacent for the ordinary reason -- two holes 180 degrees apart mean
+# the module still breathes with the vehicle at any roll angle, and one hole blocked by
+# paint, tape or a scrap of wadding still leaves one. This is blockage tolerance, which is
+# the same thing CONVENTIONAL_PORT_COUNT above is really buying.
+#
+# Note that MIN_PORT_COUNT = 3 does NOT apply here and the two are not in conflict. Three is
+# the minimum that AVERAGES a flow field, and averaging is a requirement only for a bay that
+# is being measured. Two is enough for a bay that is only being equalised.
+MODULE_VENT_CLOCKING_DEG = (45.0, 225.0)
+
+
+def module_vent_clearances(station: float, bay_aft: float, seal_fillet_forward: float,
+                           canard_root_te: float, hinge_station: float) -> dict[str, float]:
+    """Signed clearances, m, from the module vent station to everything it must miss.
+
+    Every argument is a station read off the real geometry by the caller -- the printed bay
+    from `design/bay.py`, the seal from `design/seal.py`, the canard root and hinge from the
+    vehicle -- so that this cannot agree with itself while disagreeing with the CAD. That is
+    correction 14's failure mode and it is the one this project keeps repeating.
+
+    Positive means clear. A negative entry means the hole lands ON the thing named.
+    """
+    return {
+        "aft of the printed bay": station - bay_aft,
+        "forward of the seal fillet": seal_fillet_forward - station,
+        "aft of the canard root TE": station - canard_root_te,
+        "from the hinge bore station": abs(station - hinge_station),
+    }
 
 
 def pressure_lapse(altitude: float) -> float:

@@ -16,6 +16,9 @@ from design import (
     aero, avionics, control, estimation, flutter, hinge, joints, seal, trajectory,
     tube_section, venting,
 )
+# Aliased because `bay` is a local in main() -- check_direct_drive's result. Same reason
+# design/configure.py imports mass as mass_mod.
+from design import bay as bay_mod
 from design.configure import (
     DEFLECTION_LIMIT_DEG, ROLL_COMMAND_CAP_DEG, baseline, build_vehicle, evaluate,
 )
@@ -354,7 +357,8 @@ def main() -> None:
     nav_free = avionics.free_volume(nav.inner_diameter, nav.length)
     nav_bay = venting.VentedBay("nav bay", nav_free, venting.CONVENTIONAL_PORT_COUNT,
                                 venting.CONVENTIONAL_PORT_DIAMETER)
-    mod_bay = venting.VentedBay("canard module", CANARD_MODULE_FREE_VOLUME, 2, 0.002)
+    mod_bay = venting.VentedBay("canard module", CANARD_MODULE_FREE_VOLUME,
+                                venting.MODULE_VENT_COUNT, venting.MODULE_VENT_DIAMETER)
     vchk = venting.check_venting(nav_bay, mod_bay, altitude=285.0, climb_rate=177.0,
                                  apogee=ev.flight.apogee, module_wall_area=mod_bay.area)
     print(f"  static ports        {nav_bay.n_ports} x dia "
@@ -366,6 +370,31 @@ def main() -> None:
     print(f"  lag model asks for  {venting.port_area_for_lag(nav_free, 285.0, 177.0) * 1e6:.2f} mm2 "
           f"against the {nav_bay.area * 1e6:.1f} mm2 convention drills. Lag does not size these holes")
     print(f"  venting check       {'OK' if vchk.ok else 'VIOLATIONS: ' + '; '.join(vchk.violations)}")
+
+    # The module vent had a size and a surface but no STATION until Aug 2026, which is not
+    # something a hole can be drawn from -- see venting.MODULE_VENT_STATION. Guarded here
+    # against the real bay, seal and canard geometry rather than against typed numbers, so
+    # that moving any of them fails this instead of quietly putting a hole through one.
+    module_len = r.tubes[1].length
+    bay_geom = bay_mod.build_bay(stack, geom, hinge.canard_hinge_station(r) - r.tube_station(1))
+    # The seal is bonded at the module's AFT face, so its forward-most material is the
+    # assembled stack back from there -- disc plus the fillet on each side, taken from
+    # seal.py rather than typed, for the reason correction 20 gives about allowances.
+    seal_fillet_fwd = module_len - seal.stack_length(sl)
+    canard_root_te = (r.canards.x_root_le - r.tube_station(1)) + r.canards.root_chord
+    vent_clear = venting.module_vent_clearances(
+        venting.MODULE_VENT_STATION, bay_geom.aft_face, seal_fillet_fwd,
+        canard_root_te, bay_geom.hinge_station)
+    fouls = [k for k, v in vent_clear.items() if v <= 0.0]
+    print(f"  module vent at      Z {venting.MODULE_VENT_STATION * 1000:.1f} mm, "
+          f"{'/'.join(f'{a:.0f}' for a in venting.MODULE_VENT_CLOCKING_DEG)} deg -- "
+          f"{'CLEAR' if not fouls else 'FOULS: ' + '; '.join(fouls)}")
+    print(f"                      {vent_clear['aft of the printed bay'] * 1000:.1f} mm aft of the "
+          f"bay, {vent_clear['forward of the seal fillet'] * 1000:.1f} mm fwd of the seal "
+          f"fillet,")
+    print(f"                      {vent_clear['aft of the canard root TE'] * 1000:.1f} mm aft of "
+          f"the canard root TE. The AFT band is chosen so a leak past")
+    print("                      the seal reaches a hole without crossing the servos")
 
     bays = joints.budgets(r, BASELINE.wall_thickness)
     navb = bays["nav bay"]

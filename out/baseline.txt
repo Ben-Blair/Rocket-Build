@@ -237,6 +237,10 @@ VENTING and the NAV BAY
   canard module vent  2 x dia 2.0 mm through its OWN WALL -- so the module is not in the sense volume
   lag model asks for  1.59 mm2 against the 24.1 mm2 convention drills. Lag does not size these holes
   venting check       OK
+  module vent at      Z 120.0 mm, 45/225 deg -- CLEAR
+                      25.4 mm aft of the bay, 12.1 mm fwd of the seal fillet,
+                      14.8 mm aft of the canard root TE. The AFT band is chosen so a leak past
+                      the seal reaches a hole without crossing the servos
   nav bay packing     FITS   nav bay          need 110.4 mm, have 115.0 mm (  +4.6 mm)  4 components on two faces at 70%
     before the move   NO FIT nav bay          need 161.7 mm, have 115.0 mm ( -46.6 mm)  short by 47 mm
   nose stack          FITS   nose stack        35.4 mm sled at station 282-318 mm, 59.1 mm wide  2 parts, aft of the ballast
