@@ -156,6 +156,16 @@ MODULE_VENT_COUNT = 2
 # is being measured. Two is enough for a bay that is only being equalised.
 MODULE_VENT_CLOCKING_DEG = (45.0, 225.0)
 
+# Free air in the canard module: the tube's own volume less the servos, the printed bay, the
+# shafts and the bearings, from their CAD masses and densities. An estimate, and it only has
+# to be good enough to size a vent hole that convention already oversizes by 300x.
+#
+# LIVES HERE, NOT IN A SCRIPT. `scripts/seal_report.py` and `scripts/baseline.py` each typed
+# this number until Aug 2026 -- two copies of exactly the drift `configure.py`'s own docstring
+# warns about, in the file that warns about it. `design/access_bulkhead.py` is the third
+# caller and the reason it got fixed rather than copied a third time.
+CANARD_MODULE_FREE_VOLUME = 570e-6  # m^3
+
 
 def module_vent_clearances(station: float, bay_aft: float, seal_fillet_forward: float,
                            canard_root_te: float, hinge_station: float) -> dict[str, float]:

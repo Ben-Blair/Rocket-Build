@@ -20,10 +20,6 @@ from design.configure import baseline, evaluate
 
 MM = 1000.0
 
-# Free air in the canard module: the tube's own volume less the servos, the printed bay, the
-# shafts and the bearings, from their CAD masses and densities. An estimate, and it only has
-# to be good enough to size a vent hole that convention already oversizes by 300x.
-CANARD_MODULE_FREE_VOLUME = 570e-6  # m^3
 OUT = Path(__file__).resolve().parents[1] / "out" / "seal_report.txt"
 
 lines: list[str] = []
@@ -229,7 +225,7 @@ def main() -> None:
     nav = next(t for t in ev.rocket.tubes if t.name == "nav bay")
     module = next(t for t in ev.rocket.tubes if t.name == "canard module")
     nav_free = avionics.free_volume(nav.inner_diameter, nav.length)
-    mod_free = CANARD_MODULE_FREE_VOLUME
+    mod_free = venting.CANARD_MODULE_FREE_VOLUME
     nav_bay = venting.VentedBay("nav bay", nav_free,
                                 venting.CONVENTIONAL_PORT_COUNT,
                                 venting.CONVENTIONAL_PORT_DIAMETER)

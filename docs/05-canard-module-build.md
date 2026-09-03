@@ -15,7 +15,7 @@ The document now holds **four** elements that matter:
 | element | what it is |
 |---|---|
 | `Part Studio 1` | the module: tube, four canard panels, four shafts. 13 parts |
-| `KST X08 Plus` | the **real servo**, built from the datasheet. 3 parts |
+| `KST X08 Plus` | the **real servo**, bu1ilt from the datasheet. 3 parts |
 | `Canard articulation` (Feature Studio) | `canardDeflection` and `canardHingeConnectors`, source of truth in `cad/canard_articulation.fs` |
 | `Assembly 1` | 21 instances: module + four real servos, positioned, grouped |
 
@@ -102,9 +102,52 @@ root joint" and "The tube at the hinge station".
 
 **The four revolute hinge mates are IN** (Aug 2026), so `Assembly 1` is a mechanism and not
 just a pose. `Canard 0 (+X) hinge` … `Canard 3 (-Y) hinge`, each pairing `tube{n}` with
-`shaft{n}` from `canardHingeConnectors`, REVOLUTE, limited to ±8°. Mass and CoM did not
+`shaft{n}` from `canardHingeConnectors`, REVOLUTE. Mass and CoM did not
 move (258.650 g, Z 75.122 mm), which is the check that the connectors really were
 coincident — mating two connectors that are not coincident drags the geometry.
+
+**They were in and they did not turn, and the mate limits were why** (Sep 2026 — correction
+39 in `docs/01`). The four mates carried the ±8° deflection limit, and every attempt to
+animate one came back *"Unable to compute any steps for this animation. Unable to apply
+transform. Instance(s) may be constrained."* Nothing in the assembly explained it: all 36
+instances sit in exactly one rigid group each and the groups do not overlap, only the tube
+is fixed (correctly — it is ground), every feature regenerates OK, and both mate connectors
+resolve to the right parts. **On these mates a limit does not clamp the rotation, it
+abolishes it.** Measured by driving the mate through `POST /matevalues` after each edit and
+confirmed against the animation itself:
+
+| `limitsEnabled` | rotation limit | asked | got |
+|---|---|---|---|
+| false | — | +5° | **+5.000°**, and the animation plays |
+| true | −8 … 8° | +5° | 0.000°, frozen — the error above |
+| true | −60 … 60° | +5° | 0.000°, frozen |
+| true | −360 … 360° | +90° | 0.000°, frozen |
+| true | 80 … 100° | +90° | 0.000°, frozen |
+
+So it is **not the width of the limit** and not a pose sitting outside one: a limit generous
+enough to allow a full revolution freezes the hinge exactly as hard as ±8° does. It is not
+the rigid groups either — suppressing `Canard 0 (+X) rotating group` and retrying changes
+nothing. The trigger is `limitsEnabled` itself, on mates whose connectors come from a Part
+Studio (`BTMPartStudioMateConnectorQuery`), and it applies to all four identically.
+
+Onshape's own Edit-mate dialog reads and writes `limitAxialZMin/Max` for a revolute's
+rotation limits — open the dialog and those are the numbers it shows — so **the browser did
+nothing wrong when these were authored**. The other Z pair, `limitZMin/Max`, *is* drivable
+with limits enabled but enforces nothing (driven to +12° against a ±8° limit without
+complaint), so putting the deflection limit there would leave the Limits box ticked over a
+limit that does not exist. This project has enough of those.
+
+**Fixed by turning the mate limits off**, with `scripts/fix_hinge_mate_limits.py` (safe to
+re-run; `--verify` drives all four and parks them at zero). The limit was never load
+bearing: no script has ever read it, `scripts/canard_sweep.py` drives the Part Studio's
+`deflection` parameter rather than the assembly mates, and the number that every analysis
+actually reads is `DEFLECTION_LIMIT_DEG` in `design/configure.py`. What is lost is a
+hand-drag guard in the browser; what is gained is the mechanism the assembly exists to
+demonstrate. Mass 356.393 g and CoM Z 78.183 mm across the write, unchanged to the microgram
+— a limit is not a pose.
+
+**If you re-author these mates by hand, leave Limits unticked**, or the assembly goes back
+to being a pose.
 
 They were added **in the browser**, because the assembly-feature API still will not create
 them. The useful discovery is that the restriction is on CREATION only: once the mates
@@ -217,8 +260,14 @@ Margins on the selected stack, at q = 19.42 kPa and 9.19° of panel local alpha:
 `design/hinge.py` holds the model, `scripts/hinge_report.py` prints it to
 `out/hinge_report.txt`, and `scripts/make_hinge_stack.py` applies it to Onshape (idempotent;
 every write is followed by a part count, a feature-status sweep and a mass comparison).
-Two API facts that cost time and are not in Onshape's documentation, so they are written
-down: **there is no assembly interference-check endpoint** (`/interferencecheck` 404s on
+Four API facts that cost time and are not in Onshape's documentation, so they are written
+down. **An assembly feature id can contain a `/`** — `MwVg60P6xoYjGb/Tu` is one of the
+rigid groups — so it must be percent-encoded into the `/features/featureid/{fid}` path or
+the call 404s while looking exactly like a feature that is not there. **A limit parameter
+that is UNSET reads back from `GET /features` as a non-null zero**, so the obvious round
+trip — read a mate, change one thing, post it back — rewrites every unset limit as a hard
+value; anything editing a mate should set what it means and null the rest. Then:
+**there is no assembly interference-check endpoint** (`/interferencecheck` 404s on
 v10), which is why the clash had to be found from part bounding boxes and a volume that
 matched the analytic solid figure exactly; and **a `mateGroup` freezes its members**, so
 the four servos could not be transformed until the five rigid groups were deleted, saved
@@ -1052,6 +1101,208 @@ mass. There is exactly one tool for that and it is not in the API
 every instance, right-click → **Check interference…**. Run it after any assembly change. It
 is the only check that found the tang buried in the tube wall, the collar boss rim outside
 the shell, and the retainer bar inside the servo — none of which moved a gram.
+
+There is now a **second route, and it does not need the browser**: export the assembly to
+STEP, open it in Fusion, and boolean every pair of bodies against each other with
+`TemporaryBRepManager` — which works on copies and never touches the design. It is
+scriptable, it reports the overlap volume rather than just a yes/no, and it can be pointed
+at a rebuilt model as easily as at the import. See "The Fusion 360 transfer" below, where
+it found 21 clashes in a rebuild that had passed every mass and volume check.
+
+## The Fusion 360 transfer — what the rebuild lost
+
+Sep 2026. The module was re-created natively in Fusion 360 (`CanardControlModule`), with
+`cad/onshape_export/Assembly_1.step` imported alongside it as the component
+`Onshape_reference`. Both live in the same file at the same coordinates, so the two can be
+booleaned against each other body-for-body. That is the check, and it is worth knowing it
+is available: **a native rebuild and its source in one document is a diffable pair**, which
+is a stronger check than eyeballing dimensions, because it catches the things that are not
+dimensions at all.
+
+Volumes below are Fusion's `VeryHighCalculationAccuracy`. The default accuracy is not good
+enough for this — it reported the tube 27 mm³ off its own analytic value and sent the first
+pass of this check chasing a hole that was not there.
+
+**Four parts transferred exactly**, to 0.0000 mm³: the four canard shafts (698.1377 mm³),
+the eight servo retainer bars (90.8076), the pass-through plate (10425.7648) and the aft
+gas seal (20744.0871). Every Z station in the module matches. So does the tube OD/ID, the
+bay's shell OD ⌀74.500 and bore ⌀69.700, and all four hinge axes at Z 68.270.
+
+Four things did not, and two of them are load path.
+
+### 1. Every radial hole in the tube is blind
+
+The tube reads 79142.6901 mm³ against the Onshape 79131.8242 — the rebuild has 10.87 mm³
+**more** material, in a part whose only features are holes. All six radial holes — four ⌀8
+hinge bores at Z 68.270 and both ⌀2.0 vents at Z 120.0 — stop on a flat plane at R 37.400,
+tangent to the ⌀74.8 bore, instead of cutting through it. The bore is curved and the hole
+bottom is flat, so each hole breaks through along a single tangent line and leaves a
+crescent web everywhere else:
+
+| hole | leftover web | thickest at hole edge |
+|---|---|---|
+| ⌀8 hinge bore, ×4 | 2.692 mm³ each | 0.2145 mm |
+| ⌀2 vent, ×2 | 0.011 mm³ each | 0.0134 mm |
+
+4 × 2.692 + 2 × 0.011 = 10.788 mm³ against the 10.866 measured. That is the whole
+discrepancy, and it is the signature of a cut whose depth was typed as a number rather than
+taken through the far face.
+
+It is not cosmetic. The crescent sits exactly where the bearing and the shaft pass, so it
+interferes with both: 1.85 mm³ against each bearing, 0.85 mm³ against each shaft, eight
+clashes in total. And **the two vents do not vent** — they are blind pockets, which undoes
+correction 37 entirely.
+
+### 2. The bay's four bearing bores are plugged by the shell
+
+The bay reads 29949.1849 against 28257.5795 — 1691.55 mm³ extra. The difference is purely
+additive: the Onshape bay has only 0.41 mm³ the rebuild lacks, so nothing was left out,
+things were left *in*. Splitting the extra by radius from the rocket axis says where:
+
+| band | extra | what it is |
+|---|---|---|
+| R 26.000 – 34.850 | 1127.0 mm³ | a second pair of tray webs |
+| R 34.850 – 37.250 | 482.9 mm³ | the bearing bores, not cut through the shell |
+| R 37.250 – 40.000 | 81.6 mm³ | collar bosses run out too far |
+
+The middle row is the one that matters. 482.9 mm³ is 4 × π/4 · 8² · 2.400 = 482.5 — a
+2.400 mm **plug of shell wall left in each of the four ⌀8 collar bores**. The ⌀12 boss and
+its ⌀8 bore are both present and both correctly sized; the bore simply was never cut
+through the shell it passes into, which is what happens when the boss is unioned to the
+shell and the bore is cut only in the boss. The bearing cannot be pressed in, and the model
+says so: 52.95 mm³ against each bearing, 43.42 mm³ against each shaft, 19.47 mm³ against
+each servo spline, twelve clashes.
+
+The third row is the failure this build sheet already records Check interference finding
+once. The collar bosses end at **R 37.400** — the tube ID — instead of **R 36.500**, which
+is the shell bore at 34.850 plus `COLLAR_BOSS_OVERLAP` 1.650. They are 0.900 mm too long.
+A flat-ended ⌀12 boss on a radial axis at R 37.400 has a rim at
+hypot(37.400, 6.000) = **37.878**, against a shell OD of 37.250 and a tube ID of 37.400, so
+the boss stands proud of its own shell and buries itself in the airframe wall — 43.85 mm³
+of it. `design/bay.py` carries a comment warning about precisely this and a check
+(`collar_rim_radius`) that would have caught it.
+
+The first row is extra print, not a defect: the rebuild carries a second pair of tray webs
+at a circumferential offset of 5.900–7.500 mm, where the Onshape bay has webs only at
+7.600–9.200 mm. Nothing fouls them and they clear the servo's 8.0 mm width easily. They are
+about 1.5 g of PETG-CF nobody asked for. Decide whether they were deliberate.
+
+### 3. The servos are right — including the thing that was suspected
+
+The servos were the first suspect and they are the one assembly that is provably correct.
+Each rebuilt servo is one merged body where Onshape carries three (case + flange, lower
+boss, spline), which is fine, and the merged volume is 3918.9964 against
+3193.0482 + 672.3840 + 40.2124 = 3905.6446. The difference is **13.3518 mm³**, and
+
+    4 × π/4 · 1.5² · 1.000  +  2 × π/4 · 2.0² · 1.000  =  13.3518
+
+to four decimals — the four ⌀1.5 and two ⌀2.0 flange holes through the 1.000 mm flange,
+not cut. Nothing else about the part differs. Every dimension `SERVO_GEOMETRY` carries
+survived the transfer: 23.5 mm case and 29.5 mm lug envelope running axially, 8.0 mm
+across the circumference, 16.8 mm of radius for the case, output face at R 33.185, spline
+⌀4.0 × 3.2 reaching R 36.385, and the lower boss inboard to R 6.085 — which is
+33.185 − 27.100, the `depth_from_top` the datasheet gives. The shaft is 6.14 mm off the
+case centre in the rebuild too.
+
+So the 23.5 × 8 × 16.8 numbers are not the problem, and neither is the flat-mount
+orientation. Cut the six flange holes and the part is exact.
+
+### 4. The bearing chamfers are undocumented, and the disagreement is the other way round
+
+The rebuilt bearing is 131.9469 mm³ — exactly π/4 (8² − 6²) · 6, which is the analytic
+annulus `scripts/make_bearing_cad.py` says it built and verified to 0.001 mm³. The
+**Onshape** part is 130.2462, 1.7007 mm³ lighter, consistent with a 45° lead-in chamfer of
+about 0.3 mm at both ends. Nothing in this repo mentions a chamfer, and the part has also
+been renamed since that docstring was written (`dia 6/8 x 6 plain` →
+`iglidur G, 6/8 x 6 plain`). Harmless either way — a chamfer only removes material and a
+lead-in on a pressed bushing is good practice — but **the source of truth and the model
+disagree and neither knows it**. Reconcile it: either put the chamfer in
+`make_bearing_cad.py` or take it out of Onshape.
+
+The canard panels differ by 1.991 mm³ (0.021%) and 0.008 mm of axial extent at the tip.
+That is below anything that matters and below what a STEP round trip of a swept surface
+guarantees. Leave it.
+
+### The check that actually found all of this
+
+Pairwise boolean intersection over every body, via `TemporaryBRepManager` — which does not
+touch the design, so it is safe to run on a model you have not saved:
+
+- **Onshape reference, 36 bodies: 6 pairs touching, all ≤ 0.028 mm³.** Those are tolerance
+  slivers on coincident press-fit faces from the STEP round trip. This is what clean looks
+  like, and it agrees with Onshape's own Check interference.
+- **Fusion rebuild, 28 bodies: 21 pairs clashing, 0.85 – 52.95 mm³.** Three to four orders
+  of magnitude larger. All 21 trace to findings 1 and 2.
+
+None of the four findings moves a gram in any direction that a mass check would notice, and
+two of them make the module unbuildable. This is the same lesson as the API rewrite and the
+servo bounding box, one tool further out: **volume and mass agreement is not model
+agreement.** Boolean the rebuild against its source.
+
+### Fixed, Sep 2026 — and the fix is the same trick as the check
+
+All four findings are closed in the Fusion file, which is saved. The repair did not involve
+re-typing a single dimension, and that is the point worth keeping: **the reference solid is
+also the cutting tool.** For any body where the rebuild is a superset of its source,
+
+    tool  =  rebuild  −  reference
+    fixed =  rebuild  −  tool      ( ≡ rebuild ∩ reference )
+
+which lands the rebuild exactly on the reference without anyone deciding what the number
+ought to be. Six such tools were built with `TemporaryBRepManager`, dropped into a
+`BaseFeature`, and applied with `CombineFeature` cuts — a parametric design will not accept
+a temporary body as a tool any other way. They sit at the end of the timeline and can be
+deleted.
+
+The bay was the only one needing judgement, because there the extra material was not all
+unwanted: the bore plugs and the proud boss had to go, the extra webs were a separate
+question. They split cleanly at the shell bore, so the tool was masked with a cylinder —
+`tool = (rebuild − reference) − cylinder(R 34.850)` — which takes the plugs and the boss
+and leaves the webs. The webs were then removed in a second, separate cut once they were
+confirmed unintentional, so the two decisions stayed separable in the timeline.
+
+| body | was | now | reference | note |
+|---|---|---|---|---|
+| tube | 79142.6901 | 79132.2721 | 79131.8242 | difference solid is **empty** |
+| bay | 29949.1849 | 28257.1924 | 28257.5795 | difference solid is **empty** |
+| servo ×4 | 3918.9964 | 3905.5375 | 3905.6446 | −0.0027% |
+| canard panel ×4 | 9510.2874 | — | 9508.2962 | +0.021%, untouched |
+| bearing ×4 | 131.9469 | — | 130.2462 | +1.31%, see below |
+
+All mm³, `VeryHighCalculationAccuracy`. The tube and the bay now boolean to a **zero-face
+empty body** against their Onshape counterparts, which is a stronger statement than the
+volumes: the residual ±0.4 mm³ is the kernel valuing a natively-cut solid slightly
+differently from a STEP-imported one, not geometry. The tube also matches face-for-face —
+10 faces, no flat bottoms, hole walls 231.6304 mm² and 28.8834 mm² against 231.6304 and
+28.8836.
+
+Interference, same pairwise boolean as before:
+
+| | pairs | worst |
+|---|---|---|
+| rebuild, before | 21 | 52.95 mm³ |
+| rebuild, after | 4 | 0.0192 mm³ |
+| Onshape reference | 6 | 0.0278 mm³ |
+
+The four survivors are bearing-against-bay slivers on the press-fit seat, smaller than the
+reference's own. That is parity, not a clean sheet, and a clean sheet is not available: a
+STEP round trip does not reproduce coincident faces to zero. **Judge a rebuild against its
+reference's interference number, not against zero.**
+
+Two things are deliberately still open, and neither is a rebuild defect:
+
+- **The bearing chamfer.** The rebuild is the exact analytic annulus
+  `scripts/make_bearing_cad.py` claims. Onshape has ~0.3 mm lead-in chamfers nobody wrote
+  down. Fixing this in Fusion would be encoding an undocumented change; the fix belongs in
+  Onshape or in the script. Until then the rebuild is the one that agrees with this repo.
+- **The canard panel's 0.021%.** Below what a STEP round trip of a swept surface promises.
+
+The extra tray webs were removed at the same time — 1127.05 mm³, ~1.5 g — because they were
+not intentional. Had they been, the fix would have been the other direction: `design/bay.py`
+would have had to learn about them, since its 38.6 g is what reaches `design/control.py`
+as the mass tensor. Worth stating as a rule: **when the CAD and the model disagree, decide
+which one is wrong before deciding what to edit.** Three of the four findings here were the
+CAD; the bearing chamfer probably is not.
 
 ## What to check when you are done
 

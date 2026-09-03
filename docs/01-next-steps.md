@@ -33,9 +33,13 @@ Read this first if you are picking the project back up.
   and 10 below. The four revolute hinge mates are the one piece not finished: the mate
   connectors and the rigid groups are in — **and as of Aug 2026 so are the mates**, added in
   the browser because the API will not author that connector reference. `Assembly 1` now
-  carries `Canard 0 (+X) hinge` … `Canard 3 (-Y) hinge`, REVOLUTE, ±8°, each pairing
+  carries `Canard 0 (+X) hinge` … `Canard 3 (-Y) hinge`, REVOLUTE, each pairing
   `tube{n}` with `shaft{n}`. Mass and CoM did not move, which is how you know the paired
-  connectors really were coincident.
+  connectors really were coincident. **They did not actually turn until Sep 2026** — the
+  ±8° mate limit froze all four, and no one had ever driven one to find out
+  (correction 39). Limits are off now, the deflection limit lives where it is enforced
+  (`DEFLECTION_LIMIT_DEG`), and `scripts/fix_hinge_mate_limits.py --verify` drives every
+  hinge and parks it at zero.
 - **The hinge is a mechanism now, and closing it found a third thing.** Both fits
   correction 10 left open are closed — see correction 11 and `docs/05` "The hinge stack".
   `design/hinge.py` models the shaft, bearing and coupling as a load path rather than as a
@@ -126,6 +130,35 @@ Read this first if you are picking the project back up.
   nav bay / canard module plate, and the nose's aft face — has ever been sized by
   anything**, while both already spend bay length as allowances. What is otherwise left is
   the Step 3 drawing.
+- **Both access bulkheads are sized, and neither is sized by stress** (correction 38).
+  `design/access_bulkhead.py`, `scripts/access_bulkhead_report.py`, verdict in
+  `baseline.py`. Both clear the thinnest stocked G-10 sheet by 25×+ on every load found —
+  the pass-through plate because the bays either side of it (nav bay, canard module) both
+  vent to ambient **on their own**, so the only load across it is the nav-bay/module venting
+  **lag differential**, about 5.5 Pa; the nose plate against the **trapped
+  pad-to-apogee differential** (15.4 kPa, conservative — see below) plus a **300 g payload
+  point load** at max boost accel, correction 32's provision ceiling rather than the 105 g
+  actually flying. **What actually sets both plates is producibility** — holding a screw
+  thread through repeated disassembly, a connector's panel-nut torque — which has no stress
+  model here, so a stated practical floor stands in: **2.4 mm / 19.5 g** for the pass-through
+  plate, **3.2 mm / 26.0 g** for the nose plate. Same shape of result as `venting.py`'s port
+  sizing: the model gives the floor, practice gives the design point.
+  `CANARD_MODULE_FREE_VOLUME` also stopped being a two-script duplicate and now lives in
+  `design/venting.py`, since this was its third caller.
+  **One real gap surfaced, not closed: the nose cavity's own venting has never been modelled
+  anywhere in this project** — `design/avionics.py` and `design/venting.py` both stop at the
+  nav bay. The nose plate is checked against the fully-sealed case until that gap is closed;
+  if a nose vent is added later, that load goes away and the plate stays oversized rather
+  than becomes undersized. Two part numbers are still open and don't move the plate: the
+  pass-through's wire bundle (no gauge has ever been chosen) and the nose module's panel
+  connector. **The pass-through can now be drawn.**
+  Both plates are CAD now too: `scripts/make_access_bulkhead_cad.py` builds them (volume
+  verified against the analytic disc-less-hole figure on the first build), and
+  `scripts/place_access_bulkhead.py` instances the pass-through plate in `Assembly 1` at
+  Z = 0.000 — the module's forward face, with identity transform because the disc's own
+  frame is built as the aft seal's *mirror* (origin on the forward face, growing aft) rather
+  than a copy of it. **Check interference reports none across all 36 instances.** The nose
+  plate is a part only, same reasoning as the internal bulkhead: its cavity is unmodelled.
 - **D7 is CLOSED** (correction 35). A **custom STM32F405 board** flies the guided vehicle
   and a **Teensy + breakout stack** flies the L1/L2 certs as a passive logger — staged in
   that order, because the cert launches are monthly and eight weeks of PCB work would spend
@@ -151,6 +184,31 @@ Read this first if you are picking the project back up.
   model**, and they were invisible because `joints.budgets()` already charges bay length
   for them and `seal.py`'s exclusion list named only the booster's. An allowance that
   nobody turned into a part, for the third time in this project.
+- **The Fusion 360 rebuild does not match the Onshape module, and the servos were not why**
+  (correction 40). `cad/onshape_export/Assembly_1.step` is imported into the Fusion file
+  next to the native rebuild, so the two can be booleaned body-for-body. Four parts
+  transferred exactly and the **servos are provably correct** — the merged servo body is
+  13.3518 mm3 heavy, which to four decimals is the six flange holes that were not cut, and
+  every dimension in `SERVO_GEOMETRY` survived. Two findings are load path and make the
+  module unbuildable: **all six radial holes in the tube are blind**, stopping on a plane
+  tangent to the bore and leaving a 0.2145 mm crescent web that the bearings and shafts run
+  into (and the two vents therefore do not vent, undoing correction 37); and **the bay's
+  four bearing bores are plugged by 2.400 mm of uncut shell wall**, with the collar bosses
+  run out to R 37.400 instead of R 36.500 so they bury themselves in the tube. Pairwise
+  boolean says it plainly: **21 clashing pairs at 0.85-52.95 mm3 in the rebuild, against 6
+  tolerance slivers all under 0.028 mm3 in the reference.** Also open, and pointing the
+  other way: the Onshape bearing carries ~0.3 mm lead-in chamfers that
+  `scripts/make_bearing_cad.py` does not know about. **All four are fixed and the file is
+  saved** -- and the repair re-used the check, because for a rebuild that is a superset of
+  its source the reference solid is also the cutting tool: `rebuild - (rebuild - reference)`
+  lands it exactly, with no dimension re-typed. Tube and bay now boolean to an **empty**
+  difference against Onshape; interference is **4 pairs at 0.0192 mm3 against the
+  reference's own 6 at 0.0278**, which is parity and is the right bar -- a STEP round trip
+  will not reproduce coincident faces to zero. The extra tray webs were confirmed
+  unintentional and cut (1127 mm3, ~1.5 g). Still open by choice: the bearing chamfer,
+  which belongs in Onshape or in the script rather than in the rebuild. Full write-up in
+  `docs/05`, "The Fusion 360 transfer". **Volume and mass agreement is not model
+  agreement** -- none of this moved a gram.
 - **Step 4 is next in the plan**, and D8 has settled what it is built from. What is left is
   firmware: the filter, the HIL rig, the controller and the safety logic.
 
@@ -175,7 +233,8 @@ these, because they moved once already when the altimeter went into the budget
 on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
 so instead of hiding it.
 
-Thirty-seven corrections are worth knowing about. The first four changed the design; two of the
+Thirty-nine corrections are worth knowing about — 38's own numbered entry is still only the
+bullet above. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 
@@ -1102,6 +1161,40 @@ that silently recurs:
    20's shape and correction 33's harness again, and the reason nobody noticed is that
    `seal.py`'s "what this does not do" list named only the booster's bulkhead — **an
    incomplete exclusion list reads as coverage.**
+
+39. **The hinge mates were in, correct, regenerating OK — and frozen solid, because of
+   their own ±8° limit.** Every attempt to animate one returned *"Unable to compute any
+   steps for this animation. Unable to apply transform. Instance(s) may be constrained."*
+   Everything the message points at was fine: all 36 instances are in exactly one rigid
+   group each and the groups do not overlap, only the tube is fixed (correctly — it is
+   ground), both mate connectors resolve to the right parts, all nine features report OK.
+
+   **On these mates a limit does not clamp the rotation, it abolishes it.** Driving the
+   mate through `POST /matevalues` after each edit: limits off, +5° asked and +5.000° got;
+   limits on at ±8°, ±60°, ±360° or 80…100°, every one **0.000°**. So it is not the width
+   of the limit and not a pose outside it — a limit that would allow a full revolution
+   freezes the hinge exactly as hard as ±8° does. Nor is it the rigid groups: suppressing
+   the rotating group changes nothing.
+
+   **Nothing was authored wrong.** Onshape's own mate dialog reads and writes
+   `limitAxialZMin/Max` for a revolute's rotation limits, which is where the ±8° sat. The
+   other Z pair, `limitZMin/Max`, is drivable with limits enabled and **enforces nothing**
+   (driven to +12° against a ±8° limit), so moving the number there would have produced a
+   ticked Limits box over a limit that does not exist — this project's most-repeated
+   failure, one part further out. Fixed by turning the mate limits **off**:
+   `scripts/fix_hinge_mate_limits.py`, `--verify` drives all four and parks them at zero.
+   Mass and CoM unchanged to the microgram across the write, which is how you know only
+   limits moved.
+
+   The transferable part is not the parameter. It is that **the CAD had a working
+   mechanism and a check that said so, and neither was true.** `Assembly 1` was recorded
+   here as "a mechanism and not just a pose" from the day the mates went in, on the
+   strength of the mates existing, mass not moving, and every feature reporting OK — the
+   same three signals that were satisfied by the `Hinge Plane` datum driving no geometry
+   (correction 4's era) and by the circular pattern silently dropping materials. **Nobody
+   had ever turned it.** The one check that finds this class of defect is the one that
+   makes the thing do its job: drive the mate and read back what moved, which is now what
+   `--verify` does and what no amount of tree-reading would have shown.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —

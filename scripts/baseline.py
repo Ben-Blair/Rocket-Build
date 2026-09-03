@@ -13,8 +13,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design import (
-    aero, avionics, control, estimation, flutter, hinge, joints, seal, trajectory,
-    tube_section, venting,
+    access_bulkhead, aero, avionics, control, estimation, flutter, hinge, joints, seal,
+    trajectory, tube_section, venting,
 )
 # Aliased because `bay` is a local in main() -- check_direct_drive's result. Same reason
 # design/configure.py imports mass as mass_mod.
@@ -36,8 +36,9 @@ MOTOR = BASELINE.motor
 # Servo is part of the frozen design now -- see design/configure.py.
 SERVO_CHOICE = BASELINE.servo
 # Free air in the canard module -- tube volume less the servos, printed bay, shafts and
-# bearings. An estimate; it only has to be good enough to size a vent convention oversizes.
-CANARD_MODULE_FREE_VOLUME = 570e-6  # m^3
+# bearings. Lives in design/venting.py now; it had drifted into two scripts as two copies of
+# the same guess.
+CANARD_MODULE_FREE_VOLUME = venting.CANARD_MODULE_FREE_VOLUME
 # Roll control needs far less deflection than pitch/yaw, because roll inertia is tiny --
 # and D8 found that it is also what keeps the rate gyro inside its range, so both limits now
 # live in design/configure.py rather than here. See design/estimation.py.
@@ -370,6 +371,27 @@ def main() -> None:
     print(f"  lag model asks for  {venting.port_area_for_lag(nav_free, 285.0, 177.0) * 1e6:.2f} mm2 "
           f"against the {nav_bay.area * 1e6:.1f} mm2 convention drills. Lag does not size these holes")
     print(f"  venting check       {'OK' if vchk.ok else 'VIOLATIONS: ' + '; '.join(vchk.violations)}")
+
+    rule("ACCESS BULKHEADS -- the two seal.py never sized")
+    abpt = access_bulkhead.pass_through_from_evaluation(ev)
+    npl = access_bulkhead.nose_plate_from_evaluation(ev)
+    ptchk = access_bulkhead.check_access_bulkhead(abpt)
+    nplchk = access_bulkhead.check_access_bulkhead(npl)
+    print(f"  pass-through plate  G-10 {abpt.bulkhead.thickness * 1000:.1f} mm, "
+          f"{abpt.bulkhead.mass * 1e3:.1f} g; {abpt.plate_margin:.0f}x plate, "
+          f"{abpt.hole_margin:.0f}x feed-through -- governed by {abpt.governed_by}")
+    print(f"  nose aft face       G-10 {npl.bulkhead.thickness * 1000:.1f} mm, "
+          f"{npl.bulkhead.mass * 1e3:.1f} g; {npl.plate_margin:.0f}x plate, "
+          f"{npl.point_margin:.0f}x payload mount ({access_bulkhead.NOSE_PAYLOAD_DESIGN_MASS * 1000:.0f} g "
+          f"provision at {ev.flight.max_acceleration_g:.1f} g)")
+    print(f"  neither is stress-governed -- both clear the thinnest stocked sheet by 25x+.")
+    print(f"  the nose cavity's OWN venting has never been modelled anywhere in this project;")
+    print(f"  its plate is checked against the fully-sealed trapped-differential case until")
+    print(f"  that gap is closed.")
+    print(f"  pass-through check  {'OK' if ptchk.ok else 'VIOLATIONS: ' + '; '.join(ptchk.violations)}")
+    print(f"  nose plate check    {'OK' if nplchk.ok else 'VIOLATIONS: ' + '; '.join(nplchk.violations)}")
+    print("     Full argument: python scripts/access_bulkhead_report.py")
+
 
     # The module vent had a size and a surface but no STATION until Aug 2026, which is not
     # something a hole can be drawn from -- see venting.MODULE_VENT_STATION. Guarded here
