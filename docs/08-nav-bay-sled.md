@@ -286,7 +286,21 @@ does not go in at all.
 - **Connector overhang and cable bend radius.** An envelope is a rectangle and a plugged
   connector is not. This is the next thing that will bite, and it eats directly into the
   1.0 mm of placement clearance and the 3.0 mm of headroom.
-- **The nav bay's static ports still have no station and no clocking anywhere in this
-  repo.** `design/venting.py` flags this itself: it sizes 3 × ⌀3.2 mm and says nothing about
-  where they go. That is the next open CAD item in this bay, and it needs a decision rather
-  than a script.
+- ~~**The nav bay's static ports still have no station and no clocking anywhere in this
+  repo.**~~ **CLOSED, Sep 2026 — docs/01 correction 42.** 3 × ⌀3.2 mm at station 420.82 mm,
+  clocked 15/135/255°, 4.60 mm deep, in the CAD and interference-checked. `design/ports.py`,
+  `scripts/port_report.py`.
+
+  This paragraph said it "needs a decision rather than a script". **It needed a script**, and
+  the reason is worth keeping: the first question a hole asks is not where the pressure is
+  right, it is **what is behind the wall** — and the answer here was that there is no bare
+  wall in this bay at all. Two 1.0 cal joints do not fit in a 1.60 cal tube, and nothing
+  could see it because `design/joints.py` described a joint only by the half that protrudes.
+  Getting to three holes went through a new field on `Joint`, a new check, and 9.4 mm of the
+  recovery bay's packing margin.
+
+  It also validated this document's own sled model against CAD for the first time in a way
+  nothing else had: the ports' inner mouths measure **9.29 / 11.02 / 7.89 mm** to the nearest
+  sled solid in Fusion, against the same three numbers to the hundredth from
+  `sled.solids_at()` — which is the function that had to exist before anyone could ask
+  whether air can actually reach a hole from inside.

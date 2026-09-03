@@ -27,8 +27,22 @@ the plate itself sits 2.4 mm into the canard module, and reading it the other wa
 the sled 12 mm too far aft and straight through the plate.
 
 Plate width runs along X, thickness along Y, length along Z. Components mount on the two
-+/-Y faces. The rods run along Z at X = +/- rod_pitch/2, Y = 0 -- outboard of the plate in
-the corner crescents. See `design/sled.py` for why they are outboard and not through it.
++/-Y faces. The rods run along Z at X = 0, Y = +/- ROD_RADIUS -- PERPENDICULAR to the plate,
+above and below it, and through the two end BRACKETS rather than through the plate. That
+sentence read "at X = +/- rod_pitch/2, Y = 0 -- outboard of the plate in the corner
+crescents" until Sep 2026, which describes the FIRST attempt at the mount, the one
+`design/sled.py`'s ROD_RADIUS comment records as wrong: 47.31 mm3 of plate lay inside each
+rod. The generator itself was corrected and this paragraph was not.
+
+WHAT ELSE IS IN THIS COMPONENT, and why. Besides the sled it draws the nav bay tube, the
+nose shoulder, the nose plate, and -- since Sep 2026 -- the AFT COUPLER and the three STATIC
+PORTS drilled through both it and the tube (`design/ports.py`, docs/01 correction 42). The
+coupler is here because the ports pass through it: there is no bare wall anywhere in this
+bay, so a port drawn through the tube alone would be 2.30 mm deep when the real hole is
+4.60. Only the coupler's ANCHORED half is drawn, Z -47.64 -> 0.00. Its protruding half is
+the open item -- `joints.check_joints()` says the canard module cannot hold the 1.0 cal it
+is charged -- and drawing a length the check rejects would assert something this file does
+not know.
 
 GEOMETRY IS BUILT AS TEMPORARY BREP BODIES INJECTED THROUGH A BaseFeature, not as sketches
 and extrudes. That is the pattern that was proven to work in this document last session
@@ -45,7 +59,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import math
 
-from design import joints, sled
+from design import joints, ports, sled
 from design.configure import baseline, evaluate
 
 MM = 1000.0
@@ -53,6 +67,34 @@ OUT = Path(__file__).resolve().parents[1] / "out" / "make_sled_fusion_generated.
 
 COMPONENT = "NavBay"
 NOSE_PLATE_THICKNESS_MM = 3.2   # design/access_bulkhead.MODULE_INTERFACE_THICKNESS_FLOOR
+
+# HOW MUCH A VOLUME CHECK ON A RADIALLY-DRILLED SHELL IS ACTUALLY WORTH, measured in Fusion
+# rather than assumed. Every other body in this file is verified to 0.01 mm3 and every one
+# of them passes: a plain annulus and a flat plate with eleven holes both come back exact to
+# five decimals. A RADIAL hole through a CURVED wall does not, and the reason it does not is
+# worth keeping.
+#
+# Fusion has two routes to the same number and they must agree exactly: the material a drill
+# removes is (body - cut body), and it is also (body INTERSECT drill). Measured on this
+# vehicle's own port, the same hole, six times:
+#
+#     clocking      body - cut      body INT drill      analytic
+#       15 deg      +0.037           -0.017             18.50166
+#      135 deg      +0.000           +0.001             18.50166
+#      255 deg      +0.048           +0.000             18.50166
+#
+# The analytic figure is right -- design.ports.drilled_volume() agrees with a Monte Carlo
+# integration to 0.002 mm3, and at 135 deg BOTH Fusion routes land on it to five decimals.
+# What moves is Fusion's own integration, and it moves WITH THE CLOCKING: a hole on a 45 deg
+# diagonal is exact and one at 15 deg is not. Cutting three holes into one body compounds it
+# further -- the whole tube came back 0.12 mm3 light and the coupler 0.36 mm3.
+#
+# So the volume check on these two bodies is loosened to 0.15 mm3 per port and the REAL check
+# on the ports is the face check in verify(): count the cylindrical faces at the port radius
+# and read their axes back. That is exact, and it tests what actually matters -- right
+# number, right size, right clocking -- which a volume never did. A tolerance is not a
+# measurement; the face count is.
+PORT_VOLUME_TOLERANCE_PER_PORT = 0.15   # mm3
 ROD_COUNT_TXT = f"{sled.ROD_COUNT} x M{sled.ROD_DIAMETER * MM:.0f} rods"
 
 
@@ -73,8 +115,25 @@ def geometry():
     return g, bay, z_fwd, z_aft
 
 
+def joint_geometry():
+    """The two joints the nav bay tube is sleeved by, and the port ring drilled through one.
+
+    Read from `design/joints.py` and `design/ports.py` rather than from `bay.narrow_span`.
+    That distinction is not cosmetic: since `anchor` arrived, `narrow_span` is the SUM of both
+    halves -- 127.04 mm for this bay -- and this file used it to draw the nose shoulder. It
+    would have drawn a 127 mm shoulder in a 127 mm bay.
+    """
+    ev = evaluate(baseline())
+    wall = ev.params.wall_thickness
+    js = joints.for_rocket(ev.rocket, wall)
+    nose_joint = next(j for j in js if j.aft_bay == "nav bay")
+    aft_joint = next(j for j in js if j.forward_bay == "nav bay")
+    return ev, wall, nose_joint, aft_joint, ports.place_ports(ev.rocket, wall)
+
+
 def emit() -> str:
     g, bay, z_fwd, z_aft = geometry()
+    ev, wall, nose_joint, aft_joint, placement = joint_geometry()
     chk = sled.check_sled(g)
     if not chk.ok:
         raise SystemExit(
@@ -108,14 +167,44 @@ def emit() -> str:
         boxes.append((pl.name, cx, cy, cz, pl.width * MM, pl.height * MM, pl.length * MM))
 
     od = bay.full_bore * MM + 2.0 * ev_wall() * MM
+    # Stations are converted to this file's frame the same way everywhere: Z = 0 is the canard
+    # module's forward face, which is the aft end of the nav bay tube.
+    module_face = ev.rocket.nose.length + bay.tube_length
+    z_of = lambda station: (station - module_face) * MM
+
+    coupler_z0 = z_of(module_face - aft_joint.anchor)
     tubes = [
         ("nav bay tube", od / 2.0, bay.full_bore * MM / 2.0,
          z_fwd, z_fwd + bay.tube_length * MM),
-        ("nose shoulder", bay.full_bore * MM / 2.0, bay.narrow_bore * MM / 2.0,
-         z_fwd, z_fwd + bay.narrow_span * MM),
+        # From the NOSE JOINT's engagement, not from bay.narrow_span -- see joint_geometry().
+        ("nose shoulder", bay.full_bore * MM / 2.0, aft_joint.bore * MM / 2.0,
+         z_fwd, z_fwd + nose_joint.engagement * MM),
+        # The aft coupler's ANCHORED half only. Its protruding half is an open item.
+        ("aft coupler", bay.full_bore * MM / 2.0, aft_joint.bore * MM / 2.0,
+         coupler_z0, 0.0),
         ("nose plate", bay.full_bore * MM / 2.0, 0.0,
          z_fwd - NOSE_PLATE_THICKNESS_MM, z_fwd),
     ]
+
+    # The three static ports, drilled radially through the tube AND the coupler behind it.
+    port_z = z_of(placement.station)
+    port_rows = [(f"static port {theta:.0f} deg", theta, port_z)
+                 for theta in placement.clocking_deg]
+    port_r = placement.diameter * MM / 2.0
+    tube_port_volume = ports.drilled_volume(
+        placement.diameter / 2.0, bay.full_bore / 2.0, bay.full_bore / 2.0 + ev_wall())
+    coupler_port_volume = ports.drilled_volume(
+        placement.diameter / 2.0, aft_joint.bore / 2.0, bay.full_bore / 2.0)
+    n_ports = len(port_rows)
+
+    def annulus(r_out_mm, r_in_mm, length_mm):
+        return math.pi * (r_out_mm**2 - r_in_mm**2) * length_mm
+
+    tube_volume = (annulus(od / 2.0, bay.full_bore * MM / 2.0, bay.tube_length * MM)
+                   - n_ports * tube_port_volume * 1e9)
+    coupler_volume = (annulus(bay.full_bore * MM / 2.0, aft_joint.bore * MM / 2.0,
+                              aft_joint.anchor * MM)
+                      - n_ports * coupler_port_volume * 1e9)
 
     return f'''"""GENERATED by scripts/make_sled_fusion.py -- do not edit this file.
 
@@ -125,7 +214,11 @@ Plate   {g.plate_length * MM:.2f} x {w:.2f} x {t:.2f} mm G-10, {len(g.mount_hole
 Bracket 2 off, R {g.bracket_radius * MM:.2f} cropped to +/-{sled.BRACKET_HALF_WIDTH * MM:.1f} mm in X, {bt:.1f} mm thick
 Rods    {sled.ROD_COUNT} x M{g.rod_diameter * MM:.0f} at (0, +/-{g.rod_radius * MM:.2f}) running Z {z_fwd:.2f} -> {z_fwd + g.rod_length * MM:.2f}
 Stack   {len(g.placements)} components at {g.clearance * MM:.1f} mm clearance, {len(standoffs)} standoffs
+Joints  nose shoulder Z {z_fwd:.2f} -> {z_fwd + nose_joint.engagement * MM:.2f}, aft coupler Z {coupler_z0:.2f} -> 0.00 (anchored half only)
+Ports   {n_ports} x dia {placement.diameter * MM:.1f} mm at Z {port_z:.2f}, clocked {"/".join(f"{c:.0f}" for c in placement.clocking_deg)} deg, {placement.depth * MM:.2f} mm deep
 """
+
+import math
 
 import adsk.core
 import adsk.fusion
@@ -148,6 +241,18 @@ ROD_R = {g.rod_diameter * MM / 2.0:.4f}
 ROD_HOLE_R = {g.rod_hole_diameter * MM / 2.0:.4f}
 ROD_Z0 = {z_fwd:.4f}
 ROD_Z1 = {z_fwd + g.rod_length * MM:.4f}
+
+PORT_R = {port_r:.4f}
+PORT_BORE_R = {aft_joint.bore * MM / 2.0:.4f}
+PORT_OUTER_R = {od / 2.0:.4f}
+PORTS = [
+{chr(10).join(f"        ({n!r}, {th:.4f}, {z:.4f})," for (n, th, z) in port_rows).rstrip(",")}
+]
+
+NAV_TUBE_VOLUME_MM3 = {tube_volume:.4f}
+COUPLER_VOLUME_MM3 = {coupler_volume:.4f}
+PORT_BODIES = ("nav bay tube", "aft coupler")
+PORT_VOLUME_TOLERANCE = {n_ports * PORT_VOLUME_TOLERANCE_PER_PORT:.4f}
 
 PLATE_VOLUME_MM3 = {g.plate_volume * 1e9:.4f}
 BRACKET_VOLUME_MM3 = {g.bracket_area * g.bracket_thickness * 1e9:.4f}
@@ -185,6 +290,22 @@ def _cyl(tbm, x, y, z0, z1, r):
     return tbm.createCylinderOrCone(
         adsk.core.Point3D.create(x / 10.0, y / 10.0, z0 / 10.0), r / 10.0,
         adsk.core.Point3D.create(x / 10.0, y / 10.0, z1 / 10.0), r / 10.0)
+
+
+def _radial_drill(tbm, theta_deg, z, r0, r1, r):
+    """A drill running OUTWARD along a radius at `theta_deg`, from radius r0 to r1.
+
+    The three static ports are the only radial features in this component, and a hole down a
+    radius is not a hole down Z -- _cyl cannot make one. It runs from inboard of the coupler
+    bore to outboard of the tube OD so that one tool cuts both walls in one pass, which is
+    also how it is actually drilled: after bonding, from outside, in one go.
+    """
+    a = math.radians(theta_deg)
+    return tbm.createCylinderOrCone(
+        adsk.core.Point3D.create(r0 * math.cos(a) / 10.0, r0 * math.sin(a) / 10.0, z / 10.0),
+        r / 10.0,
+        adsk.core.Point3D.create(r1 * math.cos(a) / 10.0, r1 * math.sin(a) / 10.0, z / 10.0),
+        r / 10.0)
 
 
 def run(_context: str):
@@ -260,6 +381,17 @@ def run(_context: str):
         outer = _cyl(tbm, 0.0, 0.0, z0, z1, r_out)
         if r_in > 0.0:
             cut(outer, _cyl(tbm, 0.0, 0.0, z0 - 1.0, z1 + 1.0, r_in), name)
+        # The static ports go through the airframe tube AND the coupler bonded behind it --
+        # one drill, both walls, because after bonding they ARE one wall. Any other body in
+        # TUBES is either forward of the ring or has no material at that radius, so the same
+        # loop is safe to run over all of them.
+        if name in ("nav bay tube", "aft coupler"):
+            for (pname, theta, pz) in PORTS:
+                if not (min(z0, z1) < pz < max(z0, z1)):
+                    continue
+                cut(outer, _radial_drill(tbm, theta, pz, PORT_BORE_R - 2.0,
+                                         PORT_OUTER_R + 2.0, PORT_R),
+                    "%s in %s" % (pname, name))
         made.append((name, outer))
 
     bf = comp.features.baseFeatures.add()
@@ -286,20 +418,68 @@ def verify(comp):
     for b in comp.bRepBodies:
         got[b.name] = b.getPhysicalProperties(acc).volume * 1e3
 
+    # The tube and the coupler carry the three static ports, and their expected volumes have
+    # the drilled material taken off with design.ports.drilled_volume() -- the exact figure
+    # for a radial hole through a curved wall, not pi r^2 t, which is 0.0040 mm3 light per
+    # hole and would read as a real disagreement at four decimals.
     want = {{"sled plate": PLATE_VOLUME_MM3,
             "end bracket fwd": BRACKET_VOLUME_MM3,
             "end bracket aft": BRACKET_VOLUME_MM3,
-            "rod +Y": ROD_VOLUME_MM3, "rod -Y": ROD_VOLUME_MM3}}
+            "rod +Y": ROD_VOLUME_MM3, "rod -Y": ROD_VOLUME_MM3,
+            "nav bay tube": NAV_TUBE_VOLUME_MM3,
+            "aft coupler": COUPLER_VOLUME_MM3}}
 
     bad = []
     for name, wv in want.items():
         if name not in got:
             bad.append("%s is missing" % name)
             continue
+        # 0.01 mm3 everywhere except the two bodies carrying radial ports, where Fusion's own
+        # volume is only good to about 0.05 mm3 per hole and gets worse as they are cut in
+        # sequence. See PORT_VOLUME_TOLERANCE_PER_PORT in the generator: the number is
+        # measured, not chosen, and the ports themselves are checked by FACE below.
+        tol = PORT_VOLUME_TOLERANCE if name in PORT_BODIES else 0.01
         d = got[name] - wv
-        print("  %-20s %12.4f mm3  want %12.4f  delta %+9.4f" % (name, got[name], wv, d))
-        if abs(d) > 0.01:
+        print("  %-20s %12.4f mm3  want %12.4f  delta %+9.4f  (tol %.2f)"
+              % (name, got[name], wv, d, tol))
+        if abs(d) > tol:
             bad.append("%s is %+.4f mm3 out" % (name, d))
+
+    # --- THE PORTS, CHECKED BY FACE RATHER THAN BY VOLUME ---
+    # A volume says the right amount of material went missing. This says the right holes are
+    # in the right places at the right size, which is the thing that was actually asked for,
+    # and it is exact where the volume is not.
+    for name in PORT_BODIES:
+        body = None
+        for b in comp.bRepBodies:
+            if b.name == name:
+                body = b
+        if body is None:
+            bad.append("%s is missing, so its ports cannot be checked" % name)
+            continue
+        found = []
+        for f in body.faces:
+            g = f.geometry
+            if not g.objectType.endswith("Cylinder"):
+                continue
+            if abs(g.radius * 10.0 - PORT_R) > 1e-6:
+                continue
+            ax = g.axis
+            if abs(ax.z) > 1e-9:          # a port axis is radial, so it has no Z component
+                continue
+            found.append(math.degrees(math.atan2(ax.y, ax.x)) % 180.0)
+        want_clock = sorted(th % 180.0 for (_n, th, _z) in PORTS)
+        print("  %-20s %d port faces at dia %.1f, axes %s deg (want %s)"
+              % (name, len(found), PORT_R * 2.0,
+                 ["%.2f" % v for v in sorted(found)], ["%.2f" % v for v in want_clock]))
+        if len(found) != len(PORTS):
+            bad.append("%s has %d port faces, wanted %d"
+                       % (name, len(found), len(PORTS)))
+        else:
+            for got_th, want_th in zip(sorted(found), want_clock):
+                if abs(got_th - want_th) > 1e-6:
+                    bad.append("%s: a port is clocked %.4f deg, wanted %.4f"
+                               % (name, got_th, want_th))
 
     STRUCTURE = ("nav bay tube", "nose shoulder", "nose plate")
     worst, who = 0.0, ""

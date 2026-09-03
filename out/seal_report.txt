@@ -191,9 +191,9 @@ WHAT THE PACKING NOW COSTS
     main                    859 cm3 -> 229.5 mm of tube
     drogue                  336 cm3 ->  89.7 mm of tube
   required length         330.0 mm (4.16 cal)
-  available length        347.8 mm (4.38 cal)
-  margin                  +17.8 mm
-  fill fraction              78 % of geometric volume  (limit 85 %)
+  available length        338.4 mm (4.26 cal)
+  margin                   +8.4 mm
+  fill fraction              80 % of geometric volume  (limit 85 %)
   NOTE: canopies use vendor pack volumes; still estimated from bulk density: main harness, main protector, links/swivel, drogue harness, drogue protector, links/swivel
 
 
@@ -223,5 +223,5 @@ WHAT THE PACKING NOW COSTS
   1/0.85 and manufacture a shortfall, which is precisely correction 5.
 
   Margin: +13.0 mm before any of this was counted, +0.1 mm once the coupler bore
-  and the rigid hardware went in, and +17.8 mm now the harness is sized and the
+  and the rigid hardware went in, and +8.4 mm now the harness is sized and the
   internal bulkhead is the measured 10.8 mm stack rather than a 12.0 mm allowance.

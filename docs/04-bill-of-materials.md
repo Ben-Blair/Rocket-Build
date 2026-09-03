@@ -231,12 +231,26 @@ Two more things about this bay:
 
 - **The nose shoulder is settled** (docs/01 correction 31). A shoulder is a hollow tube and
   its bore is usable, so it costs *diameter* — 74.8 → 70.2 mm over its 79 mm — and not
-  length. The sled runs up inside it. The bay gets 115 mm of usable length at 70.2 mm bore,
-  and the shortfall is **9 mm**. `design/joints.py` models all four joints.
+  length. The sled runs up inside it, and gets all **115 mm** of usable length at 70.2 mm
+  bore. `design/joints.py` models all four joints. *(This bullet said "and the shortfall is
+  9 mm" until Sep 2026, three paragraphs under the same section's own **+4.6 mm FITS** —
+  the third copy of that stale figure, and the one correction 41 missed while fixing the
+  other two.)* Since correction 42 the bore is narrowed over the **whole 127 mm**, not just
+  the shoulder's 79: the aft coupler is bonded into the remaining 47.64 mm, which is where
+  the static ports are drilled.
 - **The firing circuits leave this bay going aft**, cross the canard module, and cross the
   aft gas seal, because there is no room for an av-bay next to the charges. See docs/05.
-- **The static ports go here and only here**, 3 × ⌀3.2 mm. The canard module vents through
-  its own wall so that it is *not* part of this bay's sensed volume — docs/01 correction 28.
+- **The static ports go here and only here**, 3 × ⌀3.2 mm — and they are now *placed*:
+  **station 420.82 mm from the nose tip, clocked 15/135/255°, 4.60 mm deep**, drilled after
+  bonding through the airframe tube **and the aft coupler behind it** (docs/01 correction 42,
+  `design/ports.py`). That is the only drillable wall in this bay: the nose shoulder occupies
+  the forward caliber and its joint comes apart, so a hole there would have to re-align on
+  every assembly. The canard module vents through its own wall so that it is *not* part of
+  this bay's sensed volume — docs/01 correction 28.
+- **The aft coupler is 0.600 cal of bond, not 1.0**, because that is all the nose shoulder
+  leaves in a 1.60 cal tube. Below convention, and **nothing in this project sizes a coupler
+  in bending**, so it is an open item rather than a checked one. Its retaining screws are not
+  placed and will want the same 47.64 mm band the ports are in.
 
 ## 6. Recovery
 
@@ -260,7 +274,7 @@ Sized Aug 2026; `design/seal.py`, argument in `out/seal_report.txt`, docs/05.
 | Charge well + 2-pole terminal block | Bulkhead-mount, aft face | 2 | — | ~$10 | in `ejection_hardware_charges` |
 | Shear pins | **3 × 2-56 nylon** per separation joint | pack | — | ~$6 | the intended fuse; buy spares, they are consumed |
 | High-temp RTV, potting | 315 °C service, **forward face only** | 1 | — | ~$10 | |
-| Wiring conduit | ⌀5 mm thin-wall, ~240 mm, drogue circuit through the main compartment | 1 | 0.010 kg | ~$5 | costs 1.2 mm of the bay's 13.0 mm margin |
+| Wiring conduit | ⌀5 mm thin-wall, ~240 mm, drogue circuit through the main compartment | 1 | 0.010 kg | ~$5 | costs 1.2 mm of the bay's margin, which is **+8.4 mm** after docs/01 correction 42 |
 | Black powder | **1.17 g** per main charge, sized at a 2.0× separation factor | — | — | ~$20 | **ground test twice; the calculation is not the arbiter** |
 
 Descent 100 s, landing 5.0 m/s at 50 ft·lbf, ~0.93 km walk in a 15 mph wind. Ground-test

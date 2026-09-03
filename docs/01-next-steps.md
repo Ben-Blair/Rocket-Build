@@ -106,8 +106,9 @@ Read this first if you are picking the project back up.
   `tube_section.py` has wanted since it was written. **A coupler is a tube and its bore is
   usable**, so it costs local diameter and not bay length; only bulkheads cost length. That
   settled the nose shoulder, and it also took the recovery bay from +6.8 mm to +0.1 mm.
-- **The recovery bay margin is fixed, and the harness is why** (correction 33). It is
-  **+17.8 mm** now, and the fix was not to shave anything: **nothing in this project had
+- **The recovery bay margin is fixed, and the harness is why** (correction 33). It went to
+  **+17.8 mm**, and is **+8.4 mm** now that correction 42 made the joints pay for both of
+  their halves. The fix was not to shave anything: **nothing in this project had
   ever sized the harness.** Its volume came from a budget line nobody had checked, divided
   by an assumed bulk density; its strength came from nowhere. Sized against the opening
   shock it actually carries, it is **3/4" tubular nylon at 4.2×** rather than 1" at 6.7×.
@@ -264,6 +265,23 @@ Read this first if you are picking the project back up.
   example at a sled width the model never produces, and `docs/04` section 5 still said
   9 mm short. Next in this bay: the nav bay's static ports still have **no station and no
   clocking** anywhere in the repo.
+- **The nav bay's static ports are placed, and placing them found that the nav bay has no
+  bare wall** (correction 42). `design/ports.py`, `scripts/port_report.py`, verdict in
+  `baseline.py`, and it is built and interference-checked in Fusion. **3 × ⌀3.2 mm at
+  station 420.82 mm, clocked 15/135/255°, 4.60 mm deep**, through the airframe tube *and
+  the bonded aft coupler together*, because that band is the only drillable wall
+  there is: the nose shoulder takes the forward caliber and that joint comes apart. The cause
+  is that **`joints.py` described a joint only by the half that PROTRUDES**, so nothing could
+  ask whether a bay had room for the anchored half — and **two 1.0 cal joints do not fit in a
+  1.60 cal tube.** `anchor` is a field now and `check_joints()` is the check; the nav bay is
+  exactly full, and **the canard module fails it by 15.88 mm and is left open.** One number
+  moved elsewhere: the recovery bay's packing margin **+17.8 → +8.4 mm**, because
+  `bay_budget` was taking the `max` of a bay's two narrowed spans instead of their sum. Four
+  findings, and the two worth carrying are that **neither conventional placement rule can be
+  met and it costs about a metre** (the error is only ever read where q is small), and that
+  **the port-count argument came out backwards from the first guess** — four ports is the
+  more accurate ring and three is the forgiving one, because a 4-port ring's clocking is
+  load-bearing against a four-canard vehicle's own field and a 3-port ring's is not.
 - **Step 4 is next in the plan**, and D8 has settled what it is built from. What is left is
   firmware: the filter, the HIL rig, the controller and the safety logic.
 
@@ -288,7 +306,7 @@ these, because they moved once already when the altimeter went into the budget
 on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
 so instead of hiding it.
 
-Forty-one corrections are worth knowing about — 38's, 40's and 41's own numbered entries are
+Forty-two corrections are worth knowing about — 38's, 40's and 41's own numbered entries are
 still only the bullets above. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
@@ -937,6 +955,11 @@ that silently recurs:
    full-bore cylinder of the same volume — 357.3 → **347.8 mm** — and the margin goes
    **+6.8 → +0.1 mm.** That is not a pass, it is a coincidence. The sensitivities:
 
+   *(347.8 mm was itself too generous, and correction 42 says why: this bay is sleeved at
+   BOTH ends and `bay_budget` was taking the `max` of its two narrowed spans rather than
+   their sum, because until `anchor` existed at most one of them was ever non-zero. It is
+   338.4 mm now.)*
+
    | change | margin moves |
    |---|---|
    | fill limit 0.85 → 0.87 | +7.7 mm |
@@ -1016,7 +1039,8 @@ that silently recurs:
    half the rated strength; without that factor the answer is two sizes smaller and wrong.
 
    2 × 3.40 m of 3/4" is **136 g against the 170 g the budget assumed**, and the bay goes
-   **+0.1 → +17.8 mm**. `mass.py` now carries 0.186 kg as a *result*, and `evaluate()`
+   **+0.1 → +17.8 mm** (and to **+8.4 mm** at correction 42, which is still the harness's
+   margin and not a new problem). `mass.py` now carries 0.186 kg as a *result*, and `evaluate()`
    re-derives it every run and warns if the constant drifts from the sized part — because
    the packing check and the mass budget reading different numbers is how this started.
 
@@ -1250,6 +1274,145 @@ that silently recurs:
    had ever turned it.** The one check that finds this class of defect is the one that
    makes the thing do its job: drive the mate and read back what moved, which is now what
    `--verify` does and what no amount of tree-reading would have shown.
+
+42. **The nav bay's static ports could not be placed until something else was found, and
+   what was found is that the nav bay has no bare wall.** Three ⌀3.2 mm holes were the last
+   open CAD item in this bay, and `docs/08` closed with the note that they *"need a decision
+   rather than a script"*. They needed a script, because the first question a hole asks is
+   not "where is the pressure right" — it is **what is behind the wall**.
+
+   | | |
+   |---|---|
+   | nav bay tube | 127.04 mm, 1.60 cal |
+   | nose shoulder engaged into it | 79.40 mm, 1.00 cal |
+   | left for the aft coupler's bonded half | **47.64 mm, 0.600 cal** |
+   | what the same 1.0 cal convention wants | 79.40 mm — **31.76 mm short** |
+
+   **Two 1.0 cal joints do not fit in a 1.6 cal bay.** Nothing had ever said so, and the
+   reason is structural rather than a slip: `design/joints.py` described a joint only by the
+   half that PROTRUDES — `engagement` and `into` — because the question it was written to
+   settle (correction 31) was whether an inserted tube costs the bay it protrudes into any
+   length. It does not, and that answer still stands. But every coupler also has an
+   **anchored** half bonded into the other tube, and that half was not a field, so no check
+   could ask whether the bay had room for it. It is the fifth allowance in this project that
+   nobody turned into a part — except that this one was never even an allowance.
+
+   `anchor` is that field now, `check_joints()` is the check, and the nav bay's aft anchor is
+   **derived** from what the nose shoulder leaves rather than typed, so it cannot quietly
+   stop fitting if `nav_bay_cal` moves. `narrowed_span` now counts both halves, and
+   `bay_budget` **sums** them instead of taking their `max` — which was harmless only while
+   at most one half per bay was non-zero. That is the one number this correction moved
+   anywhere else: **the recovery bay's packing margin goes +17.8 → +8.4 mm.** It still fits,
+   and it was applied rather than merely reported, because leaving half of every joint out of
+   the bore model is the identical defect to leaving it out of the length model.
+
+   **The canard module fails the same check by 15.88 mm and is left failing on purpose.** Its
+   forward joint is worse than the check can even see: the protrusion has 50.73 mm before it
+   reaches the printed canard bay's forward face at module Z 53.129 (the potted pass-through
+   plate holds Z 0.000–2.400 ahead of it) against the 79.40 mm charged — a coupler driven
+   straight through the part that carries the hinge bearings. Resizing it is the module's aft
+   joint and the aft gas seal, which is not something the placement of three holes in the nav
+   bay is entitled to redesign. **OPEN.**
+
+   **THE PORTS: 3 × ⌀3.2 mm at station 420.82 mm, clocked 15/135/255°, 4.60 mm deep**,
+   through the airframe tube **and the bonded aft coupler together**. That band is the only
+   drillable wall in the bay — the forward band is the nose shoulder, and that joint comes
+   apart, so a hole through both walls would have to re-align on every assembly and the
+   annulus between them would be a leak path the altimeter senses through. Drilling through
+   tube + coupler is not a workaround: the classic high-power av-bay **is** a coupler with
+   its ports drilled through it, and it only looked like one here because this vehicle's
+   av-bay is a full-diameter tube, so the doubled wall arrives from the joint instead.
+   `design/ports.py`, `scripts/port_report.py`, verdict in `baseline.py`.
+
+   Three more things came out of it, and the first two are the ones worth carrying:
+
+   - **NEITHER CONVENTIONAL PLACEMENT RULE CAN BE MET, AND IT COSTS ABOUT A METRE.** "At
+     least 2 cal aft of the nose shoulder" and "at least 1 cal forward of the next
+     disturbance" are both unreachable — the nav bay is 1.6 cal long and it is sandwiched
+     between the nose junction and the canards, so the best available is **1.30 cal and
+     0.78 cal**. So the violation was priced instead of avoided. A validated slender-body
+     solution (it is run against the exact answer for a 4:1 prolate spheroid, where it
+     under-reads |Cp| by 17%, and that factor is applied) gives **Cp −0.0176** at the chosen
+     station. And the answer is that **it does not matter, because position error scales with
+     q and the altimeter is only ever read where q is small**: 28.7 m at max q, **0.69 m at
+     the main's 200 m under drogue**, zero at apogee. The station is therefore set by edge
+     distance in the bonded band, not by aerodynamics — the ring is centred, 23.82 mm each
+     side against a 4.80 mm floor, and moving it to the aft end would buy 0.12 m and spend
+     all of that. Same shape as `venting.py`'s own result on port SIZE.
+   - **THE PORT COUNT ARGUMENT CAME OUT BACKWARDS FROM THE FIRST GUESS, AND THE FIRST GUESS
+     IS THE INSTRUCTIVE PART.** A ring of N ports feeds one plenum, so the altimeter reads
+     the mean, and the mean over N equally spaced samples kills every circumferential
+     harmonic that is not a multiple of N. "Three and four are coprime, so a 3-port ring
+     averages the canards' 4-fold field and a 4-port ring cannot" is *true* and points at the
+     wrong answer, because **the 4-fold roll field is the small one**. A lateral command is
+     odd-harmonic and 170× larger, and four ports reject all of it while three pass its
+     k = 3. Worst case over every lateral command azimuth, at max q: one port 4.216 m,
+     **three ports 0.265 m at any phasing**, four ports 0.000 m on the canard planes or their
+     bisectors and 0.024 m anywhere else. **On the aerodynamics four ports is the better
+     ring.** What the sweep actually settles is the clocking: **a 4-port ring's clocking is
+     load-bearing and a 3-port ring's is not** — with a 4-fold field every port on a 4-port
+     ring sits at the same phase of it, so the ring does not average it, it reads it. Three
+     is the *forgiving* choice rather than the accurate one, which is a better reason for it
+     than the one `venting.py` had written down, and it is the same thing every other number
+     in that file is chosen for. **The count did not change.** With one port taped over —
+     the failure the 3.2 mm diameter is really sized against — three degrade to 2.315 m and
+     four to 1.522 m at max q, and both are under 0.07 m at deployment.
+   - **THE ORIFICE EQUATION IN `venting.py` IS THE WRONG MODEL, AND THE CONCLUSION IS
+     UNCHANGED.** `VentedBay.lag()` puts the bay behind a sharp-edged orifice at Cd 0.62,
+     which is an inertial model valid above about Re 10⁴. The real port runs at **Re = 67**
+     at the worst flow in the whole flight: laminar, linear in velocity, and 4.60 mm deep
+     through a 3.2 mm hole, which is a short pipe and not a thin plate. Both are computed —
+     0.153 Pa against 0.081 Pa, into a 35.1 Pa budget — so nothing moves, by a factor of 230.
+     Recorded because "the model is invalid and the conclusion is unchanged" is a result, and
+     because the next marginal vent needs to know which equation to reach for.
+
+   Also asked for the first time, and it is correction 10's shape applied to a void instead
+   of to a shaft: **can air actually reach the hole from inside.** An interference check
+   cannot answer it — a mouth 0.2 mm off the face of a board is not an interference, it is a
+   bay that does not breathe. `ports.port_mouth_clearances()` measures each port's inner
+   mouth against everything the sled puts in that cross-section: **7.89 mm at worst**, to the
+   −Y rod.
+
+   Four stale strings fixed on the way past, all in `venting.py`'s own header and all the
+   same cause — a free volume typed once while the component list under it kept moving:
+   303 cm³ → **359**, "4 holes of 0.65" → **0.71**, "eighteen times the area" → **fifteen**,
+   "three hundred times the margin" → **230**. None of them changed a conclusion, which is
+   exactly why nobody caught them.
+
+   **THE CAD IS BUILT AND VERIFIED.** `scripts/make_sled_fusion.py` now emits the aft coupler
+   and cuts the three ports through both walls; the Fusion document `CanardControlModule` holds
+   **15 bodies**, **Check interference reports none across all 105 pairs**, and the port mouths
+   measure **9.29 / 11.02 / 7.89 mm** to the nearest sled solid — the same three numbers, to
+   the hundredth, and the same three nearest parts, that `ports.port_mouth_clearances()`
+   predicts analytically. It also fixes a regression this same correction introduced: the
+   generator drew the nose shoulder from `bay.narrow_span`, which now sums both halves, so it
+   would have drawn a 127 mm shoulder in a 127 mm bay.
+
+   **AND BUILDING IT FOUND THAT THE CHECK ITSELF HAS A RESOLUTION NOBODY HAD MEASURED.** The
+   expected volumes come from `ports.drilled_volume()` — the exact figure for a radial hole
+   through a curved wall, +0.02% on πr²t, and 0.0040 mm³ per hole is forty times what the
+   four-decimal check resolves. It is right: it agrees with a Monte Carlo integration to
+   0.002 mm³. **Fusion's own volume of that hole is not, and it is wrong by clocking.** Asked
+   for the same removed material by the two routes that must agree exactly — (body − cut body)
+   and (body ∩ drill) — Fusion returns **+0.037/−0.017 mm³ at 15°, +0.000/+0.001 at 135°, and
+   +0.048/+0.000 at 255°**. A hole on a 45° diagonal is exact and one at 15° is not; cutting
+   three in sequence compounds it to 0.12 mm³ on the tube and 0.36 on the coupler. A flat
+   plate with eleven holes and a plain annulus both still come back exact to five decimals, so
+   this is specific to a *radial* hole through a *curved* wall. The volume tolerance on those
+   two bodies is loosened to a **measured** 0.15 mm³ per port, and **the ports are now checked
+   by FACE instead** — count the cylindrical faces at the port radius and read their axes back,
+   which is exact and which tests what was actually asked for (right number, right size, right
+   clocking) where a volume never did. Both bodies report 3 faces at ⌀3.2 on axes 15/75/135°
+   (255° is 75° mod 180). This project has been trusting four-decimal volume agreement since
+   correction 34; it is worth knowing where that stops working.
+
+   **STILL OPEN, stated rather than solved:** the aft coupler is 0.600 cal of bond against a
+   1.0 cal convention and **nothing in this project sizes a coupler in bending**; the same
+   joint's **retaining screws want the same 47.64 mm band the ports are in**, and no script
+   here has ever placed one; the canard module's 15.88 mm; the boundary layer, which is a
+   position error of the same order as the one that was modelled and the wrong sign to guess
+   at; and the ejection transient, which is the one flow case where this port really is
+   inertial.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —

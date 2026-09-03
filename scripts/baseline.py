@@ -13,11 +13,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design import (
-    access_bulkhead, aero, avionics, control, estimation, flutter, hinge, joints, seal,
-    sled, trajectory, tube_section, venting,
+    access_bulkhead, aero, avionics, control, estimation, flutter, hinge, joints, ports,
+    seal, sled, trajectory, tube_section, venting,
 )
 # Aliased because `bay` is a local in main() -- check_direct_drive's result. Same reason
 # design/configure.py imports mass as mass_mod.
+from design import atmosphere
 from design import bay as bay_mod
 from design.configure import (
     DEFLECTION_LIMIT_DEG, ROLL_COMMAND_CAP_DEG, baseline, build_vehicle, evaluate,
@@ -352,6 +353,17 @@ def main() -> None:
     print("  nose shoulder question -- see design/joints.py.")
     print("  For anything that PACKS the narrowed bore is a volume penalty, so the recovery")
     print("  bay is checked against its full-bore equivalent length, not its tube length.")
+    print()
+    print("  AND EVERY JOINT HAS AN ANCHORED HALF, which this model left out until Sep 2026.")
+    for cap in joints.tube_capacity(r, BASELINE.wall_thickness).values():
+        print(f"  {cap}")
+    jchk = joints.check_joints(r, BASELINE.wall_thickness)
+    print(f"  joint capacity      {'OK' if jchk.ok else 'VIOLATIONS: ' + '; '.join(jchk.violations)}")
+    print("  The nav bay is EXACTLY full -- two 1.0 cal joints in a 1.60 cal tube do not fit,")
+    print("  so its aft coupler gets the 0.600 cal that is left. The canard module is over by")
+    print("  15.88 mm and is OPEN: see docs/01 correction 42. Neither was visible while a")
+    print("  joint was described only by the half that protrudes.")
+
 
     rule("VENTING and the NAV BAY")
     nav = next(t for t in ev.rocket.tubes if t.name == "nav bay")
@@ -371,6 +383,41 @@ def main() -> None:
     print(f"  lag model asks for  {venting.port_area_for_lag(nav_free, 285.0, 177.0) * 1e6:.2f} mm2 "
           f"against the {nav_bay.area * 1e6:.1f} mm2 convention drills. Lag does not size these holes")
     print(f"  venting check       {'OK' if vchk.ok else 'VIOLATIONS: ' + '; '.join(vchk.violations)}")
+
+    rule("THE NAV BAY'S STATIC PORTS -- station and clocking, which nothing had")
+    pl = ports.place_ports(r, BASELINE.wall_thickness)
+    nav_ports = venting.VentedBay("nav bay", nav_free, len(pl.clocking_deg), pl.diameter)
+    sled_fwd, _ = sled.station_range(r, sled.sled_from_evaluation(ev))
+    bore_r = next(j for j in joints.for_rocket(r, BASELINE.wall_thickness)
+                  if j.forward_bay == "nav bay").bore / 2.0
+    mouth = min(c[0] for c in ports.port_mouth_clearances(
+        pl, sled.sled_from_evaluation(ev), sled_fwd, bore_r))
+    pchk = ports.check_ports(r, BASELINE.wall_thickness, pl, nav_ports, 285.0, 177.0,
+                             interior_clearance=mouth)
+    print(f"  placement           {pl}")
+    print(f"  band                {pl.band.name}, {pl.band.x0 * 1000:.2f} -> "
+          f"{pl.band.x1 * 1000:.2f} mm -- the ONLY drillable wall in this bay")
+    print(f"  edge distance       {pl.edge_distance * 1000:.2f} mm each side; inner mouth "
+          f"{mouth * 1000:.2f} mm clear of anything on the sled")
+    print(f"  conventions broken  {pl.cal_aft_of_shoulder:.2f} cal aft of the shoulder "
+          f"(rule: {ports.CONVENTIONAL_AFT_OF_SHOULDER_CAL:.1f}), "
+          f"{pl.cal_forward_of_canards:.2f} cal fwd of the canards "
+          f"(rule: {ports.CONVENTIONAL_FORWARD_OF_DISTURBANCE_CAL:.1f}) -- both UNREACHABLE")
+    # Both errors computed, never typed: |Cp| * q restated as metres of altitude. The
+    # descent case is the one that matters -- it is where the altimeter is actually READ.
+    boost_pt = max(f.points, key=lambda pt: pt.q)
+    _, _, rho_b, _ = atmosphere.properties(boost_pt.z)
+    _, _, rho_d, a_d = atmosphere.properties(200.0)
+    q_d = 0.5 * rho_d * 30.0**2
+    cp_b = ports.nose_position_error(r, pl.station, boost_pt.mach)
+    cp_d = ports.nose_position_error(r, pl.station, 30.0 / a_d)
+    print(f"  position error      Cp {cp_b:+.4f} from the nose: "
+          f"{abs(cp_b) * boost_pt.q / (rho_b * atmosphere.G0):.1f} m at max q, "
+          f"{abs(cp_d) * q_d / (rho_d * atmosphere.G0):.2f} m at the main's 200 m under")
+    print(f"                      drogue. It is only read where q is small, so the station is")
+    print(f"                      set by edge distance and not by aerodynamics.")
+    print(f"  port check          {'OK' if pchk.ok else 'VIOLATIONS: ' + '; '.join(pchk.violations)}")
+    print("     Full argument: python scripts/port_report.py")
 
     rule("ACCESS BULKHEADS -- the two seal.py never sized")
     abpt = access_bulkhead.pass_through_from_evaluation(ev)

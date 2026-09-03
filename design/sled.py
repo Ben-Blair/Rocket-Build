@@ -643,6 +643,70 @@ def sled_from_evaluation(ev, clearance: float = PLACEMENT_CLEARANCE,
     )
 
 
+def station_range(rocket, g: SledGeometry) -> tuple[float, float]:
+    """Where the sled ASSEMBLY sits in vehicle stations, m from the nose tip.
+
+    The aft limit is the nav bay's aft end less `joints.BULKHEAD_ALLOWANCE` -- the 12 mm the
+    pass-through plate is charged, even though the plate itself sits 2.4 mm INTO the canard
+    module -- and the forward end is that less `assembly_length`, which is plate plus both
+    brackets and not the plate alone.
+
+    LIVES HERE because it now has two callers. `scripts/make_sled_fusion.py` derived it and
+    `design/ports.py` needs the identical frame to ask whether a static port's inner mouth is
+    blocked by anything on the sled; two derivations of the same conversion is exactly the
+    drift `design/configure.py`'s docstring warns about, and reading it 12 mm the wrong way
+    would put the sled straight through the plate.
+    """
+    from . import joints as joints_mod
+
+    nav = next(t for t in rocket.tubes if t.name == "nav bay")
+    aft = rocket.nose.length + nav.length - joints_mod.BULKHEAD_ALLOWANCE
+    return aft - g.assembly_length, aft
+
+
+def solids_at(g: SledGeometry, station_forward: float, x: float
+              ) -> list[tuple[str, str, tuple]]:
+    """Everything the sled puts in the tube's cross-section at vehicle station `x`.
+
+    Returned as ("name", kind, params) with kind "rect" -- (x0, x1, y0, y1) in the sled's own
+    (X across the plate, Y normal to it) frame -- or "disc" -- (cx, cy, r). It exists so that
+    `design/ports.py` can ask the one question no check in this project had ever asked of a
+    hole: **can air actually get to it from the inside.** An unmodelled part cannot collide
+    with anything, and neither can it block anything.
+    """
+    out: list[tuple[str, str, tuple]] = []
+    half_w = g.plate_width / 2.0
+    half_t = g.plate_thickness / 2.0
+    sx = x - station_forward  # from the forward face of the forward bracket
+
+    # brackets, one at each end of the assembly
+    for label, z0 in (("fwd", 0.0), ("aft", g.assembly_length - g.bracket_thickness)):
+        if z0 <= sx <= z0 + g.bracket_thickness:
+            out.append((f"end bracket {label}", "rect",
+                        (-BRACKET_HALF_WIDTH, BRACKET_HALF_WIDTH,
+                         -g.bracket_radius, g.bracket_radius)))
+
+    if g.bracket_thickness <= sx <= g.bracket_thickness + g.plate_length:
+        out.append(("sled plate", "rect", (-half_w, half_w, -half_t, half_t)))
+
+    for sign in (1.0, -1.0):
+        out.append((f"rod {'+' if sign > 0 else '-'}Y", "disc",
+                    (0.0, sign * g.rod_radius, g.rod_diameter / 2.0)))
+
+    for pl in g.placements:
+        z0 = g.bracket_thickness + pl.x
+        if not (z0 <= sx <= z0 + pl.length):
+            continue
+        comp = next(c for c in g.components if c.name == pl.name)
+        standoff = 0.0 if comp.name in STRAPPED_DIRECTLY else STANDOFF_HEIGHT
+        sign = 1.0 if pl.face == 0 else -1.0
+        y0 = sign * (half_t + standoff)
+        y1 = sign * (half_t + standoff + pl.height)
+        out.append((pl.name, "rect",
+                    (-half_w + pl.y, -half_w + pl.y + pl.width, min(y0, y1), max(y0, y1))))
+    return out
+
+
 def hole_layout(g: SledGeometry) -> list[Hole]:
     """Everything cut out of the PLATE -- reuses `seal.Hole`, as `design/access_bulkhead.py`
     does, so a CAD script can build it off one shape.

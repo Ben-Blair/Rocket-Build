@@ -20,7 +20,7 @@ WHAT THE BAY GIVES THE SLED
   usable by the sled      115.04 mm
 
   full bore                74.80 mm
-  narrowed bore            70.20 mm over the forward 79.4 mm -- the nose shoulder
+  narrowed bore            70.20 mm over 127.0 mm -- 79.4 mm nose shoulder, 47.6 mm aft coupler bond
   what a SLED sees         70.20 mm, over its whole length, because it is one rigid plate
 
   The nose's own plate is charged to the NOSE, not to this bay -- joints.py puts

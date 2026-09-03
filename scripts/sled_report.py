@@ -91,8 +91,15 @@ def main() -> None:
     say(f"  usable by the sled    {bay.usable_length * MM:8.2f} mm")
     say()
     say(f"  full bore             {bay.full_bore * MM:8.2f} mm")
-    say(f"  narrowed bore         {bay.narrow_bore * MM:8.2f} mm over the forward"
-        f" {bay.narrow_span * MM:.1f} mm -- the nose shoulder")
+    # Both halves of both joints, since Sep 2026 -- and for this bay they tile the whole
+    # tube, which is docs/01 correction 42. Naming the parts rather than saying "the nose
+    # shoulder" matters here: the shoulder is only 79.4 of the 127.0.
+    js = joints.for_rocket(ev.rocket, ev.params.wall_thickness)
+    sleeves = ", ".join(
+        f"{j.narrowed_span('nav bay') * MM:.1f} mm {'nose shoulder' if j.aft_bay == 'nav bay' else 'aft coupler bond'}"
+        for j in js if j.narrowed_span("nav bay") > 0.0)
+    say(f"  narrowed bore         {bay.narrow_bore * MM:8.2f} mm over"
+        f" {bay.narrow_span * MM:.1f} mm -- {sleeves}")
     say(f"  what a SLED sees      {bay.min_bore * MM:8.2f} mm, over its whole length,"
         " because it is one rigid plate")
     say()

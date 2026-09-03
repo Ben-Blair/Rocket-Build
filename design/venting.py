@@ -36,10 +36,16 @@ not the ascent, it is the DESCENT, because a bay that lags on the way down fires
 below the 200 m it was set for, and there is no margin under 200 m. That is the failure this
 model was written to size against.
 
-**It does not bind, and by a factor of about 300.** The nav bay holds 303 cm3 of air and the
+**It does not bind, and by a factor of 230.** The nav bay holds 359 cm3 of air and the
 pressure changes at about 2 kPa/s at burnout; the lag budget below is met by 4 holes of
-0.65 mm, while convention on an airframe this size is 3 holes of 3.2 mm -- eighteen times
-the area, three hundred times the margin. Any drillable hole passes.
+0.71 mm, while convention on an airframe this size is 3 holes of 3.2 mm -- fifteen times
+the area, and a lag of 0.013 m against a 3.0 m budget. Any drillable hole passes.
+
+(303 cm3, "4 holes of 0.65", "eighteen times" and "three hundred times" stood here until
+Sep 2026 and were all stale by the same cause: the free volume was typed once and the
+component list under it kept moving. Every one of them is now read off
+`avionics.free_volume` and `port_area_for_lag` by `scripts/port_report.py`. None of them
+changed a conclusion, which is exactly why nobody caught them.)
 
 So the honest statement is that **the port size is set by convention and not by this model,
 and the model's job was to find that out**. This project counts a check that confirms as a
@@ -56,11 +62,34 @@ ceiling.
 
 WHAT THIS DOES NOT DO. It does not model the flow disturbance around the port, which is why
 the upper bound comes from convention rather than from theory. It does not model the
-transient of the ejection event. And it says nothing about where the NAV BAY's ports go
-beyond the ring rule below, because that placement is about the local pressure coefficient
-and this project has no panel-method model of its own airframe. The CANARD MODULE's vents
-are placed here -- see MODULE_VENT_STATION -- and they can be, precisely because that bay
-feeds no sensor and so no Cp argument is needed to put a hole in it.
+transient of the ejection event. The CANARD MODULE's vents are placed here -- see
+MODULE_VENT_STATION -- and they can be, precisely because that bay feeds no sensor and so no
+Cp argument is needed to put a hole in it.
+
+WHERE THE NAV BAY'S PORTS GO IS `design/ports.py` NOW (Sep 2026). This file used to say it
+"says nothing about where the NAV BAY's ports go beyond the ring rule below, because that
+placement is about the local pressure coefficient and this project has no panel-method model
+of its own airframe". The second half of that was the load-bearing part and it turned out to
+be a boundary drawn in the wrong place: the placement is barely about the pressure
+coefficient at all, and what it IS about -- what is bonded to the back of the wall -- had
+never been asked. `design/ports.py` places them, and three things it found bear on this file
+directly:
+
+  * THE ORIFICE EQUATION IN `VentedBay.lag()` BELOW IS THE WRONG MODEL. The port Reynolds
+    number at the worst flow in the flight is 67, not the 10^4 a sharp-edged orifice wants,
+    so the drop is laminar and linear in velocity rather than inertial and quadratic. Both
+    are computed in `ports.port_flow_regime()` -- 0.153 Pa against 0.081 Pa -- and both are
+    230x inside the lag budget, so nothing here moves. It is exactly what this file's own
+    header predicted would happen to any argument about port area, arrived at from a
+    direction the header did not anticipate.
+  * MIN_PORT_COUNT = 3 IS RIGHT, AND NOT FOR THE REASON WRITTEN BESIDE IT. Four ports is the
+    more accurate ring on this vehicle, not the sloppier one; what three buys is that its
+    rejection of the canards' own 4-fold field holds at EVERY clocking, where a 4-port ring
+    only rejects it on the field's nodes. Three is the forgiving choice. See ports.py
+    Finding 4 -- and note that the first guess there was the opposite and was wrong.
+  * THE PORT IS 4.60 mm DEEP, not 2.30. It passes through the airframe tube AND the aft
+    coupler bonded behind it, because `design/joints.py` now says there is no bare wall
+    anywhere in the nav bay.
 """
 
 from __future__ import annotations
@@ -73,6 +102,15 @@ from . import atmosphere
 # Discharge coefficient of a plain drilled hole in a thin wall. 0.6-0.65 is the standard
 # range for a sharp-edged orifice; 0.62 is taken. It is not worth arguing about -- the
 # answer goes as 1/Cd and every other input here is softer than that.
+#
+# AND THE REGIME IT ASSUMES IS NOT THE ONE THIS PORT IS IN. A discharge coefficient is an
+# INERTIAL model -- it wants Re above about 1e4 -- and `design/ports.py` measured the real
+# port at Re = 67 at the worst flow in the whole flight. The drop is laminar, so it goes
+# linearly with velocity rather than quadratically, and a 4.60 mm deep hole is a short pipe
+# rather than a thin plate. `lag()` below is left exactly as it stands, because the laminar
+# model gives 0.081 Pa against its 0.153 Pa and the budget is 35.1 Pa: the same conclusion by
+# a factor of 230. Reach for `ports.port_flow_regime()` before trusting `lag()` on a vent
+# that is genuinely marginal. This one is not, by two orders of magnitude.
 DISCHARGE_COEFFICIENT = 0.62
 
 # THE ERROR BUDGET. The bay may lag ambient by the pressure equivalent of this much altitude.
@@ -95,7 +133,17 @@ CONVENTIONAL_PORT_COUNT = 3
 
 # Ports go in a ring, not in a line, so that the bay reads an average and not one point of a
 # flow field that is asymmetric whenever the vehicle is at an angle of attack. Three is the
-# minimum that averages; four is easier to lay out on a 90 degree pattern.
+# minimum that averages.
+#
+# "Four is easier to lay out on a 90 degree pattern" used to be the rest of this comment, as
+# though four were the same choice made more conveniently. It is not the same choice.
+# `design/ports.py` Finding 4: a ring of N ports rejects every circumferential harmonic that
+# is not a multiple of N, this vehicle's four canards make a k = 4 field under roll command,
+# and a 4-PORT RING CANNOT AVERAGE IT -- every port sits at the same phase of it, so the ring
+# reads it rather than rejecting it, and is correct only where the ports land on its nodes.
+# Three rejects it at any clocking. Four is the more accurate ring on the larger (lateral,
+# k = 1) field and the fragile one on the smaller; three is the forgiving one. Both are far
+# inside anything that matters, which is why this constant did not move.
 MIN_PORT_COUNT = 3
 
 

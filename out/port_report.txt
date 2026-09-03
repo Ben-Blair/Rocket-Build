@@ -1,0 +1,168 @@
+
+============================================================================================
+WHAT IS BEHIND THE NAV BAY WALL -- the question that had to be answered first
+============================================================================================
+
+  A static port is a hole, and the first thing a hole needs is a wall with nothing
+  bonded to the back of it. The nav bay has none.
+
+  band                          station, mm       mm  walls  drillable
+  nose shoulder            317.60 ->  397.00    79.40      2  NO
+  aft coupler bond         397.00 ->  444.64    47.64      2  yes
+    nose shoulder: the nose joint COMES APART -- a hole through both walls would have to re-align on every assembly, and the annulus between them is a leak path
+
+  The bands TILE the tube. There is no bare wall anywhere in this bay, and nothing
+  had ever said so because design/joints.py described a joint only by the half that
+  protrudes. See its header, and docs/01 correction 42.
+
+============================================================================================
+JOINT CAPACITY -- the check that did not exist
+============================================================================================
+
+  nav bay           127.0 mm tube holds 127.04 mm of joint (nose / nav bay 79.40, nav bay / canard module 47.64) ->   +0.00 mm spare
+  canard module     142.9 mm tube holds 158.80 mm of joint (nav bay / canard module 79.40, canard module / recovery bay 79.40) ->  -15.88 mm spare
+  recovery bay      357.3 mm tube holds 158.80 mm of joint (canard module / recovery bay 79.40, recovery bay / booster 79.40) -> +198.50 mm spare
+  booster           416.3 mm tube holds  79.40 mm of joint (recovery bay / booster 79.40) -> +336.88 mm spare
+
+  VIOLATION  canard module: 158.80 mm of joint in a 142.92 mm tube -- over by 15.88 mm. Two solids cannot share the same millimetre of tube
+  note       nav bay is EXACTLY full: 127.04 mm of joint in 127.04 mm of tube, 0.00 mm spare. Nothing else can be bonded to this bore anywhere along its length
+  note       recovery bay has 198.50 mm of tube spare
+  note       booster has 336.88 mm of tube spare
+  note       nav bay / canard module: anchor 47.64 mm is 31.76 mm under the 1.0 cal convention. Nothing in this project sizes a coupler in bending, so there is no analysis that either confirms or replaces it -- open
+
+  The canard module violation is OPEN and is not the static ports' to close: its
+  aft joint would have to share the module's aft end with the printed canard bay
+  and the aft gas seal. Its forward joint is worse than the check can see -- the
+  printed bay's forward face is at module Z 53.129 and the potted pass-through
+  plate holds Z 0.000 to 2.400, so the protrusion has 50.73 mm and is charged
+  79.40 mm.
+
+============================================================================================
+THE PLACEMENT
+============================================================================================
+
+  3 x dia 3.2 mm at station 420.82 mm, clocked 15/135/255 deg, 4.60 mm deep
+
+  band                  aft coupler bond, 397.00 -> 444.64 mm
+  edge distance         23.82 mm each side, against a 4.80 mm floor (1.5 diameters)
+  depth                 4.60 mm through 2 bonded walls, L/D 1.44
+  aft of nose shoulder  1.300 cal, against a 2.0 cal rule -- UNREACHABLE, the whole bay is 1.60 cal
+  fwd of canard root    0.775 cal, against a 1.0 cal rule -- UNREACHABLE for the same reason
+
+  CAN AIR REACH THE HOLE FROM INSIDE -- the question an interference check does not
+  ask, because a mouth 0.2 mm off a board is not an interference, it is a bay that
+  does not breathe.
+    port at   15.0 deg     9.29 mm to the nearest solid (sled plate)
+    port at  135.0 deg    11.02 mm to the nearest solid (servo power BEC)
+    port at  255.0 deg     7.89 mm to the nearest solid (rod -Y)
+
+============================================================================================
+POSITION ERROR 1 -- THE NOSE, and the validation the solver had to pass
+============================================================================================
+
+  The solver is a line-source slender-body solution. Run on a 4.0:1 prolate
+  spheroid, where the exact answer is elementary, it reads Cp -0.1455 against -0.1698
+  -- it under-reads |Cp| by 17%, and that factor is applied to every case below.
+
+    station  cal aft        Cp   err at max q   err at deploy
+         mm shoulder               (19.2 kPa)        (541 Pa)
+     397.00    1.000   -0.0220        36.0 m          0.86 m
+     420.82    1.300   -0.0176        28.7 m          0.69 m  <- chosen
+     444.64    1.600   -0.0144        23.5 m          0.56 m
+
+  THE STATION IS NOT SET BY THIS. Position error scales with q, and the altimeter is
+  only ever READ where q is small -- at apogee it is zero, and at the main's 200 m
+  under drogue the whole error is under a metre. Moving the ring to the aft end of
+  the band buys 0.12 m and would spend the 23.82 mm of edge distance down to
+  nothing. The band is centred instead -- same shape as venting.py's own result on
+  port SIZE: the model gives the floor, practice gives the design point.
+
+============================================================================================
+POSITION ERROR 2 -- THE CANARDS, and what a ring of ports is actually for
+============================================================================================
+
+  panel CN_alpha 1.642 /rad, bound circulation 0.969 m2/s at the 8 deg limit,
+  four horseshoe vortices, evaluated on the tube at station 420.82 mm.
+
+  Worst case over every lateral command azimuth, with the roll command at its cap:
+
+  ring                                  Cp read    at max q   at deploy
+  one port                             0.002582     4.216 m    0.1185 m
+  THREE ports, any phasing             0.000162     0.265 m    0.0075 m
+  four ports, phased 45 deg (nodes)    0.000000     0.000 m    0.0000 m
+  four ports, phased 22.5 deg          0.000017     0.028 m    0.0008 m
+
+  THE FIRST GUESS WAS WRONG AND IT IS WORTH RECORDING WHICH WAY. 'three and four are
+  coprime, so three averages the canards' 4-fold field and four cannot' is true, and
+  it points at the wrong answer: the 4-fold ROLL field is the small one. The lateral
+  field is odd-harmonic and 170x larger, and FOUR ports reject all of it while three
+  pass its k = 3. On the aerodynamics four ports is the better ring.
+
+  What the sweep settles instead is the CLOCKING, and it settles it differently for
+  the two counts. With four ports every port sits at the same phase of a 4-fold
+  field, so the ring does not average the roll field at all -- it reads it, at
+  whatever phase it was clocked to, and is correct only on the nodes (the canard
+  planes, or their bisectors). With three ports the rejection is structural and
+  holds at every phasing:
+
+    phase   0.0 deg    three ports  0.265 m     four ports  0.000 m
+    phase  15.0 deg    three ports  0.265 m     four ports  0.024 m
+    phase  22.5 deg    three ports  0.265 m     four ports  0.028 m
+    phase  30.0 deg    three ports  0.265 m     four ports  0.024 m
+    phase  45.0 deg    three ports  0.265 m     four ports  0.000 m
+
+  So THREE is the forgiving choice rather than the accurate one, which is a better
+  reason for it than venting.py's ('three is the minimum that averages'), and it is
+  the same thing every other number in that file is chosen for. The count is NOT
+  changed -- the whole spread is hundredths of a metre where the altimeter is read.
+
+  WITH ONE PORT TAPED OVER -- the failure the 3.2 mm diameter is really sized
+  against -- the remainder is not a ring and rejects nothing cleanly:
+
+    three ports                 2.315 m at max q, 55% of a single port -- 0.065 m at deployment
+    four ports, phased 45 deg   1.522 m at max q, 33% of a single port -- 0.043 m at deployment
+
+============================================================================================
+THE HOLE AS A FLOW PASSAGE -- venting.py's orifice equation is the wrong model
+============================================================================================
+
+  through-port velocity     313.83 mm/s   at the worst flow in the flight
+  Reynolds number               67      -- LAMINAR; the orifice equation wants 1e4
+  L/D of the port             1.44      a short pipe, not a thin-plate orifice
+
+  drop, orifice model        0.153 Pa   venting.VentedBay.lag()
+  drop, laminar model        0.081 Pa   Hagen-Poiseuille, same hole
+  the lag budget              35.1 Pa   3.0 m of altitude
+
+  Same conclusion by a factor of 230 either way, which is what venting.py
+  predicted would happen to any argument about port area. Recorded because 'the
+  model is invalid and the conclusion is unchanged' is a result, and because the
+  next marginal vent -- the canard module's 2 x dia 2.0 mm is a tenth of this area
+  -- needs to know which equation to reach for.
+
+============================================================================================
+VERDICT
+============================================================================================
+
+  OK
+    note       edge distance 23.82 mm each side, 5.0x the 1.5-diameter floor
+    note       the port passes 2 walls, 4.60 mm -- aft coupler bond: tube and coupler bonded into one wall -- drilled after bonding, so it cannot mis-align, and deburred from inside the nav bay
+    note       3 ports reject circumferential modes k = 1, 2, 4, 5, 7, 8 and pass k = 3, 6, 9, 12
+    note       a ROLL command is a k = 4 field and 3 ports reject it AT ANY CLOCKING -- which is the argument for 3 rather than 4: a 4-port ring puts every port at the same phase of a 4-fold field, so it rejects it only where every port lands on a node, and its clocking becomes load-bearing
+    note       a LATERAL command is odd-harmonic (k = 1, 3, 5 ...) and this ring passes its k = 3. That is the dominant residual and it is priced in scripts/port_report.py rather than assumed small
+    note       with ONE port taped over the remainder is not a ring and rejects nothing exactly: about 50% of a single port's k = 1 error survives, which is the case the 3.2 mm diameter is chosen against
+    note       CONVENTION BROKEN, and it cannot be met: 1.30 cal aft of the nose shoulder against the 2.0 cal rule. The nav bay is 1.60 cal long and its forward caliber is the shoulder, so no station in the sensed volume can satisfy it
+    note       CONVENTION BROKEN, and it cannot be met: 0.78 cal forward of the canard root against the 1.0 cal rule. Priced by canard_position_error() rather than avoided
+    note       the position-error solver reads -0.1455 against an exact -0.1698 on a 4.0:1 prolate spheroid, so it under-reads |Cp| by 17% and that factor is applied
+    note       port Re 67 at the worst flow in the flight, so the flow is LAMINAR and venting.py's sharp-edged orifice equation is the wrong model. Both are computed: orifice 0.153 Pa, laminar 0.081 Pa through the 4.60 mm depth (L/D 1.44), against a 35.1 Pa budget. Same conclusion either way, by a factor of 230
+    note       nearest sled solid to any port's inner mouth 7.89 mm -- the bay can breathe through all 3
+
+  STILL OPEN, stated rather than solved:
+    * the aft coupler is 0.600 cal of bond against a 1.0 cal convention, and
+      nothing in this project sizes a coupler in bending
+    * the same joint's RETAINING SCREWS want the same 47.64 mm band these holes are
+      in, and no script in this repo has ever placed one
+    * the canard module's joint capacity is over-subscribed by 15.88 mm
+    * the boundary layer is not modelled; the position errors above are inviscid
+    * the ejection transient is not modelled, and it is the one flow case where
+      this port really is inertial

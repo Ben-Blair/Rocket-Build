@@ -121,7 +121,7 @@ def main() -> None:
     say("  This line used to read 'STILL SHORT BY 14 mm' as a hardcoded string while the")
     say("  computed verdict three lines above already said FITS. It was stale from before")
     say("  D7 closed, and a report that types its own conclusion is not reporting one.")
-    say("  It is derived now. (docs/04 section 5 still carries the same stale figure.)")
+    say("  It is derived now. (docs/04 section 5 carried the same stale figure in two more places; both fixed.)")
     say()
     say("  AND THE AREAL ANSWER IS NOT THE WHOLE ANSWER. Placing the same stack as real")
     say("  rectangles on two real faces -- which this model does not do, by design -- says")

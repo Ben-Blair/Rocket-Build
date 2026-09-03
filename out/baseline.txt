@@ -214,21 +214,32 @@ RECOVERY -- the aft gas seal
   internal bhd check  OK
   harness             3/4" tubular nylon, 2 x 3.40 m, 136 g -- 4.2x on the 1320 N opening shock after a knot derating
     sized, not budgeted; it was 1" nylon at 6.7x and a quarter of the bay
-  packing             FITS   recovery bay     need 330.0 mm, have 347.8 mm ( +17.8 mm)  2 compartments, 78% full
+  packing             FITS   recovery bay     need 330.0 mm, have 338.4 mm (  +8.4 mm)  2 compartments, 80% full
      Full argument: python scripts/seal_report.py
 
 ============================================================================================
 JOINTS -- what the couplers cost each bay
 ============================================================================================
-  nav bay           127.0 mm tube ->  115.0 mm usable, bore 74.8 mm (70.2 over 79 mm)
-  canard module     142.9 mm tube ->  130.9 mm usable, bore 74.8 mm (70.2 over 79 mm)
-  recovery bay      357.3 mm tube ->  357.3 mm usable, bore 74.8 mm (70.2 over 79 mm)
+  nav bay           127.0 mm tube ->  115.0 mm usable, bore 74.8 mm (70.2 over 127 mm)
+  canard module     142.9 mm tube ->  130.9 mm usable, bore 74.8 mm (70.2 over 159 mm)
+  recovery bay      357.3 mm tube ->  357.3 mm usable, bore 74.8 mm (70.2 over 159 mm)
   booster           416.3 mm tube ->  404.3 mm usable, bore 74.8 mm (70.2 over 79 mm)
   A coupler or a shoulder is a TUBE and its bore is usable, so it costs DIAMETER
   over its span, not LENGTH. Only bulkheads cost length. That is what settled the
   nose shoulder question -- see design/joints.py.
   For anything that PACKS the narrowed bore is a volume penalty, so the recovery
   bay is checked against its full-bore equivalent length, not its tube length.
+
+  AND EVERY JOINT HAS AN ANCHORED HALF, which this model left out until Sep 2026.
+  nav bay           127.0 mm tube holds 127.04 mm of joint (nose / nav bay 79.40, nav bay / canard module 47.64) ->   +0.00 mm spare
+  canard module     142.9 mm tube holds 158.80 mm of joint (nav bay / canard module 79.40, canard module / recovery bay 79.40) ->  -15.88 mm spare
+  recovery bay      357.3 mm tube holds 158.80 mm of joint (canard module / recovery bay 79.40, recovery bay / booster 79.40) -> +198.50 mm spare
+  booster           416.3 mm tube holds  79.40 mm of joint (recovery bay / booster 79.40) -> +336.88 mm spare
+  joint capacity      VIOLATIONS: canard module: 158.80 mm of joint in a 142.92 mm tube -- over by 15.88 mm. Two solids cannot share the same millimetre of tube
+  The nav bay is EXACTLY full -- two 1.0 cal joints in a 1.60 cal tube do not fit,
+  so its aft coupler gets the 0.600 cal that is left. The canard module is over by
+  15.88 mm and is OPEN: see docs/01 correction 42. Neither was visible while a
+  joint was described only by the half that protrudes.
 
 ============================================================================================
 VENTING and the NAV BAY
@@ -237,6 +248,51 @@ VENTING and the NAV BAY
   canard module vent  2 x dia 2.0 mm through its OWN WALL -- so the module is not in the sense volume
   lag model asks for  1.59 mm2 against the 24.1 mm2 convention drills. Lag does not size these holes
   venting check       OK
+
+============================================================================================
+THE NAV BAY'S STATIC PORTS -- station and clocking, which nothing had
+============================================================================================
+  placement           3 x dia 3.2 mm at station 420.82 mm, clocked 15/135/255 deg, 4.60 mm deep
+  band                aft coupler bond, 397.00 -> 444.64 mm -- the ONLY drillable wall in this bay
+  edge distance       23.82 mm each side; inner mouth 7.89 mm clear of anything on the sled
+  conventions broken  1.30 cal aft of the shoulder (rule: 2.0), 0.78 cal fwd of the canards (rule: 1.0) -- both UNREACHABLE
+  position error      Cp -0.0176 from the nose: 28.7 m at max q, 0.69 m at the main's 200 m under
+                      drogue. It is only read where q is small, so the station is
+                      set by edge distance and not by aerodynamics.
+  port check          OK
+     Full argument: python scripts/port_report.py
+
+============================================================================================
+ACCESS BULKHEADS -- the two seal.py never sized
+============================================================================================
+  pass-through plate  G-10 2.4 mm, 19.5 g; 302112x plate, 162150x feed-through -- governed by the practical minimum gauge -- handling and repeated fasteners set this; the feed-through hole alone would have cleared 2x at 1.6 mm
+  nose aft face       G-10 3.2 mm, 26.0 g; 193x plate, 118x payload mount (300 g provision at 8.3 g)
+  neither is stress-governed -- both clear the thinnest stocked sheet by 25x+.
+  the nose cavity's OWN venting has never been modelled anywhere in this project;
+  its plate is checked against the fully-sealed trapped-differential case until
+  that gap is closed.
+  pass-through check  OK
+  nose plate check    OK
+     Full argument: python scripts/access_bulkhead_report.py
+
+============================================================================================
+THE NAV BAY SLED -- the allowance nobody turned into a part
+============================================================================================
+  plate               G-10 109.04 x 59.41 x 1.6 mm, 19.0 g
+  end brackets        2 x G-10 R 34.80 mm x 3.0 mm, 26.2 g -- the rods pass through THESE
+  rods                2 x M4 at (0, +/-30.00), PERPENDICULAR to the plate, running the full 127.04 mm of bay
+  assembly            115.04 mm in 70.20 mm bore, widest R 34.80 mm; 101.6 g against the 150 g mass.py has budgeted since before the part existed
+  DISCRETE PLACEMENT, which avionics.check_packing() does not do: all 5 components place
+  at 1.0 mm clearance on the 59.41 mm plate -- and NONE place on the 56.16 mm plate that
+  avionics.SLED_WIDTH_FRACTION = 0.80 gives. The blocker is the 80 g wiring loom, which the areal
+  model charges 70 x 20 mm of face and which then has nowhere to go. Read
+  design/sled.py before acting on that: it has a second reading, and NOTHING
+  here resizes the bay (correction 5).
+  sled check          OK
+  at 0.80 of the bore VIOLATIONS: no discrete placement at 1.0 mm clearance -- the set is infeasible on both faces at 1.0 mm clearance; removing any ONE of [custom STM32 guidance board, battery, 2S 1500 mAh, wiring loom] makes the rest place, so no single part is uniquely at fault -- it is the total
+  OPEN                battery, 2S 1500 mAh has 1.00 mm of clear plate beside it against the 3.0 mm a cable-tie slot needs -- retention is NOT SOLVED and is not drawn
+  OPEN                wiring loom has 1.41 mm of clear plate beside it against the 3.0 mm a cable-tie slot needs -- retention is NOT SOLVED and is not drawn
+     Full argument: python scripts/sled_report.py
   module vent at      Z 120.0 mm, 45/225 deg -- CLEAR
                       25.4 mm aft of the bay, 12.1 mm fwd of the seal fillet,
                       14.8 mm aft of the canard root TE. The AFT band is chosen so a leak past

@@ -65,7 +65,18 @@ THE VERDICT, ON ESTIMATED ENVELOPES
 
   available = 127 mm of tube less one 12 mm bulkhead = 115 mm of sled, at 70.2 mm bore
 
-  STILL SHORT BY 14 mm, AND STILL NOT YET A REASON TO CHANGE GEOMETRY.
+  IT FITS ON THE AREAL MODEL, AND THAT IS STILL NOT A REASON TO CHANGE GEOMETRY EITHER WAY.
+
+  This line used to read 'STILL SHORT BY 14 mm' as a hardcoded string while the
+  computed verdict three lines above already said FITS. It was stale from before
+  D7 closed, and a report that types its own conclusion is not reporting one.
+  It is derived now. (docs/04 section 5 carried the same stale figure in two more places; both fixed.)
+
+  AND THE AREAL ANSWER IS NOT THE WHOLE ANSWER. Placing the same stack as real
+  rectangles on two real faces -- which this model does not do, by design -- says
+  the boards fit and the 80 g wiring loom does not, on a 56.16 mm plate. See
+  design/sled.py and `python scripts/sled_report.py`. Nothing there resizes the
+  bay either.
 
   Correction 5 is the precedent and it is exact: the recovery bay was declared
   11 mm short on a number built from two multiplied estimates, the airframe was
@@ -101,9 +112,9 @@ THE SHOULDER QUESTION -- SETTLED, and it went the good way
 
   What costs length is a BULKHEAD, and bulkheads were already counted. So:
 
-    nav bay           127.0 mm tube ->  115.0 mm usable, bore 74.8 mm (70.2 over 79 mm)
-    canard module     142.9 mm tube ->  130.9 mm usable, bore 74.8 mm (70.2 over 79 mm)
-    recovery bay      357.3 mm tube ->  357.3 mm usable, bore 74.8 mm (70.2 over 79 mm)
+    nav bay           127.0 mm tube ->  115.0 mm usable, bore 74.8 mm (70.2 over 127 mm)
+    canard module     142.9 mm tube ->  130.9 mm usable, bore 74.8 mm (70.2 over 159 mm)
+    recovery bay      357.3 mm tube ->  357.3 mm usable, bore 74.8 mm (70.2 over 159 mm)
     booster           416.3 mm tube ->  404.3 mm usable, bore 74.8 mm (70.2 over 79 mm)
 
   The nav bay gains 12 mm of length (one bulkhead, not two -- the

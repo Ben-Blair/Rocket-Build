@@ -29,6 +29,52 @@ instance of something general, and because `tube_section.py` has carried *"the t
 joints either side of the module -- couplers are a mass line in mass.py and nothing more"*
 since it was written.
 
+THE HALF THIS FILE USED TO LEAVE OUT, and what leaving it out hid (Sep 2026).
+
+Everything above describes a joint by the half that PROTRUDES -- `engagement` and `into` --
+because the question it was written to settle was whether an inserted tube costs the bay it
+protrudes into any length. It does not, and that answer still stands. But every coupler also
+has an ANCHORED half, bonded into the tube on the other side, and that half was not a field
+here. It could not be checked, so it never was, and it turns out the vehicle cannot afford
+what convention charges for it:
+
+    the nav bay tube                                       127.04 mm   1.60 cal
+    the nose shoulder engaged into it                       79.40 mm   1.00 cal
+    what is left for the aft coupler's bonded half          47.64 mm   0.60 cal
+    what the same 1.00 cal convention wants                 79.40 mm   -- 31.76 mm short
+
+**Two 1.0 cal joints do not fit in a 1.6 cal bay.** Nothing had ever said so, because no
+model held both halves at once. `anchor` is that field now, and `check_joints()` is the
+check: a bay's tube has to hold everything inserted into it from either end.
+
+The nav bay / canard module joint's anchor is therefore DERIVED -- `for_rocket()` gives it
+whatever the nose shoulder leaves, 0.600 cal here -- rather than typed, so that it cannot
+quietly stop fitting if `nav_bay_cal` ever moves. It is BELOW the convention, and it is
+stated rather than absorbed. Nothing in this project sizes a coupler in bending -- see the
+paragraph below, which has been true since this file was written and is only now
+load-bearing -- so the convention was the only argument either way and this joint no longer
+satisfies it. That is an open item, and it is the one thing the static ports needed and
+could not get: `design/ports.py` puts them in that 47.64 mm because it is the only band of
+nav bay wall a hole can go through.
+
+The canard module does NOT come out feasible under the same check, and it is left failing on
+purpose. Its 1.0 cal ENGAGEMENT is not resized here either, and both are the same open item:
+the module's aft joint would have to share the module's aft end with the printed bay and the
+aft gas seal, and its forward joint's protrusion has only 50.73 mm before it reaches the
+printed bay's forward face at Z 53.129 (the potted pass-through plate holds Z 0.000 to
+2.400 ahead of it) against the 79.40 mm charged here. Resizing either is the canard module's
+aft joint and the aft gas seal, which is not something the placement of three holes in the
+nav bay is entitled to redesign. Reported by `check_joints()`, recorded in `docs/01`
+correction 42, and open.
+
+WHAT CHANGED DOWNSTREAM WHEN `anchor` ARRIVED. `narrowed_span` now counts the anchored half
+too, because a bonded coupler narrows the bore exactly as much as an inserted one does. The
+recovery bay is the only bay where that moves a number anyone reads: its full-bore equivalent
+length drops 347.8 -> 338.4 mm and `recovery.check_packing`'s margin goes +17.8 -> +8.4 mm.
+It still fits. That was applied rather than merely reported, because leaving half of each
+joint out of the bore model is the identical defect to leaving it out of the length model,
+and fixing one and not the other would have left the trap in place.
+
 WHAT IS NOT. The joints' STRENGTH. A coupler in bending, the bond line that holds it, and
 the shear pins that are supposed to fail before it are all outside this file -- it answers
 "what does the joint cost the bay" and nothing else. `design/seal.py` sizes the shear pins
@@ -52,6 +98,22 @@ DEFAULT_ENGAGEMENT_CAL = {
     "access": 1.0,      # comes apart by hand or by screws; nose shoulder is this
     "separation": 1.0,  # comes apart on an ejection charge, held by shear pins
 }
+
+# Anchored length, in calibers: how much of the OTHER tube the coupler is bonded into. Same
+# convention and the same standing as DEFAULT_ENGAGEMENT_CAL above -- one caliber each side
+# is the high-power rule -- and it is a separate dict because the two halves are separately
+# negotiable, which is the whole point of having found that the vehicle cannot pay both.
+DEFAULT_ANCHOR_CAL = {
+    "bonded": 1.0,
+    "access": 1.0,
+    "separation": 1.0,
+}
+
+# An INTEGRAL shoulder -- one moulded as part of the nose cone rather than bonded in as a
+# separate tube -- has no anchored half at all. It is not that the anchor is short; it is
+# that there is nothing to bond, so it consumes none of the nose's own length. Named so that
+# `anchor = 0.0` on the nose joint reads as a fact rather than as a value nobody filled in.
+INTEGRAL_SHOULDER = 0.0
 
 # A bulkhead closing the end of a bay: the plate, its fillets, and any boss standing proud.
 # Matches recovery.BULKHEAD_THICKNESS, and deliberately so -- a bulkhead is a bulkhead
@@ -78,6 +140,9 @@ class Joint:
     airframe_id: float
     bulkheads_forward: int = 0
     bulkheads_aft: int = 0
+    # m, how far the coupler is BONDED into the other tube. Zero for an integral shoulder,
+    # which has nothing to bond. This is the half that was missing -- see the module header.
+    anchor: float = 0.0
     note: str = ""
 
     @property
@@ -89,6 +154,16 @@ class Joint:
         """
         return self.airframe_id - 2.0 * self.wall_thickness
 
+    @property
+    def anchor_bay(self) -> str:
+        """The bay whose tube the coupler is bonded into -- the one it does not protrude into.
+
+        For an integral shoulder this still names a bay, and `anchor` is zero there, which is
+        the distinction the two fields exist to keep: WHERE the anchor is and HOW MUCH tube it
+        takes are different questions, and collapsing them is how the nose joint looked free.
+        """
+        return self.aft_bay if self.into == self.forward_bay else self.forward_bay
+
     def length_cost(self, bay: str) -> float:
         """Axial length this joint takes out of `bay`, m.
 
@@ -98,24 +173,63 @@ class Joint:
         return n * BULKHEAD_ALLOWANCE
 
     def narrowed_span(self, bay: str) -> float:
-        """Length of `bay` over which the usable diameter is `bore` rather than full, m."""
-        return self.engagement if bay == self.into else 0.0
+        """Length of `bay` over which the usable diameter is `bore` rather than full, m.
+
+        BOTH halves count. A coupler bonded into a tube narrows that tube's bore exactly as
+        much as one merely inserted into it does -- the wall is the same 2.3 mm either way,
+        and whether it is wetted with epoxy makes no difference to what fits inside. Until
+        Sep 2026 only `engagement` counted here, which is the same omission `anchor` fixes in
+        the capacity check and it was worth 9.5 mm of the recovery bay.
+        """
+        span = 0.0
+        if bay == self.into:
+            span += self.engagement
+        if bay == self.anchor_bay:
+            span += self.anchor
+        return span
+
+    def tube_demand(self, bay: str) -> float:
+        """How much of `bay`'s tube this joint occupies from its end, m.
+
+        The same quantity as `narrowed_span` today, and a separate method on purpose: one is
+        about what still FITS INSIDE the bay and the other about whether the TUBE ITSELF has
+        room at that end. They agree only while every joint is a plain concentric sleeve, and
+        the moment one is not -- a stepped coupler, a flanged one -- they part company.
+        """
+        return self.narrowed_span(bay)
 
 
-def default_joints(airframe_id: float, wall: float, diameter: float) -> list[Joint]:
+def default_joints(airframe_id: float, wall: float, diameter: float,
+                   nav_bay_length: float | None = None) -> list[Joint]:
     """The four joints of this vehicle, nose to tail.
 
     Each `kind` is a decision, and each is written down here rather than implied by the
     hardware, because "which joints come apart" is the sort of thing everyone assumes they
     know and nobody has stated.
+
+    `nav_bay_length` is optional and, when given, DERIVES the aft joint's anchored half from
+    what the nose shoulder leaves instead of charging the convention. Prefer `for_rocket()`,
+    which always has it. The convention is the fallback so that this signature still means
+    what it meant, and so that a caller who does not know the bay length gets the number that
+    is wrong in the direction that FAILS the check rather than the one that passes it.
     """
     cal = diameter
     eng = DEFAULT_ENGAGEMENT_CAL
+    anc = DEFAULT_ANCHOR_CAL
+    nose_engagement = eng["access"] * cal
+    if nav_bay_length is None:
+        nav_aft_anchor = anc["access"] * cal
+    else:
+        nav_aft_anchor = min(anc["access"] * cal, nav_bay_length - nose_engagement)
     return [
         Joint(
             "nose / nav bay", "access", "nose cone", "nav bay",
-            engagement=eng["access"] * cal, into="nav bay",
+            engagement=nose_engagement, into="nav bay",
             wall_thickness=wall, airframe_id=airframe_id,
+            # The shoulder is MOULDED as part of the nose cone, so there is no bonded half
+            # and it spends none of the nose's own length. That is why this joint looked free
+            # for as long as `anchor` did not exist -- it genuinely is, and the aft one is not.
+            anchor=INTEGRAL_SHOULDER,
             # One bulkhead, and it belongs to the NOSE: it closes the instrumentation
             # cavity off from the nav bay so the nose is a module that lifts away whole.
             bulkheads_forward=1, bulkheads_aft=0,
@@ -125,6 +239,11 @@ def default_joints(airframe_id: float, wall: float, diameter: float) -> list[Joi
             "nav bay / canard module", "access", "nav bay", "canard module",
             engagement=eng["access"] * cal, into="canard module",
             wall_thickness=wall, airframe_id=airframe_id,
+            # 0.600 cal, not the 1.0 cal convention, and derived rather than typed: the nose
+            # shoulder has already spent the nav bay's forward caliber and this is what is
+            # left. Below convention, nothing here sizes a coupler in bending, open item.
+            # The static ports go in this band -- see design/ports.py.
+            anchor=nav_aft_anchor,
             # The bulkhead here is the wiring pass-through, potted solid (correction 28).
             # It is charged to the nav bay because it closes the nav bay's aft end; the
             # canard module's forward face is the same plate seen from the other side.
@@ -135,6 +254,10 @@ def default_joints(airframe_id: float, wall: float, diameter: float) -> list[Joi
             "canard module / recovery bay", "separation", "canard module", "recovery bay",
             engagement=eng["separation"] * cal, into="recovery bay",
             wall_thickness=wall, airframe_id=airframe_id,
+            # Convention, and it does NOT fit -- the canard module cannot hold this anchor
+            # alongside the forward joint's engagement. Left at the convention on purpose so
+            # that check_joints() reports it instead of a quietly shrunk number hiding it.
+            anchor=anc["separation"] * cal,
             # The aft gas seal. Charged to the canard module, whose aft end it closes.
             bulkheads_forward=1, bulkheads_aft=0,
             note="MAIN ejection separates here; the aft gas seal is this bulkhead",
@@ -143,6 +266,7 @@ def default_joints(airframe_id: float, wall: float, diameter: float) -> list[Joi
             "recovery bay / booster", "separation", "recovery bay", "booster",
             engagement=eng["separation"] * cal, into="booster",
             wall_thickness=wall, airframe_id=airframe_id,
+            anchor=anc["separation"] * cal,
             bulkheads_forward=0, bulkheads_aft=1,
             note="DROGUE ejection separates here; the booster's forward bulkhead closes it",
         ),
@@ -178,8 +302,13 @@ class BayBudget:
         import math
         full = math.pi * self.full_bore**2 / 4.0
         narrow = math.pi * self.narrow_bore**2 / 4.0
-        return (narrow * self.narrow_span
-                + full * (self.usable_length - self.narrow_span))
+        # An OVER-SUBSCRIBED bay has more joint than tube (see `check_joints`), and the
+        # arithmetic below would then hand back a volume with a negative full-bore term --
+        # a number that looks like an answer. Clamp instead, and read `check_joints` for
+        # whether this bay's volume means anything at all. The canard module is currently
+        # in exactly that state.
+        span = min(self.narrow_span, self.usable_length)
+        return narrow * span + full * (self.usable_length - span)
 
     @property
     def equivalent_length(self) -> float:
@@ -212,7 +341,12 @@ def bay_budget(name: str, tube_length: float, airframe_id: float,
     """Usable length and the bore profile for one bay."""
     mine = [j for j in joints if name in (j.forward_bay, j.aft_bay)]
     length_cost = sum(j.length_cost(name) for j in mine)
-    narrow = max((j.narrowed_span(name) for j in mine), default=0.0)
+    # SUM, not max. A bay's two joints are at opposite ends, so their narrowed spans are
+    # disjoint and both are real: a bay sleeved at both ends is narrow over both. This read
+    # `max(...)` until Sep 2026, which was harmless only while `narrowed_span` returned
+    # something non-zero for at most one joint per bay -- the moment `anchor` made the second
+    # one non-zero, `max` started silently discarding it.
+    narrow = sum(j.narrowed_span(name) for j in mine)
     bore = min((j.bore for j in mine if j.narrowed_span(name) > 0.0), default=airframe_id)
     return BayBudget(
         name=name,
@@ -229,11 +363,112 @@ def bay_budget(name: str, tube_length: float, airframe_id: float,
     )
 
 
+def for_rocket(rocket, wall: float) -> list[Joint]:
+    """The four joints, with every length this vehicle's own geometry can settle.
+
+    One place, so that `budgets()`, `check_joints()` and `design/ports.py` cannot each build
+    a slightly different set of joints -- which is what would have happened the moment the
+    nav bay's anchor became a derived number rather than a constant.
+    """
+    tube = rocket.tubes[0]
+    nav = next(t for t in rocket.tubes if t.name == "nav bay")
+    return default_joints(tube.inner_diameter, wall, tube.outer_diameter,
+                          nav_bay_length=nav.length)
+
+
 def budgets(rocket, wall: float) -> dict[str, BayBudget]:
     """Every bay's budget, from the vehicle's own geometry."""
-    tube = rocket.tubes[0]
-    joints = default_joints(tube.inner_diameter, wall, rocket.tubes[0].outer_diameter)
+    joints = for_rocket(rocket, wall)
     return {
         t.name: bay_budget(t.name, t.length, t.inner_diameter, joints)
         for t in rocket.tubes
     }
+
+
+@dataclass(frozen=True)
+class TubeCapacity:
+    """What one bay's tube is asked to hold at its two ends, against how long it is."""
+
+    bay: str
+    tube_length: float
+    demands: list[tuple[str, float]]  # (joint name, metres of this tube it occupies)
+
+    @property
+    def demanded(self) -> float:
+        return sum(d for _, d in self.demands)
+
+    @property
+    def spare(self) -> float:
+        return self.tube_length - self.demanded
+
+    def __str__(self) -> str:
+        parts = ", ".join(f"{n} {d * 1000:.2f}" for n, d in self.demands)
+        return (f"{self.bay:16s} {self.tube_length * 1000:6.1f} mm tube holds "
+                f"{self.demanded * 1000:6.2f} mm of joint ({parts}) -> "
+                f"{self.spare * 1000:+7.2f} mm spare")
+
+
+def tube_capacity(rocket, wall: float) -> dict[str, TubeCapacity]:
+    """Per bay, the sum of every joint half that lives inside its tube.
+
+    THE CHECK THAT DID NOT EXIST. `bay_budget` answers "what is left to USE"; this answers
+    "does the tube physically have room for its own joints", and until `anchor` existed there
+    was no way to ask it. The two are not the same question and the nav bay is the proof: it
+    has 115.0 mm usable and 0.00 mm spare.
+    """
+    js = for_rocket(rocket, wall)
+    out: dict[str, TubeCapacity] = {}
+    for t in rocket.tubes:
+        demands = [(j.name, j.tube_demand(t.name)) for j in js
+                   if j.tube_demand(t.name) > 0.0]
+        out[t.name] = TubeCapacity(t.name, t.length, demands)
+    return out
+
+
+@dataclass
+class JointCheck:
+    ok: bool
+    violations: list[str]
+    notes: list[str]
+
+
+def check_joints(rocket, wall: float) -> JointCheck:
+    """Can every bay's tube hold its own joints, and does any joint fall under convention?
+
+    Two separate questions and they fail differently. Over-subscription is a VIOLATION --
+    two solids cannot share a millimetre of tube. Falling under the 1.0 cal convention is a
+    NOTE, because the convention is not a load case and this project has no coupler bending
+    model to replace it with; saying otherwise would be inventing a requirement to satisfy.
+    """
+    v: list[str] = []
+    notes: list[str] = []
+    mm = 1000.0
+
+    for cap in tube_capacity(rocket, wall).values():
+        if cap.spare < -1e-9:
+            v.append(
+                f"{cap.bay}: {cap.demanded * mm:.2f} mm of joint in a "
+                f"{cap.tube_length * mm:.2f} mm tube -- over by {-cap.spare * mm:.2f} mm. "
+                f"Two solids cannot share the same millimetre of tube")
+        elif cap.spare < 1e-9:
+            notes.append(
+                f"{cap.bay} is EXACTLY full: {cap.demanded * mm:.2f} mm of joint in "
+                f"{cap.tube_length * mm:.2f} mm of tube, 0.00 mm spare. Nothing else can be "
+                f"bonded to this bore anywhere along its length")
+        else:
+            notes.append(f"{cap.bay} has {cap.spare * mm:.2f} mm of tube spare")
+
+    cal = rocket.diameter
+    for j in for_rocket(rocket, wall):
+        for half, length in (("engagement", j.engagement), ("anchor", j.anchor)):
+            if half == "anchor" and length == INTEGRAL_SHOULDER:
+                continue
+            want = (DEFAULT_ENGAGEMENT_CAL if half == "engagement"
+                    else DEFAULT_ANCHOR_CAL)[j.kind] * cal
+            if length < want - 1e-9:
+                notes.append(
+                    f"{j.name}: {half} {length * mm:.2f} mm is "
+                    f"{(want - length) * mm:.2f} mm under the {want / cal:.1f} cal "
+                    f"convention. Nothing in this project sizes a coupler in bending, so "
+                    f"there is no analysis that either confirms or replaces it -- open")
+    return JointCheck(ok=not v, violations=v, notes=notes)
