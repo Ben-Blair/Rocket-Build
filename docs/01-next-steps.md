@@ -1559,6 +1559,26 @@ that silently recurs:
    (nothing drawn at all — no planform, no root attachment, no motor mount) are the rest of
    Step 3's own deliverable. Neither is this session's.
 
+   **ALSO FLAGGED, DELIBERATELY DEFERRED:** the 8 hinge joints above live on
+   `Onshape_reference` — the STEP file imported from Onshape — not on the native Fusion
+   rebuild (the 28 loose bodies at the document root, hidden, geometrically identical per
+   correction 40's own comparison). That is a real dependency on Onshape for the one thing
+   in this Fusion document that moves, and it was raised and consciously left as-is rather
+   than fixed. Two ways to close it, from cheapest to most complete:
+     1. Split the native rebuild's existing bodies into components (Fusion's own "Create
+        Components from Bodies") and re-point the same 8 joints at them. Removes the
+        Onshape-import dependency for today's geometry; still a static snapshot, not
+        regeneratable if the Onshape design changes again.
+     2. Write Fusion-native generator scripts for the whole canard module (servo, bearing,
+        hinge stack, printed bay, root tang, spline socket), driven directly from
+        `design/*.py`, the same approach `scripts/make_sled_fusion.py` and the nose cone
+        generator already use — full regeneratable parity with Onshape, no import ever
+        needed. A large undertaking: it re-does most of the canard module's CAD history
+        (`make_servo_cad.py`, `make_bearing_cad.py`, `make_bay_cad.py`, `make_root_tang.py`,
+        `make_spline_socket.py`) on the Fusion side.
+   Neither is done. Do this before trusting the mechanism against anything but a visual
+   check, and before assuming Onshape can be dropped for this module.
+
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —
 corrections 35 and 36.
