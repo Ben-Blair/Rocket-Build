@@ -203,15 +203,26 @@ battery**, and it has **exactly one connector** to the vehicle (the radio's data
 tracker needs nothing). The one drawback is RF: the GNSS antenna stays in the nav bay under
 the shoulder, so a dense payload sits between it and the sky.
 
-**AND THE BAY STILL DOES NOT FIT.** `design/avionics.py` is the packing check the nav bay
-never had; `python scripts/avionics_report.py` is the argument. It wants **124 mm of sled
-against 115 mm available at a 70.2 mm bore** — so **9 mm short**, down from 47 mm before the
-tracker and radio moved to the nose.
+**AND THE BAY FITS — ON THE AREAL MODEL.** `design/avionics.py` is the packing check the
+nav bay never had; `python scripts/avionics_report.py` is the argument. It wants **110.4 mm
+of sled against 115.0 mm available at a 70.2 mm bore** — so **+4.6 mm**, having been 47 mm
+short before the tracker and radio moved to the nose and 9 mm short before D7 closed. *(This
+paragraph carried the 9 mm figure until Sep 2026, two corrections after it stopped being
+true. The script itself carried a hardcoded "STILL SHORT BY 14 mm" line directly under its
+own computed FITS verdict; both are fixed.)*
+
+**BUT THE AREAL MODEL DOES NOT PLACE ANYTHING**, and placing it changes the answer.
+`design/sled.py` puts the same stack down as real rectangles on two real faces:
+the four boards fit on the 56.16 mm plate `SLED_WIDTH_FRACTION = 0.80` gives, and the
+**80 g wiring loom then has nowhere to go** — not on a face, and not in the corner
+crescents, which would need it at 1.84 g/cm³. The plate has to reach **59.00 mm**, and
+M4 rods allow **59.20 mm**. See `python scripts/sled_report.py`.
 
 Every envelope in that check is an estimate for a part nobody has chosen, so this is a
 **warning and not a violation**, and correction 5 is why: an estimate-driven shortfall was
-once acted on here and turned out not to be in the hardware. **Close D7 and measure before
-concluding anything** — 14 mm is well inside what the 70% packing-efficiency guess is worth.
+once acted on here and turned out not to be in the hardware. **Measure the loom and count
+the conductors before concluding anything** — the 80 g is a line called `wiring_connectors`,
+and connectors are not loom.
 What the check is sure of is the shape of the problem: a flat sled in a round tube can only
 use the rectangle inscribed in the circle, so the binding quantity is footprint on two
 faces, not volume — the bay looks two-thirds empty by volume and is not.

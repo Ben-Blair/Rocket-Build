@@ -171,3 +171,22 @@ fully instrumented vehicle.
   now off datasheets; the rest are still correction 5 material, and the custom board's
   70 × 45 mm is a *layout target* rather than a measurement — the one line here whose
   accuracy is under your control.
+
+---
+
+## Where the boards physically go — Sep 2026
+
+The sled these boards mount on is a part now: **`docs/08-nav-bay-sled.md`**,
+`design/sled.py`, `python scripts/sled_report.py`.
+
+Drawing it changed one number that belongs here. The board footprint above is **70 × 45 mm
+and is a layout target, not a measurement** — and it is now the line with the least room in
+it. Placing the selected stack as real rectangles rather than as summed area shows the four
+boards fit comfortably, and the **80 g wiring loom** then does not: the sled has to widen
+from `0.80` of the bore to **0.846**, and past that point width is bought out of the tallest
+component's headroom, of which there is **3.0 mm**. Anything that grows the board — in
+footprint *or* in height — grows that problem, and anything that shrinks it is the cheapest
+fix available.
+
+Two things in this document are still the binding unknowns for that packing, and both are
+under your control: the **board outline**, and the **conductor count** the loom carries.

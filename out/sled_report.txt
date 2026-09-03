@@ -1,0 +1,292 @@
+
+============================================================================================
+THE NAV BAY SLED -- an allowance, for the fourth time
+============================================================================================
+
+  design/mass.py has charged 150 g for `sled_and_hardware` since that dict was
+  written, and design/avionics.py has charged 0.80 of the bore for its width. A
+  mass allowance and a length allowance, priced into every budget in the vehicle,
+  for a part that has never been drawn. That is correction 33's shape (the
+  harness), 37's (the pass-through plate) and 38's (both access bulkheads). The
+  tell is the same every time: the thing is charged for, so nothing reports it
+  missing.
+
+============================================================================================
+WHAT THE BAY GIVES THE SLED
+============================================================================================
+
+  nav bay tube            127.04 mm
+  less one bulkhead        12.00 mm   its aft closure, the pass-through plate
+  usable by the sled      115.04 mm
+
+  full bore                74.80 mm
+  narrowed bore            70.20 mm over the forward 79.4 mm -- the nose shoulder
+  what a SLED sees         70.20 mm, over its whole length, because it is one rigid plate
+
+  The nose's own plate is charged to the NOSE, not to this bay -- joints.py puts
+  it forward of the joint plane. So the sled really does get all 115.04 mm, and
+  not 8.8 mm less. That was worth deriving rather than inheriting, on a margin
+  quoted as +4.6 mm.
+
+============================================================================================
+THE TWO ANSWERS
+============================================================================================
+
+  AREAL, as design/avionics.py has always computed it -- footprint summed and
+  divided by 2 x sled width x 0.70 packing efficiency:
+
+    FITS   nav bay          need 110.4 mm, have 115.0 mm (  +4.6 mm)  4 components on two faces at 70%
+
+  DISCRETE, placing every component as a rectangle on one of two faces, exhaustive
+  over face assignment and 0/90 orientation and exact within a face:
+
+    the 4 boards, on the same 56.16 mm plate, 1.0 mm clearance all round: PLACES
+
+  Both are true. They answer different questions, and the areal one is not wrong --
+  it was built to show that footprint binds and volume does not, and it does.
+
+    face 0   fwd |------------------------------------------------------------------------------------| aft
+            |######################################################  @@@@@@@@@@@@@@@@@@@@@@@     |
+            |######################################################  @@@@@@@@@@@@@@@@@@@@@@@     |
+            |######################################################  @@@@@@@@@@@@@@@@@@@@@@@     |
+            |######################################################  @@@@@@@@@@@@@@@@@@@@@@@     |
+            |######################################################                              |
+            |######################################################                              |
+            |######################################################                              |
+            |######################################################                              |
+            |######################################################                              |
+            |                                                                                    |
+            |                                                                                    |
+            # custom STM32 guidance board ; @ servo power BEC
+
+    face 1   fwd |------------------------------------------------------------------------------------| aft
+            |######################################################  @@@@@@@@@@@@@@@@            |
+            |######################################################  @@@@@@@@@@@@@@@@            |
+            |######################################################  @@@@@@@@@@@@@@@@            |
+            |######################################################  @@@@@@@@@@@@@@@@            |
+            |######################################################  @@@@@@@@@@@@@@@@            |
+            |######################################################  @@@@@@@@@@@@@@@@            |
+            |######################################################  @@@@@@@@@@@@@@@@            |
+            |                                                        @@@@@@@@@@@@@@@@            |
+            |                                                        @@@@@@@@@@@@@@@@            |
+            |                                                        @@@@@@@@@@@@@@@@            |
+            |                                                                                    |
+            # battery, 2S 1500 mAh ; @ StratoLoggerCF (rotated)
+
+
+============================================================================================
+AND THEN THE WIRING
+============================================================================================
+
+  avionics.WIRING_FOOTPRINT charges the 80 g loom 70 x 20 mm of SLED FACE. An
+  areal model has no way to say 'along one edge' other than by charging the area.
+  Asked as a rectangle, the question has a different answer:
+
+  on the 56.16 mm plate that 0.80 of the bore gives:
+
+       clearance    boards only    boards + loom
+    --------------------------------------------
+          0.0 mm         places           places
+          0.5 mm         places     NO PLACEMENT
+          1.0 mm         places     NO PLACEMENT
+          1.5 mm         places     NO PLACEMENT
+          2.0 mm         places     NO PLACEMENT
+
+  At 1.0 mm: the set is infeasible on both faces at 1.0 mm clearance; removing any ONE of [custom STM32 guidance board, battery, 2S 1500 mAh, wiring loom] makes the rest place, so no single part is uniquely at fault -- it is the total
+
+  So the boards were never the question. Now sweep the one thing that is free:
+  once the rods sit OUTBOARD of the plate, plate width costs nothing until the
+  rods stop clearing the bore.
+
+        plate    fraction    half-height    tallest part    boards + loom
+    ----------------------------------------------------------------------
+     56.16 mm       0.800       21.06 mm        15.70 mm     NO PLACEMENT
+     57.00 mm       0.812       20.49 mm        15.70 mm     NO PLACEMENT
+     58.00 mm       0.826       19.77 mm        15.70 mm     NO PLACEMENT
+     59.00 mm       0.840       19.02 mm        15.70 mm           places
+     59.41 mm       0.846       18.70 mm        15.70 mm           places   <- selected
+     61.20 mm       0.872       17.19 mm        15.70 mm           places
+     62.50 mm       0.890       15.98 mm        15.70 mm           places
+
+  WIDTH IS BOUGHT WITH HEIGHT, and that is the only thing limiting it now. A wider
+  plate sits on a longer chord, so the inscribed rectangle gets shorter, and the
+  tallest component on the sled is what pays. The rods USED to limit it too --
+  they do not any more, and why they stopped is the next section.
+
+  THERE IS THE ANSWER, AND IT IS A DESIGN CHANGE RATHER THAN A PROBLEM.
+  avionics.SLED_WIDTH_FRACTION = 0.80 gives 56.16 mm, and 56.16 mm cannot carry
+  the loom the same file charges for. 59.00 mm can. M4 rods allow 59.20 mm.
+
+  0.80 was never argued for -- avionics.py calls it 'a working figure'. There is
+  now an argument for a different one, and design/sled.py takes it: the plate is
+  59.41 mm, or 0.846 of the bore, set by
+  keeping 3.0 mm of headroom over the tallest part.
+
+  design/configure.py now passes that real width into avionics.check_packing()
+  instead of the 0.80 fallback, so the vehicle's own warning describes the sled
+  that exists. The areal margin goes +4.6 -> +10.7 mm as a RESULT of that, and it
+  is worth being clear this is not the model being retuned until it fits: the part
+  got better, and the constant followed.
+
+  How much room is there at other assembly clearances:
+
+     clearance    plate the loom needs   widest the height allows
+    ----------------------------------------------------------
+        0.5 mm                57.00 mm                 59.41 mm
+        1.0 mm                59.00 mm                 59.41 mm
+        1.5 mm                61.00 mm                 59.41 mm
+        2.0 mm          no width works                 59.41 mm
+        2.5 mm          no width works                 59.41 mm
+
+  At 2.0 mm of clearance nothing in the bore works. 1.0 mm is already tight for
+  hand assembly with connectors plugged, so this is not a margin to spend.
+
+============================================================================================
+WHY NOT JUST PUT THE LOOM IN THE CORNERS
+============================================================================================
+
+  The obvious objection to all of the above: a loom is flexible, and the two corner
+  crescents outboard of the plate are exactly the volume a flat sled cannot reach.
+  That is avionics.py's whole argument. Put the wiring there and the plate stays at
+  0.80. It does not work, and the number says why:
+
+    plate 56.16 mm (0.80 of the bore )  crescents  43.9 cm^3  ->  1.82 g/cm^3 to hold 80 g
+    plate 59.41 mm (as built         )  crescents  29.8 cm^3  ->  2.68 g/cm^3 to hold 80 g
+
+  Copper is 8.96 g/cm^3 and PVC insulation about 1.4. A bundle with air in it does
+  not reach either figure. THE CRESCENTS DO NOT TAKE 80 g OF LOOM EITHER, and they
+  get worse as the plate widens, so the two fixes work against each other.
+
+  Note these are the crescents with the RODS OUT OF THEM. Clocking the rods above
+  and below the plate handed both crescents back whole -- a real gain, and still
+  not enough.
+
+  THIS ALL HAS A SECOND READING AND THIS REPORT CANNOT DISTINGUISH THEM:
+
+    1. The loom really is 70 x 20 x 12 mm of solid keep-out, in which case the
+       plate must go to 59 mm and there is 0.20 mm in hand.
+    2. The 80 g is a WHOLE-AVIONICS allowance. mass.py calls the line
+       `wiring_connectors`, and connectors are not loom. The servo leads run AFT
+       through the pass-through plate into the canard module, and the pyro leads
+       run aft to the recovery bay -- neither stays in this bay. Charging all 80 g
+       to nav bay sled FACE is then the wrong place for most of it, and the whole
+       squeeze dissolves.
+
+  NOTHING HERE RESIZES THE BAY AND NOTHING HERE EDITS avionics.py. Correction 5 is
+  the precedent and it is exact: the recovery bay was declared 11 mm short on a
+  figure built from multiplied estimates, the airframe was lengthened for it, and
+  the shortfall turned out not to exist. What settles this is weighing the loom
+  and counting the conductors. That is an afternoon's work and it has never been
+  done. The wider plate is the cheap insurance in the meantime: it costs nothing,
+  it is inside the bore, and it is right under either reading.
+
+============================================================================================
+THE PART
+============================================================================================
+
+  plate                 109.04 x 59.41 x 1.60 mm G-10
+  end brackets          2 off, R 34.80 mm cropped to +/-18.0 mm in X, 3.0 mm thick
+  rods                  2 x M4 at (0, +/-30.00) -- PERPENDICULAR to the plate, above and below
+                        running the full 127.04 mm of bay, plate to plate
+  standoffs             12 x 6 mm nylon, 3 mm tall
+  assembly length       115.04 mm against 115.04 mm usable
+  usable height         37.40 mm total, 18.70 mm a face
+  widest point          R 34.80 mm against a R 35.10 mm shoulder bore
+
+    plate                 19.0 g
+    end brackets          26.2 g
+    rods                  25.2 g
+    standoffs              1.2 g
+    hardware              30.0 g   nuts, washers, screws -- a guess
+    ----------------------------
+    total                101.6 g   against 150 g budgeted in mass.py
+
+============================================================================================
+THE MOUNT -- and the thing that had to be got wrong first
+============================================================================================
+
+  Two threaded rods between the two end plates. The rods are clocked PERPENDICULAR
+  to the sled -- one above it, one below -- and not out at its edges, which is
+  where a side-view sketch puts them and where this was first built.
+
+  RODS BESIDE THE PLATE DO NOT WORK, and the reason only shows up in three
+  dimensions. A nut on a rod running along the rocket axis clamps ALONG that axis,
+  and a plate lying in the rod's own plane presents nothing to that direction but
+  its 1.6 mm edge. There is no face for a washer to bear on. Widening the plate
+  into ears around each rod does not rescue it either: the rod runs the whole
+  length of the bay, so clearing it means removing every scrap of ear at that
+  radius for every station, and the ear then captures nothing. The Fusion model
+  said so in one line -- 47.31 mm3 of plate inside each rod.
+
+  So the capture has to be PERPENDICULAR to the rod: a small end bracket in the
+  cross-section plane, which is a bulkhead in miniature and is what a real
+  avionics bay has always used. Once it is a bracket, the rod can leave the
+  plate's plane, and that buys two things at once:
+
+      rod position    hole ligament in a bracket     in the two END PLATES
+    ----------------------------------------------------------------------
+    R      32.60 mm                      -0.05 mm                   2.55 mm
+    R      31.00 mm                       1.55 mm                   4.15 mm
+    R      30.00 mm                       2.55 mm                   5.15 mm   <- selected
+    R      29.00 mm                       3.55 mm                   6.15 mm
+
+  * THE ROD STOPS CONSTRAINING THE PLATE WIDTH. Beside the plate they compete for
+    the same millimetres. Above it they do not compete at all -- the rod sits at
+    Y 28.0-32.0 mm and the tallest component reaches 16.50 mm.
+  * THE ROD CAN COME INBOARD, so its hole is a real hole. At R 32.60 a 4.5 mm hole
+    leaves -0.05 mm of ligament, which is not a part. At R 30.00 it leaves 2.55 mm.
+    It also takes the hole in each END PLATE from 2.55 to 5.15 mm of edge ligament,
+    and that matters more -- those two plates are pressure boundaries.
+
+  The plate BUTTS the brackets and is bonded to them; it does not run through them.
+  It cannot: the plate is 59.41 mm wide and a bracket only
+  36.0 mm, so a slot for it would run the bracket's
+  full width and cut it into two unconnected halves. A butt bond carries 166x.
+
+============================================================================================
+VERDICT
+============================================================================================
+
+  sled check          OK
+                      all 5 components place on two faces at 1.0 mm clearance
+                      tallest is StratoLoggerCF at 15.70 mm against 18.70 mm of half-height -- 3.00 mm clear
+                      passes the shoulder bore: R 34.80 mm at its widest against R 35.10 mm, 0.30 mm to spare
+                      rod holes at R 30.00 mm leave 2.55 mm of bracket ligament
+                      rod hole bearing 4995 N against 7.2 N a hole, 696x
+                      rods clear the tallest component stack by 11.50 mm
+                      11 board mounting holes, all on the plate
+                      plate-to-bracket bond 95.1 mm2 at 25 MPa = 2376 N against 14.3 N a joint, 166x
+                      11 mounting holes from 12 screw positions -- 1 merged into shared through-holes with a standoff each side: StratoLoggerCF + servo power BEC
+                      6 of 11 mounting screws land under a component on the other face -- countersink them flush
+                      battery, 2S 1500 mAh has 1.00 mm of clear plate beside it against the 3.0 mm a cable-tie slot needs -- retention is NOT SOLVED and is not drawn
+                      wiring loom has 1.41 mm of clear plate beside it against the 3.0 mm a cable-tie slot needs -- retention is NOT SOLVED and is not drawn
+                      101.6 g against 150 g budgeted -- 48.4 g under
+
+  Read that as narrowly as it is written. Everything places, the part is
+  buildable, and it comes in under its mass allowance -- on a plate 3.25 mm wider
+  than the one every figure in this project was quoted against. Two things in that
+  list are NOT solved and are only reported:
+
+    * BATTERY AND LOOM RETENTION. There is 1.00 mm of clear plate beside the
+      battery and 1.41 mm beside the loom, against the ~3 mm a cable-tie slot
+      needs. So the two heaviest items on the sled are held by nothing that is
+      drawn. Adhesive, foam, or a strap anchored to the board standoffs will do
+      it -- 90 g at 8.3 g is only 7.3 N -- but none of those is designed, and a
+      battery coming loose in a guided vehicle is not a small failure.
+    * SIX SCREWS LAND UNDER A COMPONENT ON THE OTHER FACE. They have to be
+      countersunk flush or the part above needs relief. Free to notice now and a
+      filed screw head later.
+
+============================================================================================
+STILL A GUESS
+============================================================================================
+
+  3 of 4 nav bay envelopes are estimates:
+    custom STM32 guidance board
+    battery, 2S 1500 mAh
+    servo power BEC
+
+  The STM32 board's 70 x 45 x 12 is called a LAYOUT TARGET in avionics.py, not a
+  measurement, and it is the only line a design decision can shrink. Everything
+  above is parametric on those envelopes -- rerun this one command when a part is
+  chosen. Also a guess: the 30 g of hardware, and the loom's 12 mm bundle height.

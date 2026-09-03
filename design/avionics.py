@@ -23,7 +23,9 @@ WHY A SLED IS NOT A VOLUME PROBLEM, which is the modelling point worth keeping.
 The obvious check -- add up component volumes, compare against the bay's -- gives 249 cm3
 against 558 cm3 and says the bay is half empty. It is the wrong check. Electronics mount on
 the two faces of a flat sled, and a flat sled in a round tube can only use the rectangle
-inscribed in the circle: at a 60 mm sled width the usable height is +/-22.3 mm, not +/-37.4.
+inscribed in the circle: at the 56.16 mm sled width SLED_WIDTH_FRACTION gives, the usable
+height is +/-21.06 mm, not +/-37.4. (That worked example used to read "at a 60 mm sled width
+... +/-22.3 mm", which was never a width this model produced.)
 Nothing goes in the four corners the sled cannot reach, and nothing stacks more than one
 board deep. So the binding quantity is FOOTPRINT AREA on two faces, and the bay's length is
 what that area has to fit into.
@@ -38,9 +40,23 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-# Sled width, as a fraction of the tube bore. A sled has to slide in and out past the
-# coupler and needs clearance for the rails or threaded rods that carry it; 0.80 of the bore
-# is a working figure and it is the number the usable height falls out of.
+# Sled width, as a fraction of the tube bore.
+#
+# THIS IS NOW A FALLBACK, NOT THE DESIGN POINT. It was written as "0.80 of the bore is a
+# working figure" -- a guess with no argument behind it, made when no sled existed. A sled
+# exists now (`design/sled.py`), it is 0.846 of the bore, and `design/configure.py` passes
+# that real width into `check_packing()` rather than this constant. 0.80 remains here as the
+# figure to use when no part has been designed, which is the situation this whole module was
+# written for.
+#
+# The number moved for a reason worth stating, because "the model was retuned until it fit"
+# is the failure mode this project has a correction about (correction 5) and this is NOT
+# that. 0.80 assumed the sled's carriers sit BESIDE it, so every millimetre of rod is a
+# millimetre the sled cannot have. `sled.py` clocks the two rods perpendicular to the plate
+# instead, above and below it, where they do not compete with its width at all -- and the
+# width is then set by the only real constraint left, which is that a wider plate sits on a
+# longer chord and steals height from the tallest component. The margin got better because
+# the part got better, not because the constant was adjusted to suit.
 SLED_WIDTH_FRACTION = 0.80
 
 # Packing efficiency on a sled face. Boards are rectangles with connectors on their edges,

@@ -402,8 +402,16 @@ def evaluate(
             f"check and the mass budget are describing different parts")
 
     nav = bays["nav bay"]
+    # Check the packing against the width of the sled that EXISTS, not against
+    # avionics.SLED_WIDTH_FRACTION's fallback guess. Imported here rather than at module
+    # scope because design/sled.py imports avionics, and avionics must not import back.
+    from . import sled as sled_mod
+    nav_sled_width = sled_mod.max_plate_width(
+        nav.min_bore,
+        max(sled_mod.stack_height(c) for c in avionics.NAV_BAY_STACK + [sled_mod.LOOM]))
     nav_pack = avionics.check_packing(
-        nav.min_bore, nav.usable_length, avionics.NAV_BAY_STACK, end_closures=0)
+        nav.min_bore, nav.usable_length, avionics.NAV_BAY_STACK, end_closures=0,
+        width_fraction=nav_sled_width / nav.min_bore)
     if not nav_pack.fits:
         was = avionics.check_packing(
             nav.min_bore, nav.usable_length, avionics.DEFAULT_STACK, end_closures=0)
@@ -413,7 +421,8 @@ def evaluate(
             f"short by {-nav_pack.margin * 1000:.0f} mm (was "
             f"{was.required_length * 1000:.0f} mm before the tracker and radio went to the "
             f"nose); {len(nav_pack.estimated)} of {len(nav_pack.components)} parts are "
-            f"guesses until D7 closes. See scripts/avionics_report.py"
+            f"guesses until D7 closes. See scripts/avionics_report.py and "
+            f"scripts/sled_report.py"
         )
     if not nose_fit.fits:
         warnings.append(

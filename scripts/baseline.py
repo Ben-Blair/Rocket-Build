@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design import (
     access_bulkhead, aero, avionics, control, estimation, flutter, hinge, joints, seal,
-    trajectory, tube_section, venting,
+    sled, trajectory, tube_section, venting,
 )
 # Aliased because `bay` is a local in main() -- check_direct_drive's result. Same reason
 # design/configure.py imports mass as mass_mod.
@@ -392,6 +392,40 @@ def main() -> None:
     print(f"  nose plate check    {'OK' if nplchk.ok else 'VIOLATIONS: ' + '; '.join(nplchk.violations)}")
     print("     Full argument: python scripts/access_bulkhead_report.py")
 
+    rule("THE NAV BAY SLED -- the allowance nobody turned into a part")
+    sld = sled.sled_from_evaluation(ev)
+    sldchk = sled.check_sled(sld)
+    old_w = avionics.SLED_WIDTH_FRACTION * sld.bore
+    narrow = sled.sled_from_evaluation(ev, plate_width=old_w)
+    print(f"  plate               G-10 {sld.plate_length * 1000:.2f} x "
+          f"{sld.plate_width * 1000:.2f} x {sld.plate_thickness * 1000:.1f} mm, "
+          f"{sld.plate_mass * 1000:.1f} g")
+    print(f"  end brackets        2 x G-10 R {sld.bracket_radius * 1000:.2f} mm x "
+          f"{sld.bracket_thickness * 1000:.1f} mm, {sld.bracket_mass * 1000:.1f} g -- the "
+          f"rods pass through THESE")
+    print(f"  rods                {sled.ROD_COUNT} x M{sled.ROD_DIAMETER * 1000:.0f} at "
+          f"(0, +/-{sld.rod_radius * 1000:.2f}), PERPENDICULAR to the plate, running the "
+          f"full {sld.rod_length * 1000:.2f} mm of bay")
+    print(f"  assembly            {sld.assembly_length * 1000:.2f} mm in "
+          f"{sld.bore * 1000:.2f} mm bore, widest R {sld.max_radius * 1000:.2f} mm; "
+          f"{sld.mass * 1000:.1f} g against the {sled.SLED_MASS_BUDGET * 1000:.0f} g "
+          f"mass.py has budgeted since before the part existed")
+    print(f"  DISCRETE PLACEMENT, which avionics.check_packing() does not do: all "
+          f"{len(sld.components)} components place")
+    print(f"  at {sld.clearance * 1000:.1f} mm clearance on the "
+          f"{sld.plate_width * 1000:.2f} mm plate -- and NONE place on the "
+          f"{old_w * 1000:.2f} mm plate that")
+    print(f"  avionics.SLED_WIDTH_FRACTION = {avionics.SLED_WIDTH_FRACTION:.2f} gives. The "
+          f"blocker is the 80 g wiring loom, which the areal")
+    print(f"  model charges 70 x 20 mm of face and which then has nowhere to go. Read")
+    print(f"  design/sled.py before acting on that: it has a second reading, and NOTHING")
+    print(f"  here resizes the bay (correction 5).")
+    print(f"  sled check          {'OK' if sldchk.ok else 'VIOLATIONS: ' + '; '.join(sldchk.violations)}")
+    print(f"  at 0.80 of the bore {'OK' if sled.check_sled(narrow).ok else 'VIOLATIONS: ' + '; '.join(sled.check_sled(narrow).violations)}")
+    for n in sldchk.notes:
+        if "NOT SOLVED" in n:
+            print(f"  OPEN                {n}")
+    print("     Full argument: python scripts/sled_report.py")
 
     # The module vent had a size and a surface but no STATION until Aug 2026, which is not
     # something a hole can be drawn from -- see venting.MODULE_VENT_STATION. Guarded here

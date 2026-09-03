@@ -209,6 +209,61 @@ Read this first if you are picking the project back up.
   which belongs in Onshape or in the script rather than in the rebuild. Full write-up in
   `docs/05`, "The Fusion 360 transfer". **Volume and mass agreement is not model
   agreement** -- none of this moved a gram.
+- **The nav bay sled is a part now, and drawing it found three things** (correction 41).
+  `design/sled.py`, `scripts/sled_report.py`, `scripts/make_sled_fusion.py`, verdict in
+  `baseline.py`, full write-up in `docs/08-nav-bay-sled.md`. The sled was the fourth
+  allowance in this project to be priced without existing: `mass.py` has charged **150 g**
+  for `sled_and_hardware` since that dict was written and `avionics.SLED_WIDTH_FRACTION`
+  set its width, for a part nobody had drawn. It is **G-10 plate 109.04 x 59.41 x 1.6 mm,
+  two end brackets, two M4 rods, 101.6 g** against that 150 g, in Fusion as `NavBay` at
+  Z -127.04 -> -12.00 with the nav bay tube, the nose shoulder and the nose plate drawn
+  around it. Three findings, and the first is the one that matters:
+  - **0.80 OF THE BORE IS TOO NARROW TO CARRY THE WIRING THE SAME FILE CHARGES FOR.**
+    `avionics.check_packing()` is an **areal** model -- footprint summed and divided by
+    `2 x sled_width x 0.70` -- and it reports the bay FITS by +4.6 mm. Place the same stack
+    as **real rectangles on two faces** (exhaustive over face assignment and 0/90
+    orientation, exact within a face, so a negative is a proof and not a search that gave
+    up) and the four boards fit fine, but the **80 g wiring loom then has nowhere to go**:
+    no 70 x 20 mm rectangle left on either face, and the corner crescents would need it at
+    **1.82 g/cm3** against copper's 8.96 and PVC's 1.4. The plate has to reach **59 mm**.
+    An areal model cannot see this because it only ever sees the product -- it cannot tell
+    a plate 2.84 mm too narrow from one that is wide enough. `configure.py` now passes the
+    real sled width into `check_packing()` instead of the 0.80 fallback, and the areal
+    margin goes **+4.6 -> +10.7 mm** as a *result* of the part improving, not as a retune.
+  - **THE MOUNT AS FIRST DRAWN DID NOT HOLD ANYTHING.** Rods beside the plate, in its own
+    plane, is what a side-view sketch gives and it is wrong in three dimensions: a nut on
+    an axial rod clamps axially, and a plate in that rod's plane offers nothing but its
+    1.6 mm edge for a washer to bear on. Ears around the rods do not help -- the rod runs
+    the whole bay, so clearing it removes every scrap of ear at that radius. Pairwise
+    interference said it in one line: **47.31 mm3 of plate inside each rod.** The capture
+    has to be **perpendicular** to the rod -- an end bracket, a bulkhead in miniature -- and
+    once it is, the rods can move off the plate's plane, where they stop competing with its
+    width and can come inboard to **R 30.00**, taking the hole ligament from **-0.05 mm to
+    2.55 mm** in the bracket and from 2.55 to **5.15 mm** in the two end plates, which
+    matters more because those are pressure boundaries. The rods were also **12 mm too
+    short** -- drawn the length of the sled instead of the length of the bay, so a "simply
+    supported" sled was supported at one end by nothing.
+  - **TWO MOUNTING SCREWS COLLIDED AND NOTHING SAW IT UNTIL THE VOLUME DID.** The BEC's and
+    the altimeter's corner screws landed exactly on top of each other at one corner and
+    1.30 mm apart at another -- two holes 1.30 mm apart are one ragged slot. Found because
+    the CAD came back **+10.7519 mm3** against the analytic figure and the two overlaps
+    accounted for it to the last hundredth. Colliding holes now merge into shared
+    through-holes with a standoff each side.
+  **STILL OPEN AND STATED RATHER THAN SOLVED:** the loom result has a second reading --
+  the 80 g is a `mass.py` line called `wiring_connectors`, connectors are not loom, and the
+  servo and pyro leads both run AFT out of this bay -- so **nothing was resized and
+  `avionics.py`'s model was not edited** (correction 5's discipline). Weighing the loom and
+  counting its conductors settles it and has never been done. Also open: **battery and loom
+  retention is not drawn** -- 1.00 mm of clear plate beside the battery against the ~3 mm a
+  cable-tie slot needs, so the two heaviest items on the sled are held by nothing that
+  exists yet. Interference is **zero pairs involving any sled body** across 861, and
+  **0.0000 mm3 of the sled lies outside the 70.20 mm shoulder bore** -- the "does it slide
+  past the nose shoulder" check no script in this repo had ever performed. Three stale
+  strings fixed on the way past: `avionics_report.py` hardcoded "STILL SHORT BY 14 mm"
+  **directly under its own computed FITS verdict**, `avionics.py`'s docstring worked its
+  example at a sled width the model never produces, and `docs/04` section 5 still said
+  9 mm short. Next in this bay: the nav bay's static ports still have **no station and no
+  clocking** anywhere in the repo.
 - **Step 4 is next in the plan**, and D8 has settled what it is built from. What is left is
   firmware: the filter, the HIL rig, the controller and the safety logic.
 
@@ -233,8 +288,8 @@ these, because they moved once already when the altimeter went into the budget
 on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
 so instead of hiding it.
 
-Thirty-nine corrections are worth knowing about — 38's own numbered entry is still only the
-bullet above. The first four changed the design; two of the
+Forty-one corrections are worth knowing about — 38's, 40's and 41's own numbered entries are
+still only the bullets above. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
 

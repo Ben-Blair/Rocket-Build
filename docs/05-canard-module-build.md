@@ -977,6 +977,23 @@ Onshape elements, and which script owns each:
 | `Canard bay (printed)` — bay + retainer bar | `scripts/make_bay_cad.py`, `cad/canard_bay.fs` |
 | `Assembly 1` — 34 instances, 5 rigid groups, 4 revolute hinges | `scripts/make_module_assembly.py`, `scripts/place_bearings.py`, `scripts/make_bay_cad.py --assemble`; **the 4 mates were placed by hand** |
 
+The Fusion document `CanardControlModule` holds the same module natively, plus one component
+that is **not** in Onshape:
+
+| Fusion component | Built by |
+|---|---|
+| root — the 28-body native rebuild, Z 0 → 142.900 | rebuilt by hand; repaired against the STEP reference, see "The Fusion 360 transfer" below |
+| `Onshape_reference` | `cad/onshape_export/Assembly_1.step`, imported |
+| `NavBay` — sled plate, 2 end brackets, 2 rods, 12 standoffs, 5 component envelopes, and the bay's own tube / nose shoulder / nose plate, Z −130.24 → 0 | `scripts/make_sled_fusion.py` (a **generator** — it emits the script Fusion runs, so no dimension is typed into Fusion); argument in `docs/08-nav-bay-sled.md` |
+
+`NavBay` is the nav bay, not the canard module, and it is here only because it shares a
+frame: Z = 0 is the module's forward face, so the bay forward of it is negative Z and the
+two can be interference-checked across the joint. **The full argument for that part, and
+the finding that came out of drawing it, is `docs/08-nav-bay-sled.md`** — the short version
+is that `avionics.SLED_WIDTH_FRACTION = 0.80` is 2.84 mm too narrow to carry the wiring the
+same file charges for, that an areal packing model cannot see that, and that the mount as
+first drawn put 47.31 mm³ of plate inside each rod.
+
 ## Dimensions
 
 ### Module
