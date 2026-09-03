@@ -20,22 +20,25 @@ JOINT CAPACITY -- the check that did not exist
 ============================================================================================
 
   nav bay           127.0 mm tube holds 127.04 mm of joint (nose / nav bay 79.40, nav bay / canard module 47.64) ->   +0.00 mm spare
-  canard module     142.9 mm tube holds 158.80 mm of joint (nav bay / canard module 79.40, canard module / recovery bay 79.40) ->  -15.88 mm spare
+  canard module     142.9 mm tube holds  99.02 mm of joint (nav bay / canard module 50.73, canard module / recovery bay 48.29) ->  +43.90 mm spare
   recovery bay      357.3 mm tube holds 158.80 mm of joint (canard module / recovery bay 79.40, recovery bay / booster 79.40) -> +198.50 mm spare
   booster           416.3 mm tube holds  79.40 mm of joint (recovery bay / booster 79.40) -> +336.88 mm spare
 
-  VIOLATION  canard module: 158.80 mm of joint in a 142.92 mm tube -- over by 15.88 mm. Two solids cannot share the same millimetre of tube
   note       nav bay is EXACTLY full: 127.04 mm of joint in 127.04 mm of tube, 0.00 mm spare. Nothing else can be bonded to this bore anywhere along its length
+  note       canard module has 43.90 mm of tube spare
   note       recovery bay has 198.50 mm of tube spare
   note       booster has 336.88 mm of tube spare
+  note       nav bay / canard module: engagement 50.73 mm is 28.67 mm under the 1.0 cal convention. Nothing in this project sizes a coupler in bending, so there is no analysis that either confirms or replaces it -- open
   note       nav bay / canard module: anchor 47.64 mm is 31.76 mm under the 1.0 cal convention. Nothing in this project sizes a coupler in bending, so there is no analysis that either confirms or replaces it -- open
+  note       canard module / recovery bay: anchor 48.29 mm is 31.11 mm under the 1.0 cal convention. Nothing in this project sizes a coupler in bending, so there is no analysis that either confirms or replaces it -- open
 
-  The canard module violation is OPEN and is not the static ports' to close: its
-  aft joint would have to share the module's aft end with the printed canard bay
-  and the aft gas seal. Its forward joint is worse than the check can see -- the
-  printed bay's forward face is at module Z 53.129 and the potted pass-through
-  plate holds Z 0.000 to 2.400, so the protrusion has 50.73 mm and is charged
-  79.40 mm.
+  The canard module's own two joints are bounded by the printed canard bay sitting
+  in the MIDDLE of its tube (Z 53.13 -> 94.63 mm), not by convention -- each fits separately: the
+  forward joint's protrusion has 50.73 mm before the printed bay (the potted pass-through
+  plate holds Z 0.000 to 2.4 mm ahead of it) and is now charged 50.73 mm;
+  the aft joint's anchor has 48.29 mm behind it and is charged the same. Both are below
+  the 1.0 cal convention and reported as open notes above, since nothing here sizes
+  a coupler in bending -- see docs/01 correction 42.
 
 ============================================================================================
 THE PLACEMENT
@@ -158,11 +161,11 @@ VERDICT
     note       nearest sled solid to any port's inner mouth 7.89 mm -- the bay can breathe through all 3
 
   STILL OPEN, stated rather than solved:
-    * the aft coupler is 0.600 cal of bond against a 1.0 cal convention, and
+    * both of the canard module's own joints are below the 1.0 cal convention
+      (50.73 mm fwd, 48.29 mm aft, against the printed bay's own footprint) and
       nothing in this project sizes a coupler in bending
     * the same joint's RETAINING SCREWS want the same 47.64 mm band these holes are
       in, and no script in this repo has ever placed one
-    * the canard module's joint capacity is over-subscribed by 15.88 mm
     * the boundary layer is not modelled; the position errors above are inviscid
     * the ejection transient is not modelled, and it is the one flow case where
       this port really is inertial

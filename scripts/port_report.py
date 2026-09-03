@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from design import aero, atmosphere, avionics, joints, ports, sled, venting
+from design import access_bulkhead, aero, atmosphere, avionics, bay, joints, ports, sled, venting
 from design.configure import (
     DEFLECTION_LIMIT_DEG, ROLL_COMMAND_CAP_DEG, baseline, evaluate,
 )
@@ -61,7 +61,12 @@ def main() -> None:
     q_deploy = 0.5 * rho_deploy * drogue_rate ** 2
     mach_deploy = drogue_rate / a_deploy
 
-    js = joints.for_rocket(r, wall)
+    bay_geom = bay.printed_bay_from_evaluation(ev)
+    abpt = access_bulkhead.pass_through_from_evaluation(ev)
+    canard_fwd_room, canard_aft_room = bay.joint_room(
+        bay_geom, r.tubes[1].length, abpt.bulkhead.thickness)
+
+    js = joints.for_rocket(r, wall, canard_fwd_room, canard_aft_room)
     placement = ports.place_ports(r, wall)
     g = sled.sled_from_evaluation(ev)
     sled_forward, _ = sled.station_range(r, g)
@@ -92,21 +97,26 @@ def main() -> None:
 
     rule("JOINT CAPACITY -- the check that did not exist")
     say()
-    for cap in joints.tube_capacity(r, wall).values():
+    for cap in joints.tube_capacity(r, wall, canard_fwd_room, canard_aft_room).values():
         say(f"  {cap}")
-    chk_j = joints.check_joints(r, wall)
+    chk_j = joints.check_joints(r, wall, canard_fwd_room, canard_aft_room)
     say()
     for line in chk_j.violations:
         say(f"  VIOLATION  {line}")
     for line in chk_j.notes:
         say(f"  note       {line}")
     say()
-    say("  The canard module violation is OPEN and is not the static ports' to close: its")
-    say("  aft joint would have to share the module's aft end with the printed canard bay")
-    say("  and the aft gas seal. Its forward joint is worse than the check can see -- the")
-    say("  printed bay's forward face is at module Z 53.129 and the potted pass-through")
-    say("  plate holds Z 0.000 to 2.400, so the protrusion has 50.73 mm and is charged")
-    say(f"  {js[1].engagement * MM:.2f} mm.")
+    say("  The canard module's own two joints are bounded by the printed canard bay sitting")
+    say(f"  in the MIDDLE of its tube (Z {bay_geom.forward_face * MM:.2f} -> "
+        f"{bay_geom.aft_face * MM:.2f} mm), not by convention -- each fits separately: the")
+    say(f"  forward joint's protrusion has {canard_fwd_room * MM:.2f} mm before the printed "
+        f"bay (the potted pass-through")
+    say(f"  plate holds Z 0.000 to {abpt.bulkhead.thickness * MM:.1f} mm ahead of it) and is "
+        f"now charged {js[1].engagement * MM:.2f} mm;")
+    say(f"  the aft joint's anchor has {canard_aft_room * MM:.2f} mm behind it and is "
+        f"charged the same. Both are below")
+    say("  the 1.0 cal convention and reported as open notes above, since nothing here sizes")
+    say("  a coupler in bending -- see docs/01 correction 42.")
 
     # ---------------------------------------------------------------------------------
     rule("THE PLACEMENT")
@@ -282,11 +292,11 @@ def main() -> None:
         say(f"    note       {line}")
     say()
     say("  STILL OPEN, stated rather than solved:")
-    say("    * the aft coupler is 0.600 cal of bond against a 1.0 cal convention, and")
+    say("    * both of the canard module's own joints are below the 1.0 cal convention")
+    say("      (50.73 mm fwd, 48.29 mm aft, against the printed bay's own footprint) and")
     say("      nothing in this project sizes a coupler in bending")
     say("    * the same joint's RETAINING SCREWS want the same 47.64 mm band these holes are")
     say("      in, and no script in this repo has ever placed one")
-    say("    * the canard module's joint capacity is over-subscribed by 15.88 mm")
     say("    * the boundary layer is not modelled; the position errors above are inviscid")
     say("    * the ejection transient is not modelled, and it is the one flow case where")
     say("      this port really is inertial")

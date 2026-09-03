@@ -39,10 +39,11 @@ nose shoulder, the nose plate, and -- since Sep 2026 -- the AFT COUPLER and the 
 PORTS drilled through both it and the tube (`design/ports.py`, docs/01 correction 42). The
 coupler is here because the ports pass through it: there is no bare wall anywhere in this
 bay, so a port drawn through the tube alone would be 2.30 mm deep when the real hole is
-4.60. Only the coupler's ANCHORED half is drawn, Z -47.64 -> 0.00. Its protruding half is
-the open item -- `joints.check_joints()` says the canard module cannot hold the 1.0 cal it
-is charged -- and drawing a length the check rejects would assert something this file does
-not know.
+4.60. Only the coupler's ANCHORED half is drawn, Z -47.64 -> 0.00. Its PROTRUDING half --
+into the canard module -- is now a known length (50.729 mm, `bay.joint_room()`, not the
+1.0 cal `joints.check_joints()` used to reject) but is still not drawn here: extending this
+generator to build it is out of scope for the fix that found the number, not blocked on
+anything unknown.
 
 GEOMETRY IS BUILT AS TEMPORARY BREP BODIES INJECTED THROUGH A BaseFeature, not as sketches
 and extrudes. That is the pattern that was proven to work in this document last session
@@ -179,7 +180,9 @@ def emit() -> str:
         # From the NOSE JOINT's engagement, not from bay.narrow_span -- see joint_geometry().
         ("nose shoulder", bay.full_bore * MM / 2.0, aft_joint.bore * MM / 2.0,
          z_fwd, z_fwd + nose_joint.engagement * MM),
-        # The aft coupler's ANCHORED half only. Its protruding half is an open item.
+        # The aft coupler's ANCHORED half only. Its protruding half (into the canard
+        # module) is a known 50.729 mm now -- see the module docstring -- but drawing it
+        # is not in scope here.
         ("aft coupler", bay.full_bore * MM / 2.0, aft_joint.bore * MM / 2.0,
          coupler_z0, 0.0),
         ("nose plate", bay.full_bore * MM / 2.0, 0.0,

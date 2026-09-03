@@ -274,14 +274,17 @@ Read this first if you are picking the project back up.
   is that **`joints.py` described a joint only by the half that PROTRUDES**, so nothing could
   ask whether a bay had room for the anchored half — and **two 1.0 cal joints do not fit in a
   1.60 cal tube.** `anchor` is a field now and `check_joints()` is the check; the nav bay is
-  exactly full, and **the canard module fails it by 15.88 mm and is left open.** One number
-  moved elsewhere: the recovery bay's packing margin **+17.8 → +8.4 mm**, because
-  `bay_budget` was taking the `max` of a bay's two narrowed spans instead of their sum. Four
-  findings, and the two worth carrying are that **neither conventional placement rule can be
-  met and it costs about a metre** (the error is only ever read where q is small), and that
-  **the port-count argument came out backwards from the first guess** — four ports is the
-  more accurate ring and three is the forgiving one, because a 4-port ring's clocking is
-  load-bearing against a four-canard vehicle's own field and a 3-port ring's is not.
+  exactly full, and **the canard module failed it by 15.88 mm — resolved same-session,
+  correction 42's second half** (below): both of its joints are bounded by the printed
+  bay sitting mid-tube, not by convention, and fit with 43.9 mm spare once derived from
+  the bay's own footprint. One number moved elsewhere: the recovery bay's packing margin
+  **+17.8 → +8.4 mm**, because `bay_budget` was taking the `max` of a bay's two narrowed
+  spans instead of their sum. Four findings, and the two worth carrying are that **neither
+  conventional placement rule can be met and it costs about a metre** (the error is only
+  ever read where q is small), and that **the port-count argument came out backwards from
+  the first guess** — four ports is the more accurate ring and three is the forgiving one,
+  because a 4-port ring's clocking is load-bearing against a four-canard vehicle's own
+  field and a 3-port ring's is not.
 - **Step 4 is next in the plan**, and D8 has settled what it is built from. What is left is
   firmware: the filter, the HIL rig, the controller and the safety logic.
 
@@ -1306,13 +1309,35 @@ that silently recurs:
    and it was applied rather than merely reported, because leaving half of every joint out of
    the bore model is the identical defect to leaving it out of the length model.
 
-   **The canard module fails the same check by 15.88 mm and is left failing on purpose.** Its
-   forward joint is worse than the check can even see: the protrusion has 50.73 mm before it
-   reaches the printed canard bay's forward face at module Z 53.129 (the potted pass-through
-   plate holds Z 0.000–2.400 ahead of it) against the 79.40 mm charged — a coupler driven
-   straight through the part that carries the hinge bearings. Resizing it is the module's aft
-   joint and the aft gas seal, which is not something the placement of three holes in the nav
-   bay is entitled to redesign. **OPEN.**
+   **The canard module fails the same check by 15.88 mm, and it is RESOLVED the same
+   session, the same way.** Its forward joint is worse than the raw check can even see: the
+   protrusion would have run 79.40 mm into a printed canard bay whose own structure starts
+   at module Z 53.129 (the potted pass-through plate holds Z 0.000–2.400 ahead of it) — a
+   coupler driven straight through the part that carries the hinge bearings. The fix is the
+   nav bay's, one joint further aft: `design/bay.py` gains `printed_bay_from_evaluation()`
+   and `joint_room()`, which read the printed bay's own `forward_face`/`aft_face`
+   (53.129 / 94.629 mm) and hand `design/joints.py` the real room —
+
+   | | convention charges | real room |
+   |---|---|---|
+   | forward joint's engagement (into canard module) | 79.40 mm | **50.729 mm** |
+   | aft joint's anchor (into canard module) | 79.40 mm | **48.291 mm** |
+   | sum against the 142.92 mm tube | 158.80 mm | **99.02 mm, 43.9 mm spare** |
+
+   `design/joints.py`'s `for_rocket()`/`budgets()`/`tube_capacity()`/`check_joints()` all
+   take the two figures as optional floats (`canard_forward_room`, `canard_aft_room`,
+   `None` falling back to convention) — the same shape as `nav_bay_length` above, and kept
+   dependency-light on purpose: building the printed bay needs a servo choice
+   (`hinge.selected`, `hinge.canard_hinge_station`), and `design/configure.py`'s
+   `evaluate()` — called on every optimizer/sweep iteration — never reads the canard
+   module's own budget, only the recovery bay's, so it must not pay for that build. Only
+   `scripts/baseline.py` and `scripts/port_report.py`, the two places a human reads
+   `check_joints()`'s verdict, needed threading. **Both joints are still below the 1.0 cal
+   convention** — that does not change, and nothing in this project sizes a coupler in
+   bending, so it stays an explicit open note. What changed is that the tube is not
+   physically over-subscribed: it was only ever under-served by a convention it could not
+   have met in 142.92 mm either way. `check_joints()` now reports `OK` with three "below
+   convention, open" notes instead of a violation.
 
    **THE PORTS: 3 × ⌀3.2 mm at station 420.82 mm, clocked 15/135/255°, 4.60 mm deep**,
    through the airframe tube **and the bonded aft coupler together**. That band is the only
@@ -1406,13 +1431,14 @@ that silently recurs:
    (255° is 75° mod 180). This project has been trusting four-decimal volume agreement since
    correction 34; it is worth knowing where that stops working.
 
-   **STILL OPEN, stated rather than solved:** the aft coupler is 0.600 cal of bond against a
-   1.0 cal convention and **nothing in this project sizes a coupler in bending**; the same
+   **STILL OPEN, stated rather than solved:** all three of the canard module's coupled
+   joints are below the 1.0 cal convention (0.600 cal nav-bay-side anchor, 0.639 cal
+   forward engagement, 0.608 cal aft anchor) and **nothing in this project sizes a coupler
+   in bending** — the capacity fits (43.9 mm spare), only the convention does not; the same
    joint's **retaining screws want the same 47.64 mm band the ports are in**, and no script
-   here has ever placed one; the canard module's 15.88 mm; the boundary layer, which is a
-   position error of the same order as the one that was modelled and the wrong sign to guess
-   at; and the ejection transient, which is the one flow case where this port really is
-   inertial.
+   here has ever placed one; the boundary layer, which is a position error of the same order
+   as the one that was modelled and the wrong sign to guess at; and the ejection transient,
+   which is the one flow case where this port really is inertial.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —

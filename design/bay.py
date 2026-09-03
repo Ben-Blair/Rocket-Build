@@ -540,6 +540,39 @@ def build_bay(stack: HingeStack, servo: ServoGeometry, hinge_station: float,
                        hinge_station=hinge_station)
 
 
+def printed_bay_from_evaluation(ev, material: str = BAY_MATERIAL) -> BayGeometry:
+    """The printed canard bay for this vehicle, from an Evaluation.
+
+    Mirrors `sled.sled_from_evaluation` / `access_bulkhead.pass_through_from_evaluation` /
+    `seal.from_evaluation`: one place that turns `ev` into this part's geometry, instead of
+    every caller repeating `hinge.selected(...)` + `hinge.canard_hinge_station(...)` inline,
+    which `scripts/bay_report.py` and `scripts/baseline.py` each did separately.
+    """
+    from .hinge import canard_hinge_station, selected as hinge_selected
+    from .packaging import SERVO_GEOMETRY
+
+    r = ev.rocket
+    geometry = SERVO_GEOMETRY[ev.params.servo]
+    stack = hinge_selected(r.diameter / 2.0, r.tubes[1].wall_thickness, geometry)
+    station = canard_hinge_station(r) - r.tube_station(1)
+    return build_bay(stack, geometry, station, material=material)
+
+
+def joint_room(geom: BayGeometry, module_tube_length: float,
+              forward_plate_thickness: float) -> tuple[float, float]:
+    """(forward, aft): the real room the canard module's two tube-to-tube joints have
+    before they run into this printed bay -- see `design/joints.py`'s
+    `canard_forward_room` / `canard_aft_room`, docs/01 correction 42.
+
+    The forward figure subtracts the potted wiring pass-through plate (bonded at the
+    module's own forward face, ahead of where a coupler could start) from the bay's own
+    forward face; the aft figure is simply what is left of the tube behind the bay -- the
+    aft gas seal's bulkhead sits INSIDE that span, sharing it with the coupler rather than
+    competing with it, so nothing is subtracted there.
+    """
+    return geom.forward_face - forward_plate_thickness, module_tube_length - geom.aft_face
+
+
 # ======================================================================================
 # the check the bay was supposed to run
 # ======================================================================================

@@ -221,7 +221,7 @@ RECOVERY -- the aft gas seal
 JOINTS -- what the couplers cost each bay
 ============================================================================================
   nav bay           127.0 mm tube ->  115.0 mm usable, bore 74.8 mm (70.2 over 127 mm)
-  canard module     142.9 mm tube ->  130.9 mm usable, bore 74.8 mm (70.2 over 159 mm)
+  canard module     142.9 mm tube ->  130.9 mm usable, bore 74.8 mm (70.2 over 99 mm)
   recovery bay      357.3 mm tube ->  357.3 mm usable, bore 74.8 mm (70.2 over 159 mm)
   booster           416.3 mm tube ->  404.3 mm usable, bore 74.8 mm (70.2 over 79 mm)
   A coupler or a shoulder is a TUBE and its bore is usable, so it costs DIAMETER
@@ -232,14 +232,23 @@ JOINTS -- what the couplers cost each bay
 
   AND EVERY JOINT HAS AN ANCHORED HALF, which this model left out until Sep 2026.
   nav bay           127.0 mm tube holds 127.04 mm of joint (nose / nav bay 79.40, nav bay / canard module 47.64) ->   +0.00 mm spare
-  canard module     142.9 mm tube holds 158.80 mm of joint (nav bay / canard module 79.40, canard module / recovery bay 79.40) ->  -15.88 mm spare
+  canard module     142.9 mm tube holds  99.02 mm of joint (nav bay / canard module 50.73, canard module / recovery bay 48.29) ->  +43.90 mm spare
   recovery bay      357.3 mm tube holds 158.80 mm of joint (canard module / recovery bay 79.40, recovery bay / booster 79.40) -> +198.50 mm spare
   booster           416.3 mm tube holds  79.40 mm of joint (recovery bay / booster 79.40) -> +336.88 mm spare
-  joint capacity      VIOLATIONS: canard module: 158.80 mm of joint in a 142.92 mm tube -- over by 15.88 mm. Two solids cannot share the same millimetre of tube
+  joint capacity      OK
   The nav bay is EXACTLY full -- two 1.0 cal joints in a 1.60 cal tube do not fit,
-  so its aft coupler gets the 0.600 cal that is left. The canard module is over by
-  15.88 mm and is OPEN: see docs/01 correction 42. Neither was visible while a
-  joint was described only by the half that protrudes.
+  so its aft coupler gets the 0.600 cal that is left. The canard module's own two
+  joints are bounded by the printed bay sitting in the MIDDLE of its tube (Z 53.13 -> 94.63 mm), not by
+  convention: 50.73 mm fwd, 48.29 mm aft -- both below the 1.0 cal convention and reported as open
+  notes below, since nothing here sizes a coupler in bending. See docs/01
+  correction 42.
+    nav bay is EXACTLY full: 127.04 mm of joint in 127.04 mm of tube, 0.00 mm spare. Nothing else can be bonded to this bore anywhere along its length
+    canard module has 43.90 mm of tube spare
+    recovery bay has 198.50 mm of tube spare
+    booster has 336.88 mm of tube spare
+    nav bay / canard module: engagement 50.73 mm is 28.67 mm under the 1.0 cal convention. Nothing in this project sizes a coupler in bending, so there is no analysis that either confirms or replaces it -- open
+    nav bay / canard module: anchor 47.64 mm is 31.76 mm under the 1.0 cal convention. Nothing in this project sizes a coupler in bending, so there is no analysis that either confirms or replaces it -- open
+    canard module / recovery bay: anchor 48.29 mm is 31.11 mm under the 1.0 cal convention. Nothing in this project sizes a coupler in bending, so there is no analysis that either confirms or replaces it -- open
 
 ============================================================================================
 VENTING and the NAV BAY

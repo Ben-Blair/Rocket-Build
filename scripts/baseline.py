@@ -346,7 +346,16 @@ def main() -> None:
     print("     Full argument: python scripts/seal_report.py")
 
     rule("JOINTS -- what the couplers cost each bay")
-    for b in joints.budgets(r, BASELINE.wall_thickness).values():
+    # Hoisted here from where they used to be built (further down, for the module vent
+    # section) because the joint capacity check now needs them too, and building the
+    # printed bay twice in one script is the exact drift this project keeps correcting.
+    module_len = r.tubes[1].length
+    bay_geom = bay_mod.build_bay(stack, geom, hinge.canard_hinge_station(r) - r.tube_station(1))
+    abpt = access_bulkhead.pass_through_from_evaluation(ev)
+    canard_fwd_room, canard_aft_room = bay_mod.joint_room(
+        bay_geom, module_len, abpt.bulkhead.thickness)
+
+    for b in joints.budgets(r, BASELINE.wall_thickness, canard_fwd_room, canard_aft_room).values():
         print(f"  {b}")
     print("  A coupler or a shoulder is a TUBE and its bore is usable, so it costs DIAMETER")
     print("  over its span, not LENGTH. Only bulkheads cost length. That is what settled the")
@@ -355,14 +364,21 @@ def main() -> None:
     print("  bay is checked against its full-bore equivalent length, not its tube length.")
     print()
     print("  AND EVERY JOINT HAS AN ANCHORED HALF, which this model left out until Sep 2026.")
-    for cap in joints.tube_capacity(r, BASELINE.wall_thickness).values():
+    for cap in joints.tube_capacity(r, BASELINE.wall_thickness, canard_fwd_room,
+                                    canard_aft_room).values():
         print(f"  {cap}")
-    jchk = joints.check_joints(r, BASELINE.wall_thickness)
+    jchk = joints.check_joints(r, BASELINE.wall_thickness, canard_fwd_room, canard_aft_room)
     print(f"  joint capacity      {'OK' if jchk.ok else 'VIOLATIONS: ' + '; '.join(jchk.violations)}")
     print("  The nav bay is EXACTLY full -- two 1.0 cal joints in a 1.60 cal tube do not fit,")
-    print("  so its aft coupler gets the 0.600 cal that is left. The canard module is over by")
-    print("  15.88 mm and is OPEN: see docs/01 correction 42. Neither was visible while a")
-    print("  joint was described only by the half that protrudes.")
+    print("  so its aft coupler gets the 0.600 cal that is left. The canard module's own two")
+    print(f"  joints are bounded by the printed bay sitting in the MIDDLE of its tube (Z "
+          f"{bay_geom.forward_face * 1000:.2f} -> {bay_geom.aft_face * 1000:.2f} mm), not by")
+    print(f"  convention: {canard_fwd_room * 1000:.2f} mm fwd, {canard_aft_room * 1000:.2f} mm "
+          f"aft -- both below the 1.0 cal convention and reported as open")
+    print("  notes below, since nothing here sizes a coupler in bending. See docs/01")
+    print("  correction 42.")
+    for n in jchk.notes:
+        print(f"    {n}")
 
 
     rule("VENTING and the NAV BAY")
@@ -388,7 +404,8 @@ def main() -> None:
     pl = ports.place_ports(r, BASELINE.wall_thickness)
     nav_ports = venting.VentedBay("nav bay", nav_free, len(pl.clocking_deg), pl.diameter)
     sled_fwd, _ = sled.station_range(r, sled.sled_from_evaluation(ev))
-    bore_r = next(j for j in joints.for_rocket(r, BASELINE.wall_thickness)
+    bore_r = next(j for j in joints.for_rocket(r, BASELINE.wall_thickness, canard_fwd_room,
+                                               canard_aft_room)
                   if j.forward_bay == "nav bay").bore / 2.0
     mouth = min(c[0] for c in ports.port_mouth_clearances(
         pl, sled.sled_from_evaluation(ev), sled_fwd, bore_r))
@@ -420,7 +437,7 @@ def main() -> None:
     print("     Full argument: python scripts/port_report.py")
 
     rule("ACCESS BULKHEADS -- the two seal.py never sized")
-    abpt = access_bulkhead.pass_through_from_evaluation(ev)
+    # abpt already built above, for the joint capacity check -- reused, not rebuilt.
     npl = access_bulkhead.nose_plate_from_evaluation(ev)
     ptchk = access_bulkhead.check_access_bulkhead(abpt)
     nplchk = access_bulkhead.check_access_bulkhead(npl)
@@ -478,8 +495,7 @@ def main() -> None:
     # something a hole can be drawn from -- see venting.MODULE_VENT_STATION. Guarded here
     # against the real bay, seal and canard geometry rather than against typed numbers, so
     # that moving any of them fails this instead of quietly putting a hole through one.
-    module_len = r.tubes[1].length
-    bay_geom = bay_mod.build_bay(stack, geom, hinge.canard_hinge_station(r) - r.tube_station(1))
+    # module_len / bay_geom already built above, for the joint capacity check.
     # The seal is bonded at the module's AFT face, so its forward-most material is the
     # assembled stack back from there -- disc plus the fillet on each side, taken from
     # seal.py rather than typed, for the reason correction 20 gives about allowances.

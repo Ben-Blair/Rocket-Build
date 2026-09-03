@@ -247,10 +247,14 @@ Two more things about this bay:
   the forward caliber and its joint comes apart, so a hole there would have to re-align on
   every assembly. The canard module vents through its own wall so that it is *not* part of
   this bay's sensed volume — docs/01 correction 28.
-- **The aft coupler is 0.600 cal of bond, not 1.0**, because that is all the nose shoulder
-  leaves in a 1.60 cal tube. Below convention, and **nothing in this project sizes a coupler
-  in bending**, so it is an open item rather than a checked one. Its retaining screws are not
-  placed and will want the same 47.64 mm band the ports are in.
+- **The aft coupler is 0.600 cal of bond into the nav bay, not 1.0**, because that is all the
+  nose shoulder leaves in a 1.60 cal tube. Its other end — 0.639 cal of engagement into the
+  canard module — and the next joint's 0.608 cal anchor there are bounded the same way, by
+  the printed canard bay sitting mid-tube rather than by convention (docs/01 correction 42);
+  all three fit, with 43.9 mm to spare in the canard module's own tube. All three are below
+  the 1.0 cal convention, and **nothing in this project sizes a coupler in bending**, so that
+  stays an open item rather than a checked one — the capacity does not. The forward coupler's
+  retaining screws are not placed and will want the same 47.64 mm band the ports are in.
 
 ## 6. Recovery
 

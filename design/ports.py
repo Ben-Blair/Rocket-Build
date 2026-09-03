@@ -30,19 +30,24 @@ tube, and that half was never a field, so no check could ask whether the bay had
 it. An allowance nobody turned into a part, for the fifth time in this project -- except
 that this one was not even an allowance. It was a part with no allowance at all.
 
-It is over-subscribed at the other end of the same joint too, and worse. The coupler
-protrudes AFT into the canard module, and the module's first 53.13 mm are already spoken
-for: the potted pass-through plate occupies Z 0.000 -> 2.400, and the printed canard bay is
-bonded to the bore from Z 53.129. So the protrusion has 50.73 mm to live in against the
-79.40 mm `joints.py` charges -- 28.67 mm short, and it would have driven a coupler straight
-through the bay that carries the hinge bearings.
+The same joint is bounded at its OTHER end too, and by something worse than a bay running
+short: the coupler protrudes AFT into the canard module, and the module's first 53.13 mm
+are already spoken for -- the potted pass-through plate occupies Z 0.000 -> 2.400, and the
+printed canard bay is bonded to the bore from Z 53.129. A 79.40 mm protrusion would run
+straight through the bay that carries the hinge bearings, which the tube-capacity check
+above cannot see by itself: it only totals lengths against a tube, and does not know that
+this bay's two joints are bounded by a THIRD thing sitting between them.
 
 WHAT IS DONE ABOUT IT: `joints.py` now carries `anchor` as well as `engagement`, and
 `check_joints()` fails a bay whose tube cannot hold what its joints demand. The nav bay /
-canard module joint is set to the 0.600 cal + 0.639 cal that the geometry actually leaves,
-which is a stated design decision and not a retune -- see that file. Both are below the
-1.0 cal convention, and **nothing in this project sizes a coupler in bending**, so the
-convention is the only argument either way. That is an open item, recorded, not closed.
+canard module joint's anchor (nav-bay side) is set to the 0.600 cal that the nose shoulder
+leaves; its engagement (canard-module side) and the next joint's anchor (also
+canard-module side) are set to 0.639 cal (50.729 mm) and 0.608 cal (48.291 mm) --
+`bay.joint_room()`, derived from the printed bay's own forward/aft face, docs/01
+correction 42. All three are below the 1.0 cal convention, and **nothing in this project
+sizes a coupler in bending**, so the convention is the only argument either way and stays
+an open item -- but the capacity fits: 99.02 mm of canard-module-side joint in a 142.92 mm
+tube, 43.9 mm spare.
 
 ---------------------------------------------------------------------------------------
 FINDING 2. SO THE PORTS ARE DRILLED THROUGH TUBE AND COUPLER TOGETHER -- WHICH IS WHAT AN
