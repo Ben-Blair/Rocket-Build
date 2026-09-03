@@ -17,7 +17,7 @@ were gathered August 2026.
 | Item | Spec | Qty | Mass | Price | |
 |---|---|---|---|---|---|
 | Body tube, G12 fiberglass | 3 in, 79.4 mm OD / 74.8 mm ID, 2.3 mm wall. Need 1043 mm; buy one 48 in (1219 mm) length | 1 | 1.075 kg | ~$130 | |
-| Nose cone, fiberglass | 3 in, 4:1 tangent ogive, 318 mm, **1 cal hollow shoulder** — its bore is usable nav bay, see `design/joints.py` | 1 | 0.180 kg | ~$75 | the instrumentation module; meant to come off |
+| Nose cone, fiberglass | 3 in, 4:1 tangent ogive, 318 mm, **1 cal hollow shoulder** — its bore is usable nav bay, see `design/joints.py`. **Drawn in CAD** (docs/01 correction 43); real volume is 0.293 kg, not the 0.180 kg wetted-area estimate this line quoted until Sep 2026 — the estimate never counted the shoulder | 1 | 0.293 kg | ~$75 | the instrumentation module; meant to come off |
 | Coupler tube, fiberglass | 3 in, for 3 bay joints | 1 length | in structure | ~$50 | |
 | Bulkheads and centering rings | G10 or birch ply, 3 in | set | 0.300 kg | ~$35 | |
 
@@ -288,11 +288,14 @@ ejection charges twice before flying.
 
 | Item | Spec | Qty | Mass | Price | |
 |---|---|---|---|---|---|
-| Threaded rod, washers, nuts | Nose shoulder stack at 191 mm from the tip. **100 g design point**, provision for 300 g | 1 | 0.100 kg | ~$15 | |
+| Steel washers, 25 × 6.5 mm | Stack at 191 mm from the tip, sized to the 100 g design point (`design/nose_module.py`) | ~28 | 0.100 kg | ~$10 | adjustable — this is the tuning knob |
+| M6 threaded rod, ~150 mm, + nut | Carries the washer stack, captured at the nose plate. **Drawn in CAD, correction 43** — real hardware, not previously counted anywhere | 1 | 0.034 kg | ~$5 | |
 
-Without it P(SM < 1.0) is 1.2% against R1's 1% limit. About 25 g is the minimum that
-satisfies R1; 100 g brings it to 0.43%. This is the last free parameter — set it after
-weighing the built vehicle, not before. See `00-requirements.md` §7.1.
+Without ballast P(SM < 1.0) is 1.2% against R1's 1% limit. About 25 g of washers is the
+minimum that satisfies R1; 100 g brings it to 0.1% (`scripts/robustness.py`). The washer
+mass is the last free parameter — set it after weighing the built vehicle, not before. The
+rod itself is not adjustable and its 34 g is now counted separately in mass reconciliation
+below, having never been counted before Sep 2026. See `00-requirements.md` §7.1.
 
 ## 8. Consumables
 
@@ -328,8 +331,11 @@ a decision says. See docs/01 step 5.
 
 ## Mass reconciliation
 
-Model dry mass **5.515 kg**, wet **6.139 kg** including 100 g ballast and 0.501 kg of contingency
-(10%, carried deliberately — every real build comes out heavy). Weigh each part as it
+Model dry mass **5.676 kg**, wet **6.300 kg** including 100 g ballast and 0.516 kg of
+contingency (10%, carried deliberately — every real build comes out heavy). Both figures
+moved +156 g in Sep 2026 (correction 43): the nose cone is a real drawn part now, and its
+true volume — including the integral shoulder, never counted before — replaced a
+wetted-area estimate. Weigh each part as it
 arrives, replace the estimate in `design/mass.py`, and rerun `scripts/robustness.py`. Every
 guess retired shrinks the static margin distribution, and the ballast is what you adjust in
 response.

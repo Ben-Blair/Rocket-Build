@@ -68,12 +68,12 @@ THE DISC
 THE MAIN'S OPENING SHOCK -- the load that arrives through the U-bolt
 ============================================================================================
 
-  main                         56.3 in     deployed at 200 m
-  descent mass                5.515 kg
-  velocity at deploy           19.1 m/s    under the drogue
-  steady drag at that speed     777 N      14x vehicle weight
-  infinite-mass bound          1320 N      opening coefficient 1.7, used for the check
-  stress under the U-bolt        85 MPa   6 mm footprint, margin 5.7x
+  main                         57.1 in     deployed at 200 m
+  descent mass                5.676 kg
+  velocity at deploy           19.4 m/s    under the drogue
+  steady drag at that speed     822 N      15x vehicle weight
+  infinite-mass bound          1398 N      opening coefficient 1.7, used for the check
+  stress under the U-bolt        90 MPa   6 mm footprint, margin 5.3x
 
   This is a plate under a POINT load, not a pressure. The stress goes as the log
   of (plate radius / footprint radius), so the backing washer under the U-bolt is
@@ -115,7 +115,7 @@ VERDICT
     note  pins release at 123 kPa and the disc holds to 6693 kPa, so the pins are 54x the weaker link. That ratio is the design intent, not a coincidence
     note  recovery.FILL_LIMIT = 0.85 SETS THIS PRESSURE. The free volume a charge fires into is what the packing leaves over, so packing to 0.90 instead would take 1659 kPa to 2488 kPa -- a number chosen so a bay would close with cold hands is loading every bulkhead in the rocket
     note  assembled stack 10.8 mm (disc + a 3 mm fillet each face) inside the 12.0 mm recovery.BULKHEAD_THICKNESS allowance, which until now was a typed number nothing had checked
-    note  main opens at 19.1 m/s -- 14x the vehicle's weight at a shock factor of 1.0 and 24x at 1.7. The U-bolt needs a backing plate; the log term in point_load_stress() is the reason
+    note  main opens at 19.4 m/s -- 15x the vehicle's weight at a shock factor of 1.0 and 25x at 1.7. The U-bolt needs a backing plate; the log term in point_load_stress() is the reason
     note  2 x dia 4.0 mm at R 22.6 mm runs 2.17x, against the disc's own 4.04x -- THE HOLE GOVERNS, and sizing the plate without it lands one sheet size thin
     note  POT THE FEED-THROUGH ON THE FORWARD FACE. RTV is good to 315 C and the gas leaves the charge at 1837 K; the disc is the heat shield, so the sealant belongs behind it. Potting the exposed face is the version of this part that works on the bench and sooties the nav bay in flight
     note  THE MODULE VENTS THROUGH ITS OWN WALL, not through this disc and not forward into the nav bay -- see design/venting.py, which corrects the argument this file was first written on. The consequence is that the wiring pass-through is POTTED SOLID and the module is not in the altimeter's sense volume, so a leak past this seal goes overboard instead of into the sensor that fires the charges
@@ -180,7 +180,7 @@ VENTING -- which volumes the altimeter is allowed to sense
     note  nav bay port area 24.1 mm2 sits between the 1.6 mm2 the lag model needs and the 24.1 mm2 convention uses -- the model is the floor, convention is the ceiling, and both are satisfied
     note  the canard module vents through its OWN WALL (6.3 mm2), so the sense volume is 359 cm3 and not 929 cm3. Sharing them would take the nav bay's lag 0.01 -> 0.09 m and put ejection gas one leak away from the sensor that fires the charges
     note  SO POT THE WIRING PASS-THROUGH SOLID. It is a wire route, not an air route -- and it is only allowed to be solid because the module vents overboard instead
-    note  a bay sealed at the pad carries 15.4 kPa at 1369 m, which is 68 N on a bulkhead -- small, and not what sizes anything, but it is why every sealed volume in the vehicle gets a hole
+    note  a bay sealed at the pad carries 14.9 kPa at 1326 m, which is 66 N on a bulkhead -- small, and not what sizes anything, but it is why every sealed volume in the vehicle gets a hole
 
 ============================================================================================
 WHAT THE PACKING NOW COSTS
@@ -204,12 +204,12 @@ WHAT THE PACKING NOW COSTS
 
   webbing                    rating  after knots  vs shock    g/m
   ----------------------------------------------------------------
-  1/2" tubular nylon          4.4 kN       2.2 kN      1.7x     11
-  9/16" tubular nylon         6.7 kN       3.3 kN      2.5x     14
-  3/4" tubular nylon         11.1 kN       5.6 kN      4.2x     20  <- selected
-  1" tubular nylon           17.8 kN       8.9 kN      6.7x     30
+  1/2" tubular nylon          4.4 kN       2.2 kN      1.6x     11
+  9/16" tubular nylon         6.7 kN       3.3 kN      2.4x     14
+  3/4" tubular nylon         11.1 kN       5.6 kN      4.0x     20  <- selected
+  1" tubular nylon           17.8 kN       8.9 kN      6.4x     30
 
-  The opening shock is 1320 N and 1" tubular nylon is rated 17.8 kN.
+  The opening shock is 1398 N and 1" tubular nylon is rated 17.8 kN.
   **The harness was about 2 times more webbing than the load asks for**, and the
   excess was not free -- it was spending a bay whose margin was 0.1 mm. Same shape
   as the tube at the hinge running at 256x, except that this one had a bill.

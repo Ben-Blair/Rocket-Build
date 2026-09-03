@@ -11,6 +11,11 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
+# Aliased: `build_mass` already has a local variable named `joints` (bay_joints stations),
+# and Python would otherwise resolve the module-level import as local -- UnboundLocalError
+# -- the moment that local assignment exists anywhere in the function.
+from . import joints as joints_mod
+from . import nose_module
 from .geometry import PointMass, Rocket
 from .motors import Motor
 
@@ -131,13 +136,16 @@ def build_mass(
     """
     items: list[PointMass] = []
 
-    items.append(
-        PointMass(
-            "nose cone",
-            rocket.nose.wetted_area * rocket.nose.wall_thickness * rocket.nose.material_density,
-            0.6 * rocket.nose.length,
-        )
-    )
+    # THE NOSE CONE IS A REAL PART NOW (design/nose_module.py, Sep 2026), so it is priced
+    # from its own drawn volume -- ogive shell plus the integral shoulder that inserts into
+    # the nav bay -- rather than `wetted_area * wall_thickness`, a thin-shell estimate that
+    # was never charged for the shoulder at all (the same gap correction 42 found on the
+    # nav bay's own side of this joint). The estimate read ~180 g; the real part is ~293 g.
+    wall = rocket.tubes[0].wall_thickness
+    nose_joint = next(j for j in joints_mod.for_rocket(rocket, wall) if j.aft_bay == "nav bay")
+    nose_mass, nose_station = nose_module.shell_mass_and_centroid(
+        rocket.nose, nose_joint.airframe_id / 2.0, nose_joint.bore / 2.0, nose_joint.engagement)
+    items.append(PointMass("nose cone", nose_mass, nose_station))
 
     for i, tube in enumerate(rocket.tubes):
         x0 = rocket.tube_station(i)
@@ -174,6 +182,20 @@ def build_mass(
 
     if nose_ballast_kg > 0.0:
         items.append(PointMass("nose ballast", nose_ballast_kg, nose_ballast_station))
+        # THE ROD ITSELF WAS NEVER COUNTED. `nose_ballast_kg` has always priced the
+        # ADJUSTABLE washer stack -- the number R1/D10 tune after weighing the vehicle --
+        # and design/nose_module.py keeps it that way on purpose (changing what "100 g of
+        # ballast" means would ripple into every static-margin figure that already assumes
+        # it). But the M6 rod that carries the stack is real hardware with its own mass,
+        # found only once the part was drawn (design/nose_module.py, Sep 2026), and it was
+        # priced nowhere until now -- the same shape as the sled's rods, the U-bolts, and
+        # every other allowance this project has found by finally drawing the part.
+        ballast = nose_module.BallastRod(station=nose_ballast_station, mass=nose_ballast_kg)
+        rod_vol = math.pi * (nose_module.ROD_DIAMETER / 2.0) ** 2 * ballast.rod_length(
+            rocket.nose.length)
+        rod_mass = rod_vol * nose_module.STEEL_DENSITY
+        items.append(PointMass("ballast rod hardware", rod_mass,
+                               (ballast.rod_forward + rocket.nose.length) / 2.0))
 
     avionics = DEFAULT_AVIONICS_BUDGET if avionics is None else avionics
     recovery = DEFAULT_RECOVERY_BUDGET if recovery is None else recovery

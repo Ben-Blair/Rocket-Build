@@ -285,14 +285,63 @@ Read this first if you are picking the project back up.
   the first guess** — four ports is the more accurate ring and three is the forgiving one,
   because a 4-port ring's clocking is load-bearing against a four-canard vehicle's own
   field and a 3-port ring's is not.
-- **Step 4 is next in the plan**, and D8 has settled what it is built from. What is left is
-  firmware: the filter, the HIL rig, the controller and the safety logic.
+- **The hinge mechanism actually articulates in CAD now, and the nose cone is drawn for the
+  first time** (correction 43). Neither was true before this session: the canard hinges had
+  mates in Onshape (correction 39) but nothing equivalent existed in the Fusion document,
+  and the nose cone had never been more than the parametric shape `aero`/`mass`/`avionics`
+  read numbers off. Fixed together, in Fusion, and verified rather than assumed:
+  - **Four AS-BUILT joints** (one rigid panel-to-shaft bond, one revolute shaft-to-tube
+    hinge, per canard) connect the STEP-imported reference assembly's own components — an
+    as-built joint freezes the current position and never snaps geometry to align, which
+    matters here because nothing but the STEP import's own accuracy holds these parts
+    together. Driven to 8° and screenshotted before being trusted, then reset to 0° — the
+    same rule this project has applied to every mate since correction 39: a joint that
+    "added successfully" and one that actually turns are different claims.
+  - **The nose cone is a real part**: the ogive shell (piecewise-frustum revolve, 150
+    segments, verified against an independent 20000-step numerical integration to 0.0007%)
+    plus its integral shoulder — the same material `design/joints.py`'s nose/nav-bay joint
+    already priced from the nav bay's side, now drawn from the nose's own side instead of
+    left as an anonymous annular placeholder. Found in the process: **the wetted-area mass
+    estimate `design/mass.py` had used since before this project's history began was ~113 g
+    light** — it approximates a thin constant-thickness shell reasonably for the ogive
+    (~180 g estimate against ~216 g real) but never counted the shoulder at all (~77 g).
+    `design/mass.py` now prices the nose cone from the real drawn volume.
+  - **The adjustable ballast provision also has real hardware for the first time**:
+    `design/nose_module.py` sizes an M6 rod and a 25×6.5 mm steel washer stack to the
+    design-point 100 g (docs/00 §7.1) — a mass and a station existed for this since D10
+    closed; a rod diameter and a washer size did not. The rod itself is genuinely new mass
+    (33.6 g) that nothing had ever charged for, the same shape as the sled's rods, the
+    U-bolts, and every other "priced but not drawn" gap this project keeps finding.
+  - **The vehicle got heavier and MORE stable, not less**: +156 g total, almost all of it
+    forward of the CG, moves static margin **2.11–2.60 → 2.27–2.76 cal** and P(SM<1.0)
+    **0.2% → 0.1%** — at the cost of apogee (1369 → 1326 m) and crossrange (400 → 340 m).
+    Nothing was retuned to get this; it fell out of the mass model becoming honest. See
+    `scripts/baseline.py` and `scripts/robustness.py` for the regenerated figures.
+  - A performance regression was caught, not shipped: the first version of the new nose
+    mass calculation ran a 4000-step integration inside `evaluate()`, which every optimizer
+    in this project calls thousands of times per run. Measured before committing to it —
+    `evaluate()` cost ~300 ms regardless of step count, an existing cost this change did not
+    create — and the step count was still cut to 200 on the general principle that a hot
+    loop should not carry unneeded weight. See `design/nose_module.py`'s
+    `shell_volume_and_centroid` docstring for the numbers.
+- **Asked whether Step 4 (firmware) was really next, the honest answer was no.** Only the
+  nav bay and the canard module have ever had real CAD; the nose is now a third. **The
+  recovery bay (no tube modelled, an internal bulkhead drawn but not assembled and still
+  missing its U-bolt/backing-plate/charge-well) and the booster + aft fins (nothing drawn
+  at all — no planform, no root attachment, no motor mount) are the two sections of the
+  airframe Step 3's own deliverable, "a dimensioned drawing", has never reached.** Step 4 is
+  still next in the sense that D8 settled what it is built from, but calling it "next"
+  before Step 3's drawing covers the whole vehicle was premature, and correction 43 exists
+  because that got questioned rather than assumed.
 
 Current vehicle: 79.4 mm OD fiberglass, 1361 mm, canards 0.85 cal / aft fins 1.55 cal
 interdigitated 45°, **both sets swept 35.4°**, Cesaroni J449 Blue Streak, 4× KST X08 Plus
 servos flat-mounted with the hinge at 0.20 of MAC, 100 g nose ballast. Canards 67.5 root /
-27.0 tip (0.40 taper). **6.14 kg wet, apogee 1369 m, Mach 0.526, static margin
-2.11–2.60 cal, P(SM<1.0) 0.2%, 400 m crossrange.** Telemetry radio and GPS tracker ride in
+27.0 tip (0.40 taper). **6.30 kg wet, apogee 1326 m, Mach 0.513, static margin
+2.27–2.76 cal, P(SM<1.0) 0.1%, 340 m crossrange.** (Mass +156 g and margin up since Sep
+2026 correction 43, when the nose cone was finally drawn and its real volume — including
+the integral shoulder, never counted before — replaced a wetted-area estimate.) Telemetry
+radio and GPS tracker ride in
 the **nose** at station 300 mm, not in the nav bay (correction 30). Every one of those
 figures moved in Aug 2026 — the missing dual-deploy altimeter (correction 26) and then the
 nose move. `scripts/baseline.py` regenerates
@@ -309,7 +358,7 @@ these, because they moved once already when the altimeter went into the budget
 on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
 so instead of hiding it.
 
-Forty-two corrections are worth knowing about — 38's, 40's and 41's own numbered entries are
+Forty-three corrections are worth knowing about — 38's, 40's and 41's own numbered entries are
 still only the bullets above. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
@@ -1439,6 +1488,76 @@ that silently recurs:
    here has ever placed one; the boundary layer, which is a position error of the same order
    as the one that was modelled and the wrong sign to guess at; and the ejection transient,
    which is the one flow case where this port really is inertial.
+
+43. **Asked to keep going, the honest next step was not Step 4 — it was checking whether
+   Step 3 was actually done.** It was not: only the nav bay and canard module have ever had
+   real CAD, and Step 3's own deliverable is "a dimensioned drawing" of the whole airframe.
+   Picked the nose cone to close next, and closing it found three things.
+
+   **The hinge mechanism now articulates in Fusion, not just in Onshape.** Correction 39
+   closed the mates in Onshape; nothing equivalent existed in the Fusion document, where the
+   canard panels and shafts (imported from Onshape's own STEP export, correction 40) were
+   just floating, unconnected bodies. Four AS-BUILT joints per canard — a rigid one bonding
+   panel to shaft, a revolute one hinging shaft to tube, axis read directly off the shaft's
+   own cylindrical face — fix that. AS-BUILT rather than a regular joint on purpose: a
+   regular joint snaps the second occurrence to align with the picked geometry, which risks
+   displacing a part whose only claim to being correctly placed is the STEP import's own
+   accuracy; an as-built joint freezes the current position and adds only the requested
+   motion. Driven to 8° and screenshotted before being trusted, then reset to 0 — correction
+   39's own rule, applied a second time: a joint that "added successfully" and one that
+   turns are different claims. Confirmed with a full interference re-check across every
+   real, visible body (53 bodies, 1378 pairs) — zero real overlap, the same bearing-seat
+   tolerance slivers as before.
+
+   **The nose cone is a real part, and drawing it found the mass model was wrong by more
+   than rounding.** The ogive shell (piecewise-frustum revolve, 150 segments, agreeing with
+   an independent 20000-step numerical integration to 0.0007%) plus its integral shoulder —
+   the same material `design/joints.py`'s nose/nav-bay joint already priced from the nav
+   bay's side (correction 42), drawn now from the nose's own side instead of left as an
+   anonymous placeholder annulus inside `NavBay`. `design/mass.py` had priced the whole nose
+   cone as `wetted_area * wall_thickness * material_density` since before this file's own
+   history — a thin-shell approximation that is reasonable for the ogive alone (~180 g
+   estimate against ~216 g real, the wetted-area correction factor not quite matching a true
+   ogive) but **never charged for the shoulder at all** (~77 g). Same shape of gap as every
+   other allowance this project has found by finally drawing the part, one joint further
+   forward. `design/mass.py` now prices the nose cone from the real integrated volume.
+
+   **The adjustable ballast provision got real hardware, and the hardware itself was
+   another uncounted mass.** D10 closed with "an adjustable threaded rod and washer stack in
+   the nose shoulder" (docs/00 §7.1) but no rod diameter or washer size existed anywhere.
+   `design/nose_module.py` picks M6 — the smallest metric size with a common 25 mm OD
+   washer, chosen because the room available (31.2 mm inner radius at the ballast station)
+   doesn't bind, so there is no reason to pick a bigger rod than the smallest normal one —
+   and derives the washer stack's length from its target mass rather than asserting one,
+   the same shape as `seal.stack_length()`. The **rod's own mass, 33.6 g, had never been
+   counted** — `nose_ballast_kg` has always priced only the adjustable washer stack, which
+   `design/nose_module.py` deliberately leaves alone (changing what "100 g of ballast" means
+   would ripple into every static-margin figure that already assumes it), so the rod is a
+   new, separate mass line rather than a redefinition of the old one.
+
+   **Net effect: +156 g, nearly all of it forward of the CG, and the vehicle got MORE
+   stable, not less.** Static margin **2.11–2.60 → 2.27–2.76 cal**, P(SM<1.0) **0.2% →
+   0.1%** (`scripts/robustness.py`), at the cost of apogee (1369 → 1326 m) and crossrange
+   (400 → 340 m, `scripts/baseline.py`). Nothing was retuned to get this — it is what the
+   mass model produces once it is honest, the same kind of result correction 41's sled
+   width fix was.
+
+   **One performance regression was caught before it shipped.** The first version of
+   `design/nose_module.py`'s volume integration used 4000 steps and lives inside
+   `build_mass()`, which `evaluate()` calls once and which every optimizer in this project
+   (`robustness.py`, `sweep.py`, `motor_trade.py`) calls thousands of times. Measured rather
+   than assumed: `evaluate()` costs ~300 ms with or without this file, at 200 steps or 4000
+   — the cost is the flight simulation, not this integration, and this function was never
+   the thing slowing anything down. The step count was still cut to 200 (agreeing with 4000
+   to 0.00003%) on the general principle that a value read from a hot loop should not carry
+   weight it does not need, not because 4000 was proven to matter. Full regression sweep —
+   every report script plus `sweep.py`, `robustness.py`, `motor_trade.py` — run clean.
+
+   **STILL OPEN:** the recovery bay (no tube modelled; the internal bulkhead is drawn as a
+   part by `make_bulkhead_cad.py` but not assembled anywhere, and still missing its U-bolt,
+   backing plate, and charge well) and the booster + aft fins
+   (nothing drawn at all — no planform, no root attachment, no motor mount) are the rest of
+   Step 3's own deliverable. Neither is this session's.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —

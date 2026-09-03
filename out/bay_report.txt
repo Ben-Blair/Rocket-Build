@@ -40,22 +40,22 @@ THE SEAT  --  and why 3.2x -> 21.3x was never the right pair of numbers
   Print the collar in something ten times softer than the tube and the collar
   moves aside: the load walks back into the G10 and the effective seat shortens.
 
-  moment at the seat centre   0.7916 N m
-  normal force                24.795 N
+  moment at the seat centre   0.7320 N m
+  normal force                22.931 N
   bearing                     dia 8.0 x 6.0 long
 
     collar material       E   p collar    p wall   collar     wall   L eff
                      GPa        MPa       MPa   margin   margin      mm
-    none             0.0       0.00    107.07       --     3.5x    2.37
-    PETG             1.7       9.48     36.40     5.3x    10.2x    4.08
-    ASA              2.0       9.87     34.00     5.6x    10.9x    4.22
-    PETG-CF          4.5      11.70     25.04     5.6x    14.8x    4.93  <-- selected
-    PA6-CF           6.0      12.38     22.85     7.3x    16.2x    5.17
-    G10 (fiction)    18.0      15.97     17.01       --    21.8x    6.00
+    none             0.0       0.00     99.02       --     3.7x    2.37
+    PETG             1.7       8.77     33.67     5.7x    11.0x    4.08
+    ASA              2.0       9.13     31.44     6.0x    11.8x    4.22
+    PETG-CF          4.5      10.82     23.15     6.0x    16.0x    4.93  <-- selected
+    PA6-CF           6.0      11.45     21.13     7.9x    17.5x    5.17
+    G10 (fiction)    18.0      14.77     15.73       --    23.5x    6.00
 
-  So the collar IS worth building -- 3.5x to 14.8x on the wall is the
+  So the collar IS worth building -- 3.7x to 16.0x on the wall is the
   single largest margin improvement anywhere in this hinge. But it is worth
-  14.8x and not 21.4x, and the printed collar itself runs at 5.6x,
+  16.0x and not 21.4x, and the printed collar itself runs at 6.0x,
   which is a number nobody had computed because nobody had asked what the collar
   was made of. Correct the claim wherever it appears; do not drop the collar.
 
@@ -97,11 +97,11 @@ CLEARANCES  --  every place the bay comes near something else
 ============================================================================================
 MARGINS
 ============================================================================================
-    bearing seat, printed collar                      5.6x
-    bearing seat, G10 wall                           14.8x
+    bearing seat, printed collar                      6.0x
+    bearing seat, G10 wall                           16.0x
     servo clamp screw shear                          72.0x
     heat-set insert pull-out                        133.2x
-    bay-to-tube bond shear                          914.8x
+    bay-to-tube bond shear                          989.2x
 
   mass            38.6 g   (shell 28.7, trays 8.3, collars 0.5)
   bond area     9260.6 mm^2 of shell against the tube ID

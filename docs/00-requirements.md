@@ -290,17 +290,17 @@ On the selected Cesaroni J449 Blue Streak:
 | Nose module | Instrumentation, self-contained, one connector. Swappable for a payload up to ~300 g in 469 cm³ (correction 32) |
 | Canards | 4 panels, 67.5 root / 27.0 tip / **67.5 mm semispan**, **35.4° LE sweep** matching the aft fins, 45° interdigitated |
 | Aft fins | 4 panels, 151 root / 68 tip / **123.1 mm semispan**, 87 mm sweep |
-| Mass | **5.52 kg dry, 6.14 kg wet** (includes 100 g nose ballast) |
-| Static margin | **2.11 cal at rail exit, 2.60 cal in coast** |
-| Flight | apogee **1369 m (4490 ft)**, max Mach **0.526**, max q 19.1 kPa, 8.4 g peak, T/W 7.3 |
-| Control | **1.82 g** lateral at 8° deflection, **400 m** crossrange over an 11.7 s window |
+| Mass | **5.68 kg dry, 6.30 kg wet** (includes 100 g nose ballast; +156 g since Sep 2026 correction 43, when the nose cone was finally drawn and its real volume replaced a wetted-area estimate) |
+| Static margin | **2.27 cal at rail exit, 2.76 cal in coast** |
+| Flight | apogee **1326 m (4349 ft)**, max Mach **0.513**, max q 18.1 kPa, 8.1 g peak, T/W 7.2 |
+| Control | **1.71 g** lateral at 8° deflection, **340 m** crossrange over an 11.5 s window |
 | Roll | Cl_delta +5.66 /rad canards vs −0.95 /rad aft fins interdigitated (16.8% cancellation) |
 | Actuator | KST X08 Plus V6.0, 3.6× torque margin, 79 mm of arc needed against 188 mm (§4.2) |
 | Hinge | 0.0577 N·m per panel, hinge at 0.20c of MAC — forward of the 0.25c panel CP, so restoring at any sweep |
 | Fin flutter | aft fins 1.97× margin, canards 4.46× — the 0.40 taper's longer root chord costs the canards 5.42 → 4.46 (see §8) |
 | Recovery | 100 s descent, ~0.93 km walk at 15 mph wind, 56 in main. Bay 4.5 cal, verified against vendor pack volumes with +13 mm (§4.3) |
 | Nose ballast | **100 g at 191 mm from the nose tip**, ~25 g minimum for R1, provision 300 g (§7.1) |
-| Margin robustness | P(SM < 1.0) = 0.4% as designed, 1.2% bare; P(SM < 1.4) = 5.8% / 11.3% |
+| Margin robustness | P(SM < 1.0) = 0.1% as designed, 0.3% bare; P(SM < 1.4) = 1.7% / 3.9% (`scripts/robustness.py`) |
 | OpenRocket correlation | CNa agrees to 0.3%, CP to 0.17 cal (see `03-openrocket-correlation.md`) |
 
 ## 7. Static margin robustness

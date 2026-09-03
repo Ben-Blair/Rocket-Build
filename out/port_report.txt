@@ -68,10 +68,10 @@ POSITION ERROR 1 -- THE NOSE, and the validation the solver had to pass
   -- it under-reads |Cp| by 17%, and that factor is applied to every case below.
 
     station  cal aft        Cp   err at max q   err at deploy
-         mm shoulder               (19.2 kPa)        (541 Pa)
-     397.00    1.000   -0.0220        36.0 m          0.86 m
-     420.82    1.300   -0.0176        28.7 m          0.69 m  <- chosen
-     444.64    1.600   -0.0144        23.5 m          0.56 m
+         mm shoulder               (18.1 kPa)        (541 Pa)
+     397.00    1.000   -0.0218        33.7 m          0.86 m
+     420.82    1.300   -0.0174        26.9 m          0.69 m  <- chosen
+     444.64    1.600   -0.0143        22.0 m          0.56 m
 
   THE STATION IS NOT SET BY THIS. Position error scales with q, and the altimeter is
   only ever READ where q is small -- at apogee it is zero, and at the main's 200 m
@@ -84,16 +84,16 @@ POSITION ERROR 1 -- THE NOSE, and the validation the solver had to pass
 POSITION ERROR 2 -- THE CANARDS, and what a ring of ports is actually for
 ============================================================================================
 
-  panel CN_alpha 1.642 /rad, bound circulation 0.969 m2/s at the 8 deg limit,
+  panel CN_alpha 1.625 /rad, bound circulation 0.932 m2/s at the 8 deg limit,
   four horseshoe vortices, evaluated on the tube at station 420.82 mm.
 
   Worst case over every lateral command azimuth, with the roll command at its cap:
 
   ring                                  Cp read    at max q   at deploy
-  one port                             0.002582     4.216 m    0.1185 m
-  THREE ports, any phasing             0.000162     0.265 m    0.0075 m
+  one port                             0.002555     3.946 m    0.1173 m
+  THREE ports, any phasing             0.000161     0.248 m    0.0074 m
   four ports, phased 45 deg (nodes)    0.000000     0.000 m    0.0000 m
-  four ports, phased 22.5 deg          0.000017     0.028 m    0.0008 m
+  four ports, phased 22.5 deg          0.000017     0.026 m    0.0008 m
 
   THE FIRST GUESS WAS WRONG AND IT IS WORTH RECORDING WHICH WAY. 'three and four are
   coprime, so three averages the canards' 4-fold field and four cannot' is true, and
@@ -108,11 +108,11 @@ POSITION ERROR 2 -- THE CANARDS, and what a ring of ports is actually for
   planes, or their bisectors). With three ports the rejection is structural and
   holds at every phasing:
 
-    phase   0.0 deg    three ports  0.265 m     four ports  0.000 m
-    phase  15.0 deg    three ports  0.265 m     four ports  0.024 m
-    phase  22.5 deg    three ports  0.265 m     four ports  0.028 m
-    phase  30.0 deg    three ports  0.265 m     four ports  0.024 m
-    phase  45.0 deg    three ports  0.265 m     four ports  0.000 m
+    phase   0.0 deg    three ports  0.248 m     four ports  0.000 m
+    phase  15.0 deg    three ports  0.248 m     four ports  0.023 m
+    phase  22.5 deg    three ports  0.248 m     four ports  0.026 m
+    phase  30.0 deg    three ports  0.248 m     four ports  0.023 m
+    phase  45.0 deg    three ports  0.248 m     four ports  0.000 m
 
   So THREE is the forgiving choice rather than the accurate one, which is a better
   reason for it than venting.py's ('three is the minimum that averages'), and it is
@@ -122,8 +122,8 @@ POSITION ERROR 2 -- THE CANARDS, and what a ring of ports is actually for
   WITH ONE PORT TAPED OVER -- the failure the 3.2 mm diameter is really sized
   against -- the remainder is not a ring and rejects nothing cleanly:
 
-    three ports                 2.315 m at max q, 55% of a single port -- 0.065 m at deployment
-    four ports, phased 45 deg   1.522 m at max q, 33% of a single port -- 0.043 m at deployment
+    three ports                 2.167 m at max q, 55% of a single port -- 0.064 m at deployment
+    four ports, phased 45 deg   1.425 m at max q, 33% of a single port -- 0.042 m at deployment
 
 ============================================================================================
 THE HOLE AS A FLOW PASSAGE -- venting.py's orifice equation is the wrong model

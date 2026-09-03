@@ -1,0 +1,108 @@
+
+============================================================================================
+WHY THESE TWO WERE NEVER SIZED
+============================================================================================
+
+  design/joints.py puts a bulkhead on all four tube-to-tube joints. Two are
+  SEPARATION joints and design/seal.py sizes both. The other two are ACCESS joints
+  -- come apart by hand or by screws, not on an ejection charge -- and seal.py has
+  carried a note since it was written that it does not size either of them. Both
+  already spend bay length in joints.budgets() as a 12 mm allowance, so they were
+  priced while not existing as parts. Neither is in the CAD, which is why the
+  forward wiring pass-through has never been drawn -- the plate it passes through
+  was not there.
+
+============================================================================================
+THE HEADLINE: NEITHER PLATE IS SIZED BY STRESS
+============================================================================================
+
+                                     pass-through plate    nose aft face
+  ------------------------------------------------------------------------
+  thickness, mm                                     2.4              3.2
+  mass, g                                          19.5             26.0
+  governing pressure, Pa                            5.5          14943.3
+  plate margin                                  302112x             199x
+  feed-through margin                           162150x             107x
+  point-load margin                                 n/a             121x
+  assembled stack, mm                               5.4              6.2
+
+  Both clear the thinnest stocked G-10 sheet by more than 25x on every load this
+  file can find. That is the same shape of result design/venting.py reported for
+  the module vents: the argument everyone reaches for -- 'this is a bulkhead, size
+  it like one' -- is not what sizes these two. What sets them is producibility:
+  holding a screw thread through repeated disassembly, and a connector's panel-nut
+  torque. Neither has a stress model in this project, so a practical floor stands
+  in for one, stated rather than hidden inside a 'looks about right' thickness.
+
+============================================================================================
+THE PASS-THROUGH PLATE -- nav bay / canard module
+============================================================================================
+
+  Both bays it separates vent to ambient ON THEIR OWN: the nav bay through its
+  static ports, the canard module through its own wall (correction 28). Neither is
+  sealed, so the only load that can develop across THIS plate is the difference in
+  how fast the two bays track a changing ambient pressure -- not either bay's own
+  lag, which venting.py already showed does not bind by a factor of 300.
+
+  nav bay lag at 177 m/s          0.15 Pa
+  canard module lag               5.69 Pa    (smaller vent area, so it lags MORE)
+  differential across plate       5.54 Pa    24.34 mN total
+
+  The ejection charge does not reach this plate either. It fires in the recovery
+  bay's forward compartment against the AFT gas seal, and a leak past that disc is
+  deliberately routed to the canard module's OWN vents -- venting.MODULE_VENT_STATION
+  sits in the aft band specifically so a leak finds a hole before it travels forward
+  to here.
+
+  wire route (potted solid)   1 x dia 8.0 mm at R 22.6 mm -- NO WIRE GAUGE HAS EVER BEEN CHOSEN in this
+                               project; this is a practical bundle allowance for 4
+                               servo leads + the shared power/ground pair, flagged
+                               the way seal.py flags JOINT_FRICTION_ALLOWANCE
+
+============================================================================================
+THE NOSE AFT FACE -- the module interface and the payload mount
+============================================================================================
+
+  Two loads, neither of them the aft gas seal's kind:
+
+  1. TRAPPED DIFFERENTIAL, pad to apogee      14.94 kPa
+     CONSERVATIVE, and said plainly rather than assumed away: nobody has ever
+     modelled whether the nose cavity is vented. design/avionics.py and
+     design/venting.py both stop at the nav bay. If the nose needs its own vent,
+     that is a real open item this file surfaces rather than closes -- until it
+     exists, the plate is checked as though the cavity is fully sealed.
+
+  2. THE PAYLOAD MOUNT   300 g at 8.1 g boost accel = 23.8 N
+     seal.py: this disc 'is what a future payload of up to about 300 g would hang
+     from.' A tapered nose cone has nowhere else flat enough to cantilever a sled
+     from, so that sentence is taken as the design intent -- a point load on a
+     small boss, sized against the CORRECTION-32 PROVISION CEILING, not the 105 g
+     of avionics actually flying today. Sizing the mount for what is built rather
+     than what the vehicle is designed to carry is the harness's old mistake, one
+     part further forward.
+
+  the module's one electrical interface   1 x dia 8.0 mm at R 22.6 mm, panel-mount connector -- no part selected
+
+============================================================================================
+VERDICT
+============================================================================================
+
+  nav bay / canard module plate    OK
+    note  feed-through clears the disc edge by 10.8 mm
+    note  nav bay / canard module plate: 162150x on the worst modelled load (nav-bay/module venting-lag differential at 177 m/s -- NOT the trapped pad-to-apogee case, because both bays vent independently) at the thinnest stocked sheet -- stress does not govern this plate
+    note  governed by: the practical minimum gauge -- handling and repeated fasteners set this; the feed-through hole alone would have cleared 2x at 1.6 mm
+    note  pressure case: nav-bay/module venting-lag differential at 177 m/s -- NOT the trapped pad-to-apogee case, because both bays vent independently
+    note  assembled stack 5.4 mm (disc + one 3 mm fillet -- one bonded face, one flush mating face) inside the 12.0 mm joints.BULKHEAD_ALLOWANCE, which until now was a typed number nothing had checked
+
+  nose aft face                    OK
+    note  feed-through clears the disc edge by 10.8 mm
+    note  nose aft face: 107x on the worst modelled load (trapped differential, pad to apogee -- CONSERVATIVE: the nose cavity's own venting has never been modelled anywhere in this project, so this checks the fully-sealed case rather than assume one exists) at the thinnest stocked sheet -- stress does not govern this plate
+    note  governed by: the practical minimum gauge -- handling and repeated fasteners set this; the feed-through hole alone would have cleared 2x at 1.6 mm
+    note  point load case: 300 g payload provision (correction 32) at 8.1 g boost acceleration -- the provision ceiling, not the 105 g of avionics actually flying
+    note  pressure case: trapped differential, pad to apogee -- CONSERVATIVE: the nose cavity's own venting has never been modelled anywhere in this project, so this checks the fully-sealed case rather than assume one exists
+    note  assembled stack 6.2 mm (disc + one 3 mm fillet -- one bonded face, one flush mating face) inside the 12.0 mm joints.BULKHEAD_ALLOWANCE, which until now was a typed number nothing had checked
+
+  Neither plate blocks the drawing any longer: thickness, feed-through diameter and
+  placement, and axial stack are all numbers now instead of an allowance. What is
+  still open -- flagged, not solved -- is the nose cavity's venting and the two
+  connector/wire part numbers. None of the three change the plate.

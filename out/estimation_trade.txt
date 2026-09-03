@@ -32,7 +32,7 @@ D8 -- THE FOUR ARCHITECTURES
        - pitch/yaw attitude has no in-flight reference in 'IMU only': the accelerometer
          cannot supply one (see the gate note below), so the GNSS velocity vector is the
          only aiding this vehicle has
-       - 'IMU only' has no attitude aiding at all, and unaided propagation reaches 8.8 deg
+       - 'IMU only' has no attitude aiding at all, and unaided propagation reaches 8.4 deg
          by apogee against a 5.0 deg budget
     B:
        - roll angle is unobservable in 'IMU + baro': no magnetometer, and specific force is
@@ -41,7 +41,7 @@ D8 -- THE FOUR ARCHITECTURES
        - pitch/yaw attitude has no in-flight reference in 'IMU + baro': the accelerometer
          cannot supply one (see the gate note below), so the GNSS velocity vector is the
          only aiding this vehicle has
-       - 'IMU + baro' has no attitude aiding at all, and unaided propagation reaches 8.8
+       - 'IMU + baro' has no attitude aiding at all, and unaided propagation reaches 8.4
          deg by apogee against a 5.0 deg budget
     C:
        - roll angle is unobservable in 'IMU + baro + GNSS': no magnetometer, and specific
@@ -79,20 +79,20 @@ FINDING 1 -- THE ACCELEROMETER GATE docs/01 PRESCRIBES PASSES ITS WORST DATA
 
     t (s)   |a| (g)   v (m/s)   phase                           
   ------------------------------------------------------------------
-     0.50     8.596      34.4   boost -- gate CLOSED, correctly 
-     1.00     8.621      72.0   boost -- gate CLOSED, correctly 
-     2.00     7.730     143.0   boost -- gate CLOSED, correctly 
-     2.85     1.056     176.4   coast -- GATE OPEN              
-     2.90     1.051     175.4   coast -- GATE OPEN              
-     3.50     0.901     163.9   coast -- GATE OPEN              
-     5.00     0.618     138.2   coast -- below the band         
-     7.00     0.372     109.3   coast -- below the band         
-    10.00     0.159      72.9   coast -- below the band         
-    13.00     0.051      41.8   coast -- below the band         
-    16.00     0.008      17.1   coast -- below the band         
+     0.50     8.374      33.4   boost -- gate CLOSED, correctly 
+     1.00     8.401      69.9   boost -- gate CLOSED, correctly 
+     2.00     7.554     139.0   boost -- gate CLOSED, correctly 
+     2.85     0.968     171.6   coast -- GATE OPEN              
+     2.90     0.964     170.7   coast -- GATE OPEN              
+     3.50     0.829     159.6   coast -- GATE OPEN              
+     5.00     0.571     134.8   coast -- below the band         
+     7.00     0.344     106.6   coast -- below the band         
+    10.00     0.146      70.8   coast -- below the band         
+    13.00     0.046      40.0   coast -- below the band         
+    16.00     0.007      16.3   coast -- below the band         
 
   The gate opens at t = 2.85 s -- at burnout -- and stays open for
-  1.1 s, peaking at 1.06 g.
+  0.8 s, peaking at 0.97 g.
 
   **THE VECTOR IT ADMITS IS DRAG ALONG THE BODY AXIS, NOT GRAVITY.** A coasting
   rocket is in free fall; the only specific force on it is aerodynamic, and that
@@ -114,23 +114,23 @@ FINDING 2 -- 100 Hz INTEGRATION DRIFTS FASTER THAN THE GYRO DOES
 ============================================================================================
 
   board_requirements() derives ONE rate -- the control loop rate, 20x the pitch
-  mode, 86 Hz. A reader builds a 100 Hz system. But attitude is
+  mode, 85 Hz. A reader builds a 100 Hz system. But attitude is
   PROPAGATED, not sampled: q <- q * (1, w*dt/2) renormalised rotates by
   2*atan(|w|*dt/2), not by |w|*dt, and the shortfall is cubic in the step.
 
-    IMU rate   rot/step    drift @ 594   drift @ 2378
+    IMU rate   rot/step    drift @ 578   drift @ 2313
                   (deg) deg/s (capped)  deg/s (limit)
   ------------------------------------------------------
-       100 Hz      23.78          0.532         33.260
-       200 Hz      11.89          0.133          8.474
-       500 Hz       4.76          0.021          1.363
-      1000 Hz       2.38          0.005          0.341
-      2000 Hz       1.19          0.001          0.085
+       100 Hz      23.13          0.490         30.662
+       200 Hz      11.56          0.123          7.804
+       500 Hz       4.63          0.020          1.255
+      1000 Hz       2.31          0.005          0.314
+      2000 Hz       1.16          0.001          0.079
 
-  At 100 Hz and the 2378 deg/s the deflection limit allows, each step is a
-  23.8 degree rotation and the small-angle assumption underneath the
-  propagation is simply false. **33.3 deg/s -- with a PERFECT gyro.** Over the
-  11.7 s control window that is more than the whole sensor error budget.
+  At 100 Hz and the 2313 deg/s the deflection limit allows, each step is a
+  23.1 degree rotation and the small-angle assumption underneath the
+  propagation is simply false. **30.7 deg/s -- with a PERFECT gyro.** Over the
+  11.5 s control window that is more than the whole sensor error budget.
 
   FIX: sample the IMU at 1000 Hz. The error is cubic, so it costs almost
   nothing -- but it is a DIFFERENT REQUIREMENT from the control loop rate, it sets
@@ -169,7 +169,7 @@ FINDING 3 -- ROLL ANGLE WAS OBSERVED BY NOTHING ON THE SELECTED BOARD
 
   Note what pitch/yaw attitude is aided BY, because it is not obvious: the GNSS
   VELOCITY VECTOR, under a small-alpha assumption. That assumption is what
-  2.1-2.6 cal of static margin buys -- the one place in this
+  2.3-2.8 cal of static margin buys -- the one place in this
   project where stability margin shows up as a SENSING property rather than a
   handling one.
 
@@ -183,35 +183,35 @@ THE ATTITUDE ERROR BUDGET -- and the ranking is not the one a tutorial predicts
 
   source                                   at burnout    at apogee
   ------------------------------------------------------------------
-  gyro bias, pad-calibrated                   0.057 deg      0.338 deg
-  angular random walk                         0.005 deg      0.012 deg
-  gyro scale factor at roll rate              0.000 deg      8.671 deg
-  gyro g-sensitivity                          1.187 deg      1.187 deg
-  integration truncation at 1000 Hz           0.000 deg      0.016 deg
+  gyro bias, pad-calibrated                   0.057 deg      0.335 deg
+  angular random walk                         0.005 deg      0.011 deg
+  gyro scale factor at roll rate              0.000 deg      8.312 deg
+  gyro g-sensitivity                          1.153 deg      1.153 deg
+  integration truncation at 1000 Hz           0.000 deg      0.014 deg
   ------------------------------------------------------------------
-  RSS                                                        8.758 deg
+  RSS                                                        8.398 deg
 
   gyro bias, pad-calibrated:
       0.020 deg/s residual after averaging on the rail. Free, and mandatory: UNcalibrated
-      it is 0.50 deg/s, or 8.5 deg by apogee
+      it is 0.50 deg/s, or 8.4 deg by apogee
 
   angular random walk:
       0.0028 deg/sqrt(s) over sqrt(t). Grows as the square root, so a 17 s flight barely
       starts it
 
   gyro scale factor at roll rate:
-      0.5% of 594 deg/s is 3.0 deg/s while rolling, and the vehicle is taken as rolling
-      for 2.9 s of the 11.7 s window. THE DOMINANT TERM, and it is strictly proportional
-      to the roll command -- at the 2378 deg/s the deflection limit allows it would be 35
+      0.5% of 578 deg/s is 2.9 deg/s while rolling, and the vehicle is taken as rolling
+      for 2.9 s of the 11.5 s window. THE DOMINANT TERM, and it is strictly proportional
+      to the roll command -- at the 2313 deg/s the deflection limit allows it would be 33
       deg
 
   gyro g-sensitivity:
-      0.05 deg/s/g at 8.3 g for the 2.85 s of boost. Stops accruing at burnout, and it is
+      0.05 deg/s/g at 8.1 g for the 2.85 s of boost. Stops accruing at burnout, and it is
       an error the pad calibration cannot see because the pad is at 1 g
 
   integration truncation at 1000 Hz:
       arithmetic, not sensor error -- a PERFECT gyro drifts this much. At 100 Hz and the
-      uncapped 2378 deg/s the same term is 33.3 deg/s, which is 97 deg over the rolling
+      uncapped 2313 deg/s the same term is 30.7 deg/s, which is 88 deg over the rolling
       window and would lead every sensor term combined
 
   **Bias and random walk -- the two terms every AHRS article is about -- are
@@ -220,7 +220,7 @@ THE ATTITUDE ERROR BUDGET -- and the ranking is not the one a tutorial predicts
   tight. One root cause, and capping the roll command fixes both.
 
   Pad gyro-bias calibration is mandatory and free: averaging on the rail takes the
-  bias term from 8.5 deg to 0.34 deg by apogee.
+  bias term from 8.4 deg to 0.33 deg by apogee.
 
 ============================================================================================
 THE AIDING SENSORS, AND WHAT THEY ARE ACTUALLY FOR
@@ -230,13 +230,13 @@ THE AIDING SENSORS, AND WHAT THEY ARE ACTUALLY FOR
 
       q (Pa)   alt (m)   port error   sensor noise
   --------------------------------------------------
-       18556       283       31.7 m         0.13 m
-       11027       617       19.5 m         0.13 m
-        2917      1128        5.4 m         0.14 m
-         127      1367        0.2 m         0.14 m
+       17574       275       30.0 m         0.13 m
+       10504       600       18.5 m         0.13 m
+        2759      1099        5.1 m         0.14 m
+         127      1324        0.2 m         0.14 m
 
-  At max q (19.2 kPa) a 2% static port error coefficient is
-  383 Pa, and dp/dh there is 11.4 Pa/m: **33 m of altitude error**,
+  At max q (18.1 kPa) a 2% static port error coefficient is
+  363 Pa, and dp/dh there is 11.4 Pa/m: **32 m of altitude error**,
   against 0.13 m of sensor noise. Two orders of magnitude apart, and the
   error a datasheet comparison would optimise is the small one.
 
@@ -245,24 +245,24 @@ THE AIDING SENSORS, AND WHAT THEY ARE ACTUALLY FOR
   during boost will happily fuse it. Baro is for coast and descent altitude, apogee
   detection, and cross-checking the StratoLoggerCF.
 
-  One thing that is genuinely NOT a problem: max Mach is 0.527, so there is no
+  One thing that is genuinely NOT a problem: max Mach is 0.513, so there is no
   transonic port anomaly. Worth stating, because the absence of a problem is a
   result too.
 
   GNSS -- a slow outer-loop sensor, and the only in-flight attitude reference.
 
-    receiver latency        150 ms  ->  26.5 m at 176 m/s
-    half-sample staleness   50 ms  ->   8.8 m at 10 Hz
-    total position lag               35.3 m
+    receiver latency        150 ms  ->  25.7 m at 172 m/s
+    half-sample staleness   50 ms  ->   8.6 m at 10 Hz
+    total position lag               34.3 m
     CEP                              2.0 m
 
-  **35 m of lag against 400 m of achievable crossrange -- 9%.**
+  **34 m of lag against 340 m of achievable crossrange -- 10%.**
   It is correctable: dead-reckon the fix forward on the IMU, which is what the IMU
   is for. But only if you know it is there, and the lag is not the CEP -- a
   datasheet comparison on accuracy alone would have missed it entirely.
 
   AND THE RECEIVER MAY NOT BE TRACKING AT ALL THROUGH BOOST. Peak axial is
-  8.3 g, and 'airborne <4 g' is the most permissive dynamic platform
+  8.1 g, and 'airborne <4 g' is the most permissive dynamic platform
   model u-blox offers. Expect lock loss under boost and reacquisition in early
   coast -- which is survivable, because the guidance window does not open until
   burnout, but it means GNSS cannot be part of the boost-phase estimate.
@@ -287,7 +287,7 @@ WHAT THIS COST, AND THE PATTERN IT MAKES
   A fourth thing fell out on the way past and it is a correction to D7, not to D8:
   the gyro requirement had been computed at 6 deg of deflection and printed under an
   8 deg heading. Roll rate is linear in deflection, so the real figure at the limit
-  is 2378 deg/s -- 119% of a +/-2000 dps part, SATURATED, not the
+  is 2313 deg/s -- 116% of a +/-2000 dps part, SATURATED, not the
   comfortable 89% docs/06 quoted. The roll command cap was already in baseline.py as
   a control convenience; it is load-bearing for the SENSOR. See
   design/configure.DEFLECTION_LIMIT_DEG.
@@ -304,22 +304,22 @@ THE CHECK baseline.py CARRIES
 
   note  'position' propagates open-loop through boost
 
-  note  an |a| ~ 0.8-1.2 g gate would be OPEN from t = 2.85 s to 3.97 s -- at burnout, for
-        1.1 s, peaking at 1.06 g -- and what it would admit is drag along the BODY AXIS, not
+  note  an |a| ~ 0.8-1.2 g gate would be OPEN from t = 2.85 s to 3.64 s -- at burnout, for
+        0.8 s, peaking at 0.97 g -- and what it would admit is drag along the BODY AXIS, not
         gravity
 
   note  THE ROLL COMMAND CAP IS A SENSING REQUIREMENT, not just a control one. At the 2 deg
-        cap the vehicle rolls at 594 deg/s, 30% of ICM-42688-P gyro's +/-2000. At the 8 deg
-        deflection LIMIT it rolls at 2378 deg/s, which is 119% -- SATURATED. Lifting the
+        cap the vehicle rolls at 578 deg/s, 29% of ICM-42688-P gyro's +/-2000. At the 8 deg
+        deflection LIMIT it rolls at 2313 deg/s, which is 116% -- SATURATED. Lifting the
         cap, or a fault that runs the canards to the stops, takes the gyro out of range
 
   note  IMU output data rate must be at least 1000 Hz: first-order quaternion propagation at
-        100 Hz drifts 33.3 deg/s at the 2378 deg/s the deflection limit allows, with a
-        PERFECT gyro. THIS IS NOT THE CONTROL LOOP RATE, which is 86 Hz -- a board built to
+        100 Hz drifts 30.7 deg/s at the 2313 deg/s the deflection limit allows, with a
+        PERFECT gyro. THIS IS NOT THE CONTROL LOOP RATE, which is 85 Hz -- a board built to
         the control loop rate would be built ten times too slow
 
-  note  UNAIDED propagation reaches 8.8 deg RSS by apogee against a 5.0 deg budget, led by
-        'gyro scale factor at roll rate' at 8.7 deg. The aiding is load-bearing, not a
+  note  UNAIDED propagation reaches 8.4 deg RSS by apogee against a 5.0 deg budget, led by
+        'gyro scale factor at roll rate' at 8.3 deg. The aiding is load-bearing, not a
         refinement. That is already WITH the roll command capped; at the deflection limit
-        the same term is 35 deg
+        the same term is 33 deg
 
