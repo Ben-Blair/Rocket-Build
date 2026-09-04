@@ -996,6 +996,7 @@ clean — see correction 50.
 | 8 `AsBuiltJoint`s — 4 rigid (Shaft↔Panel), 4 revolute (Shaft↔Tube), driven and verified at 0°/8° | `scripts/make_canard_joints_fusion.py` (M5); reset to 0° with `out/reset_canard_joints_fusion_generated.py` |
 | `AftGasSeal` (placed, module aft face) + `RecoveryInternalBulkhead` (placed inside `RecoveryBayTube`, correction 51) | `scripts/make_seal_cad_fusion.py` (correction 50) |
 | `RecoveryBayTube` — plain tube aft of the canard module, Z 142.92 → 500.22, with `RecoveryInternalBulkhead` translated into it at Z 375.42 (main compartment forward, drogue aft) | `scripts/make_recovery_bay_cad_fusion.py` (correction 51) |
+| `BoosterTube` (Z 500.22 → 916.50, 4 tab slots cut) + `AftFin0`-`AftFin3` (trapezoid + through-wall tab, clocked 45/135/225/315°) | `scripts/make_aft_fin_cad_fusion.py` (correction 52) |
 | `PassThroughPlate` (placed, module forward face) + `NoseAftFace` (part only, no nose cavity modelled) | `scripts/make_access_bulkhead_cad_fusion.py` (correction 50) |
 | interference sweep at rest, all four quadrants | `scripts/check_canard_interference_fusion.py` (M4) |
 | interference sweep driven through 0°/±4°/±8°, occurrence proxies so it actually sees the joints move | `scripts/check_canard_interference_driven_fusion.py` (M6 item 2 / correction 50) |

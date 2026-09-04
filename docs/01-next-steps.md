@@ -35,13 +35,31 @@ Read this first if you are picking the project back up.
   yet**: the U-bolt, backing plate and charge well — none of the three has ever been SIZED
   by anything in this project, Onshape included, so drawing them now would be inventing a
   design decision rather than recording one.
+- **The booster tube and all four aft fins are drawn (Sep 2026, correction 52) — the
+  vehicle is modelled nose to tail in Fusion for the first time.** Correction 51 assumed
+  the booster + aft fins had no design-side sizing at all; checking before drawing found
+  that was wrong — the planform (`aft_root_cal`/`aft_semispan_cal`/`aft_sweep_cal`/
+  `aft_taper`, `design/configure.py`) and the root attachment (a 12 mm through-wall tab,
+  already baked into `scripts/make_cad_profiles.py`'s `fin_profile()`) were both already
+  decided, just never built as 3D geometry. `scripts/make_aft_fin_cad_fusion.py` builds
+  `BoosterTube` (continuing directly from `RecoveryBayTube`'s own aft face) and
+  `AftFin0`-`AftFin3`, clocked 45/135/225/315° (interdigitated 45° off the canards, a
+  number this project had only ever stated in prose until now). Interference-clean
+  everywhere: tube-to-tube, fin-to-tube, and every fin pair, all exactly 0.0000 mm³. Found
+  and fixed a real Fusion API gotcha along the way — renaming a Sketch/Extrude-sourced body
+  inside the same script transaction does not reliably persist, even into a fresh empty
+  component; `scripts/fusion_common.py`'s shared `_inject()` now renames after
+  `finishEdit()` via a fresh query instead. **Only the motor mount (never sized by
+  anything, Onshape included) and the recovery bay's U-bolt/backing-plate/charge-well
+  (correction 51) are what's left of Step 3's dimensioned-drawing deliverable.**
 - **Steps 0, 1, 2 are closed.** Sizing tool built, range access and certification path
   resolved, OpenRocket cross-check done and agreeing (CNa to 0.3%, CP to 0.17 cal).
 - **Step 3 is nearly closed.** The airframe is frozen in `design/configure.py` — that file
   is the single source of truth for the vehicle and every script imports from it. The BOM
-  is drafted (`04-bill-of-materials.md`). **The one remaining deliverable is a dimensioned
-  drawing**, which is CAD work in Fusion (`CanardControlModule`) — see the migration bullet
-  above; do not go looking for it in Onshape.
+  is drafted (`04-bill-of-materials.md`). **The dimensioned drawing now covers the whole
+  vehicle except the motor mount and the recovery bay's U-bolt/backing-plate/charge-well**
+  (both genuinely unsized, not just undrawn) — CAD work in Fusion (`CanardControlModule`),
+  see the two bullets above; do not go looking for any of it in Onshape.
 - **The canard module inertia is measured**, not estimated. `design/control.py` now
   superposes the CAD tensor (`CANARD_MODULE_CAD`) on the crude bulk estimate: vehicle roll
   inertia up 6.4%, pitch down 1.5%, pitch mode 4.30 → 4.34 Hz, roll acceleration down ~6%.
@@ -356,13 +374,13 @@ Read this first if you are picking the project back up.
     create — and the step count was still cut to 200 on the general principle that a hot
     loop should not carry unneeded weight. See `design/nose_module.py`'s
     `shell_volume_and_centroid` docstring for the numbers.
-- **Asked whether Step 4 (firmware) was really next, the honest answer was no.** Only the
-  nav bay and the canard module have ever had real CAD; the nose is now a third, and the
-  recovery bay's tube is now a fourth (correction 51). **The recovery bay's U-bolt, backing
-  plate and charge well (never SIZED anywhere, Onshape included, so not yet drawable) and
-  the booster + aft fins (nothing drawn at all — no planform, no root attachment, no motor
-  mount) are the two things left standing between here and Step 3's own deliverable, "a
-  dimensioned drawing" covering the whole vehicle.** Step 4 is still next in the sense that
+- **Asked whether Step 4 (firmware) was really next, the honest answer was no.** By the end
+  of correction 52 the whole vehicle has real CAD, nose to aft fins, in one document. **What
+  is left standing between here and Step 3's own deliverable, "a dimensioned drawing"
+  covering the whole vehicle, is two genuinely unsized items, not undrawn ones**: the
+  recovery bay's U-bolt/backing-plate/charge-well and the booster's motor mount — neither
+  has ever been sized by anything in this project, Onshape included, so neither is a CAD
+  task until it is a design decision. Step 4 is still next in the sense that
   D8 settled what it is built from, but calling it "next" before Step 3's drawing covers the
   whole vehicle was premature, and correction 43 exists because that got questioned rather
   than assumed.
@@ -2076,9 +2094,88 @@ that silently recurs:
    the hardware standing proud of them, which needs a dimension chosen before it can be
    drawn, the same discipline this project applied to the coupling (correction 21) and the
    hinge collar material (correction 19) rather than inventing a number to fill the gap.
-   **Still entirely undrawn: the booster and aft fins** — no planform, no root attachment,
-   no motor mount, and no design/*.py sizing code for any of them either. That is Step 3's
-   last remaining piece.
+   **Still entirely undrawn: the booster and aft fins** — checked rather than assumed
+   (correction 52 corrects the record here: the planform and root attachment turned out to
+   already be sized, just never built in 3D). Only the motor mount is a genuine sizing gap.
+
+52. **The booster tube and all four aft fins are drawn, and two of "no planform, no root
+   attachment, no motor mount" turned out to already be decided.** Correction 51 claimed
+   the booster + aft fins had zero design-side sizing at all. Checking before drawing found
+   that was wrong: `design/configure.py` has carried a frozen `FinSet` for the aft fins
+   since before this project's Fusion migration (`aft_root_cal`/`aft_semispan_cal`/
+   `aft_sweep_cal`/`aft_taper`, the same numbers `scripts/make_cad_profiles.py` has emitted
+   as a 2D DXF fin pattern all along), and that DXF generator's own `fin_profile(aft,
+   tab=TAB_DEPTH)` already encodes a root attachment scheme — a 12 mm through-wall tab —
+   that had simply never been built as real geometry, in Onshape or Fusion. Only the motor
+   mount (`design/mass.py`'s `motor_mount_centering_rings` budget line, no ring diameter,
+   count or station behind it anywhere) is a genuine, unsized gap, and it is NOT attempted
+   here for the same reason the U-bolt/backing-plate/charge-well were not in correction 51
+   — inventing centering-ring geometry with nothing sizing it would be the exact mistake
+   this project keeps finding and fixing elsewhere.
+
+   **One new generator**, `scripts/make_aft_fin_cad_fusion.py`: `BoosterTube` (plain
+   annulus, same OD/ID as every tube in this document, built continuing directly from
+   `RecoveryBayTube`'s own aft face — the two share the same station, confirmed by
+   `design/configure.py`'s own arithmetic, not assumed) with four rectangular slots cut
+   through its wall for the fin tabs, and `AftFin0`-`AftFin3`, each the full flat pattern
+   `fin_profile()` already describes (trapezoid plus tab, six points, one body) extruded
+   into 3D and clocked at 45/135/225/315 degrees.
+
+   **Clocking is the one number nothing in `design/*.py` encodes.** `FinSet` has no
+   clocking field; "interdigitated 45 degrees" has only ever been prose, in
+   `docs/00-requirements.md`, this file's own "Current vehicle" line, and `docs/05`'s own
+   canard-panel section. Recorded here as `AFT_FIN_CLOCK_DEG = 45.0` rather than left
+   implicit a second time.
+
+   **Building at 45 degrees broke the canard-panel generator's own quadrant trick**, and
+   fixing it found the session's one real bug. `make_hinge_stack_fusion.py` picks Fusion's
+   `xZConstructionPlane`/`yZConstructionPlane` by quadrant parity, which only works because
+   0/90/180/270 land exactly on an axis-aligned plane — 45 does not. Fixed by always
+   sketching on `xZConstructionPlane` (as if clocked at 0) and rotating the finished temp
+   body into its real clocking afterward with `TemporaryBRepManager.transform()` and a
+   `Matrix3D.setToRotation()` about Z — one technique, works at any angle, so a later
+   generator never needs a third way to place geometry.
+
+   **THE REAL BUG: renaming a body sourced from Sketch/Extrude does not persist within the
+   same script transaction, even into a component that was completely empty going in** —
+   a stronger and different failure than the already-documented "already-populated
+   component" gotcha. `b = comp.bRepBodies.add(body, bf); b.name = "aft fin"` read back
+   correctly on `b` itself but a fresh `comp.bRepBodies` query, one line later, in the same
+   run, still showed Fusion's own default name — `verify_fin()` reported "aft fin is
+   missing" against a component that, by every appearance, had just been built successfully.
+   Isolated by direct test: a body from `TemporaryBRepManager.createSphere()` renames fine
+   through the identical pattern; a body copied off an `ExtrudeFeature`'s own result does
+   not. The canard panels (M3) used this exact same rename pattern and are correctly named
+   in the live document today, so this is not "always broken" — it is unreliable, which is
+   worse, because a check that sometimes passes on a real bug is not a check. Fixed once, in
+   `scripts/fusion_common.py`'s shared `_inject()`: rename AFTER `bf.finishEdit()`, via a
+   fresh `comp.bRepBodies.item(i)` query, never via the object `.add()` itself returned.
+   Confirmed this persists for both extrude-sourced and primitive-sourced bodies alike, so
+   every generator now goes through one rename path rather than two that quietly disagree.
+
+   **A second, smaller bug in the same session: an unsubtracted slot volume.** The first
+   verify attempt on `BoosterTube` failed by exactly 4089.21 mm³ — four slots' worth, almost
+   to the decimal, because the analytic `TUBE_VOLUME_MM3` constant was computed from the
+   plain annulus and the slot volume was calculated but never actually subtracted from it
+   before being embedded in the emitted script. Fixed; the real per-slot residual once the
+   subtraction was correct is ~0.29 mm³ (a box cut through a curved wall has the same
+   flat-face-meets-curved-surface residual `fusion-mcp-gotchas.md` already documents for
+   the canard module's own radial wall bores), loosened tolerance set from that measurement,
+   not guessed.
+
+   **Verified**: `BoosterTube` volume against the analytic annulus-less-four-slots figure
+   (227819.8017 mm³, −1.1757 mm³ against a 2.0 mm³ loosened tolerance); each `AftFin{q}`
+   against the same six-point shoelace polygon its own sketch is built from, exact to
+   0.0000 mm³ on all four; centroid angle exactly 45/135/225/315 degrees on all four, 1e-4
+   deg tolerance; zero interference — `BoosterTube` vs `RecoveryBayTube`, each fin vs
+   `BoosterTube`, and every fin pair against every other — all exactly 0.0000 mm³.
+   Screenshotted at a fit view: nose, canard module, recovery bay, booster and all four aft
+   fins, visibly clocked 45 degrees off the canards, in one continuous vehicle for the first
+   time in this project's history.
+
+   **Still open**: the motor mount (unsized, stated rather than invented) and the U-bolt/
+   backing-plate/charge-well from correction 51. Between them, that is what is left of Step
+   3's "a dimensioned drawing" deliverable.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —
