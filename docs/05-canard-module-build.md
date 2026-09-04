@@ -977,13 +977,30 @@ Onshape elements, and which script owns each:
 | `Canard bay (printed)` — bay + retainer bar | `scripts/make_bay_cad.py`, `cad/canard_bay.fs` |
 | `Assembly 1` — 34 instances, 5 rigid groups, 4 revolute hinges | `scripts/make_module_assembly.py`, `scripts/place_bearings.py`, `scripts/make_bay_cad.py --assemble`; **the 4 mates were placed by hand** |
 
-The Fusion document `CanardControlModule` holds the same module natively, plus one component
-that is **not** in Onshape:
+**The canard module has fully migrated off Onshape, and the cutover is DONE (docs/01-
+next-steps.md corrections 44–50, M0–M6).** `Tube`, `Panel0`–`Panel3`, `Shaft0`–`Shaft3`,
+`Servo`, `Bearing`, `CanardBay`, `AftGasSeal` and `PassThroughPlate` are native, from-
+scratch, regenerable Fusion geometry, articulating on 8 real `AsBuiltJoint`s — nothing in
+this document reads from the STEP import any more, because there is no STEP import any
+more. `Onshape_reference` and the old hand-built 28-body rebuild were both deleted from the
+live document in the same session that closed M6, only after both gating cross-checks
+(against each other, and against the mechanism driven through its full ±8° swing) passed
+clean — see correction 50.
 
 | Fusion component | Built by |
 |---|---|
-| root — the 28-body native rebuild, Z 0 → 142.900 | rebuilt by hand; repaired against the STEP reference, see "The Fusion 360 transfer" below |
-| `Onshape_reference` | `cad/onshape_export/Assembly_1.step`, imported |
+| `Tube`, `Panel0`–`Panel3`, `Shaft0`–`Shaft3` — 9 components, tube + 4 panels + 4 shafts, tang/spline-socket folded in | `scripts/make_hinge_stack_fusion.py` (M3) |
+| `Servo` — 4 servo instances (case+flange, spline, boss) placed on their hinge axes | `scripts/make_servo_cad_fusion.py` (M2, geometry) + `scripts/place_hinge_hardware_fusion.py` (M4, placement) |
+| `Bearing` — 4 bearing instances placed on their hinge axes | `scripts/make_bearing_cad_fusion.py` (M2, geometry) + `scripts/place_hinge_hardware_fusion.py` (M4, placement) |
+| `CanardBay` — bay + retainer bars | `scripts/make_bay_cad_fusion.py` (M1) |
+| 8 `AsBuiltJoint`s — 4 rigid (Shaft↔Panel), 4 revolute (Shaft↔Tube), driven and verified at 0°/8° | `scripts/make_canard_joints_fusion.py` (M5); reset to 0° with `out/reset_canard_joints_fusion_generated.py` |
+| `AftGasSeal` (placed, module aft face) + `RecoveryInternalBulkhead` (placed inside `RecoveryBayTube`, correction 51) | `scripts/make_seal_cad_fusion.py` (correction 50) |
+| `RecoveryBayTube` — plain tube aft of the canard module, Z 142.92 → 500.22, with `RecoveryInternalBulkhead` translated into it at Z 375.42 (main compartment forward, drogue aft) | `scripts/make_recovery_bay_cad_fusion.py` (correction 51) |
+| `PassThroughPlate` (placed, module forward face) + `NoseAftFace` (part only, no nose cavity modelled) | `scripts/make_access_bulkhead_cad_fusion.py` (correction 50) |
+| interference sweep at rest, all four quadrants | `scripts/check_canard_interference_fusion.py` (M4) |
+| interference sweep driven through 0°/±4°/±8°, occurrence proxies so it actually sees the joints move | `scripts/check_canard_interference_driven_fusion.py` (M6 item 2 / correction 50) |
+| cross-check against the (now-deleted) hidden 28-body rebuild, by measured position, before the cutover | `scripts/check_canard_rebuild_cross_check_fusion.py` (M6 item 1 / correction 50) |
+| shared temp-BRep/BaseFeature/verify plumbing every generator above reuses | `scripts/fusion_common.py` (M0) |
 | `NavBay` — sled plate, 2 end brackets, 2 rods, 12 standoffs, 5 component envelopes, and the bay's own tube / nose shoulder / nose plate, Z −130.24 → 0 | `scripts/make_sled_fusion.py` (a **generator** — it emits the script Fusion runs, so no dimension is typed into Fusion); argument in `docs/08-nav-bay-sled.md` |
 
 `NavBay` is the nav bay, not the canard module, and it is here only because it shares a

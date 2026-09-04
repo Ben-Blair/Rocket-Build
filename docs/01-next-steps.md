@@ -4,12 +4,44 @@
 
 Read this first if you are picking the project back up.
 
+- **CAD moved from Onshape to Fusion, and full-module migration is DONE (Sep 2026).**
+  Everything below this bullet through the end of "State of play" predates that move and
+  is Onshape-only history — read it for the ENGINEERING content (the hinge, the joints,
+  the loads all still apply), not for which CAD tool to open. `CanardControlModule` in
+  Fusion now holds the tube, 4 panels, 4 shafts, the printed bay, 4 servos, 4 bearings,
+  the aft gas seal and the pass-through plate as native, from-scratch, regeneratable
+  geometry (eight generator scripts under `scripts/*_fusion.py`, each deriving every
+  dimension from `design/*.py`, same discipline as the Onshape scripts below), all
+  correctly placed, interference-clean at rest AND driven through 0°/±4°/±8° deflection,
+  genuinely ARTICULATING on 8 native `AsBuiltJoint`s — and **`Onshape_reference` (the STEP
+  import) and the old hand-built 28-body rebuild are both DELETED from the live document.**
+  Full blow-by-blow in **corrections 44–50** at the bottom of this file (M0 plumbing/
+  joint-API spike, M1 bay, M2 servo+bearing, M3 tube/panel/shaft, M4 placement+
+  interference, M5 joints, M6 cutover) — read correction 44 first for the architecture and
+  milestone list, then whichever of 45–50 you need. Onshape's `canard-control module`
+  document is untouched and still the thing the *rest* of this file's Onshape-era
+  corrections describe — it is history now, not a live dependency of anything that moves.
+- **The recovery bay has a tube now, and its internal bulkhead is finally assembled, not
+  just drawn (Sep 2026, correction 51).** `scripts/make_recovery_bay_cad_fusion.py` builds
+  `RecoveryBayTube` (357.3 mm, the same OD/ID as the canard module's own tube) directly
+  aft of the canard module in the same `CanardControlModule` document — Z 142.92 → 500.22,
+  continuing from the aft gas seal's own aft face — and moves the already-built
+  `RecoveryInternalBulkhead` (correction 50) from its unplaced local origin to its real
+  station, read off `evaluate().packing`'s own main/drogue compartment lengths rather than
+  assumed: main compartment forward (229.50 mm), the bulkhead centred in its 10.8 mm
+  allowance band, drogue compartment aft (89.72 mm), 27.3 mm of slack left at the tube's
+  own aft face for the recovery-bay/booster joint's coupler. Interference-clean against the
+  tube, the aft gas seal, and the canard module's own tube. **Still open, and not drawable
+  yet**: the U-bolt, backing plate and charge well — none of the three has ever been SIZED
+  by anything in this project, Onshape included, so drawing them now would be inventing a
+  design decision rather than recording one.
 - **Steps 0, 1, 2 are closed.** Sizing tool built, range access and certification path
   resolved, OpenRocket cross-check done and agreeing (CNa to 0.3%, CP to 0.17 cal).
 - **Step 3 is nearly closed.** The airframe is frozen in `design/configure.py` — that file
   is the single source of truth for the vehicle and every script imports from it. The BOM
   is drafted (`04-bill-of-materials.md`). **The one remaining deliverable is a dimensioned
-  drawing**, which is CAD work in Onshape.
+  drawing**, which is CAD work in Fusion (`CanardControlModule`) — see the migration bullet
+  above; do not go looking for it in Onshape.
 - **The canard module inertia is measured**, not estimated. `design/control.py` now
   superposes the CAD tensor (`CANARD_MODULE_CAD`) on the crude bulk estimate: vehicle roll
   inertia up 6.4%, pitch down 1.5%, pitch mode 4.30 → 4.34 Hz, roll acceleration down ~6%.
@@ -325,14 +357,15 @@ Read this first if you are picking the project back up.
     loop should not carry unneeded weight. See `design/nose_module.py`'s
     `shell_volume_and_centroid` docstring for the numbers.
 - **Asked whether Step 4 (firmware) was really next, the honest answer was no.** Only the
-  nav bay and the canard module have ever had real CAD; the nose is now a third. **The
-  recovery bay (no tube modelled, an internal bulkhead drawn but not assembled and still
-  missing its U-bolt/backing-plate/charge-well) and the booster + aft fins (nothing drawn
-  at all — no planform, no root attachment, no motor mount) are the two sections of the
-  airframe Step 3's own deliverable, "a dimensioned drawing", has never reached.** Step 4 is
-  still next in the sense that D8 settled what it is built from, but calling it "next"
-  before Step 3's drawing covers the whole vehicle was premature, and correction 43 exists
-  because that got questioned rather than assumed.
+  nav bay and the canard module have ever had real CAD; the nose is now a third, and the
+  recovery bay's tube is now a fourth (correction 51). **The recovery bay's U-bolt, backing
+  plate and charge well (never SIZED anywhere, Onshape included, so not yet drawable) and
+  the booster + aft fins (nothing drawn at all — no planform, no root attachment, no motor
+  mount) are the two things left standing between here and Step 3's own deliverable, "a
+  dimensioned drawing" covering the whole vehicle.** Step 4 is still next in the sense that
+  D8 settled what it is built from, but calling it "next" before Step 3's drawing covers the
+  whole vehicle was premature, and correction 43 exists because that got questioned rather
+  than assumed.
 
 Current vehicle: 79.4 mm OD fiberglass, 1361 mm, canards 0.85 cal / aft fins 1.55 cal
 interdigitated 45°, **both sets swept 35.4°**, Cesaroni J449 Blue Streak, 4× KST X08 Plus
@@ -1553,11 +1586,13 @@ that silently recurs:
    weight it does not need, not because 4000 was proven to matter. Full regression sweep —
    every report script plus `sweep.py`, `robustness.py`, `motor_trade.py` — run clean.
 
-   **STILL OPEN:** the recovery bay (no tube modelled; the internal bulkhead is drawn as a
-   part by `make_bulkhead_cad.py` but not assembled anywhere, and still missing its U-bolt,
-   backing plate, and charge well) and the booster + aft fins
+   **STILL OPEN as of this session:** the recovery bay (no tube modelled; the internal
+   bulkhead is drawn as a part by `make_bulkhead_cad.py` but not assembled anywhere, and
+   still missing its U-bolt, backing plate, and charge well) and the booster + aft fins
    (nothing drawn at all — no planform, no root attachment, no motor mount) are the rest of
-   Step 3's own deliverable. Neither is this session's.
+   Step 3's own deliverable. Neither is this session's. **[Update, correction 51: the
+   recovery bay now has a native Fusion tube and its bulkhead is assembled — the U-bolt/
+   backing-plate/charge-well and the booster+aft-fins are what remains.]**
 
    **ALSO FLAGGED, DELIBERATELY DEFERRED:** the 8 hinge joints above live on
    `Onshape_reference` — the STEP file imported from Onshape — not on the native Fusion
@@ -1578,6 +1613,472 @@ that silently recurs:
         `make_spline_socket.py`) on the Fusion side.
    Neither is done. Do this before trusting the mechanism against anything but a visual
    check, and before assuming Onshape can be dropped for this module.
+
+44. **Correction 43's option 2 was chosen — full migration off Onshape for this module —
+   and its two biggest unknowns are now retired.** Asked directly, rather than deferred
+   again: yes, migrate fully, and yes, also regenerate the tube/4 panels/4 shafts from
+   scratch rather than keep them as the hand-built snapshot in the hidden 28-body rebuild
+   (its planform math already exists, `scripts/make_cad_profiles.py`'s `fin_profile()`/
+   `mac()`, so this is a port, not new design). That makes the real undertaking **six**
+   generator scripts, not five: `make_hinge_stack_fusion.py` (tube + 4 panels + 4 shafts,
+   each its own Fusion component, tang-cut and spline-socket folded into the same
+   per-quadrant pass since the generator already holds direct body references and doesn't
+   need Onshape's `classifyCanardBodies()` workaround), `make_servo_cad_fusion.py`,
+   `make_bearing_cad_fusion.py`, `make_bay_cad_fusion.py`, and — new, no precedent anywhere
+   in this repo — `make_canard_joints_fusion.py`. A new `scripts/fusion_common.py` is also
+   planned, since `make_sled_fusion.py` is currently the only Fusion-side code in the repo
+   and duplicating its temp-BRep/BaseFeature/verify boilerplate six times would be exactly
+   the kind of second source of truth this project's conventions exist to prevent.
+
+   This is a multi-session build (a 7-milestone plan, M0–M6). **Only M0, a plumbing spike,
+   is done this session** — no real canard geometry has been generated yet. It existed to
+   answer two open questions before committing to writing any generator against them:
+
+   - **How does a generated script actually run inside Fusion?** Confirmed:
+     `mcp__fusion360__fusion_mcp_execute` (`featureType: "script"`) runs a Python
+     `run(_context)` function directly against the ACTIVE document via the real Fusion API
+     — it is not "print text and paste it into Fusion's script editor by hand," which is
+     what `make_sled_fusion.py`'s `--write`-to-`out/` pattern would otherwise imply and
+     which nothing in the repo had actually proven. A generator can call this tool with its
+     emitted script text directly.
+   - **Does Fusion's `AsBuiltJoint` API work the way correction 43 assumed?** Confirmed, on
+     the first attempt, both joint types this module needs:
+     `root.asBuiltJoints.createInput(occA, occB, geometry)` then either
+     `.setAsRigidJointMotion()` (geometry=`None`) or
+     `.setAsRevoluteJointMotion(adsk.fusion.JointDirections.ZAxisJointDirection)` with
+     geometry = `adsk.fusion.JointGeometry.createByCylinderOrConeFace(cylFace,
+     JointQuadrantAngleTypes.StartJointQuadrantAngleType, JointKeyPointTypes.MiddleKeyPoint)`
+     — axis read directly off the shaft's own cylindrical face, exactly the technique
+     correction 43 used by hand for the current joints — then `root.asBuiltJoints.add(input)`.
+     Driving motion: `adsk.fusion.RevoluteJointMotion.cast(joint.jointMotion).rotationValue
+     = math.radians(8.0)`, read back exact. Screenshotted at 8° (visible near the document's
+     origin, next to the nose), then both joints and their four throwaway test components
+     deleted (`joint.deleteMe()`, `occurrence.deleteMe()`) — `CanardControlModule` is left
+     exactly as it was before this session, nothing real added or changed.
+
+   **Next up is M1 — the bay shell, standalone-verified** (the largest of the six ports,
+   currently a custom Onshape FeatureScript purely because of two Onshape-only
+   limitations — boolean scope can't name bodies by bare ID, radial extrude needs a
+   sketch-plane query — that don't exist against Fusion's temp-BRep API). Full milestone
+   list (M1 bay, M2 servo+bearing, M3 tube+panels+shafts, M4 placement+interference sweep,
+   M5 joints wired for real, M6 cutover deleting `Onshape_reference` and the old hidden
+   rebuild) and the full architecture/verification plan were written to a Claude Code plan
+   file that does **not** live in this repo and will not survive a new machine or a cleared
+   plan directory — this entry is the durable record of the decision and of what's proven;
+   rebuilding the milestone-by-milestone detail from scratch next session is expected and
+   fine, the risk retirement above is the part worth not re-deriving.
+
+45. **M1 is done, same session as correction 44: the printed canard bay now has a native
+   Fusion generator, verified against `design/bay.py` in the live `CanardControlModule`
+   document.** Two new files, `scripts/fusion_common.py` (the shared temp-BRep primitive
+   builders, BaseFeature injection loop and volume/face verify helpers every later
+   generator will reuse -- written once so six generators don't retype it, per correction
+   44's own stated plan) and `scripts/make_bay_cad_fusion.py`, which ports
+   `cad/canard_bay.fs`'s geometric logic (not its FeatureScript mechanics -- Fusion's
+   temp-BRep API needs neither of the two Onshape limitations that forced a custom feature
+   there) into Python that emits a standalone Fusion script, run via
+   `fusion_mcp_execute` exactly as correction 44 hoped.
+
+   Built and verified live: one "canard bay" body (shell, 4 collar bosses, 4 servo trays,
+   8 webs, 8 clamp bosses, all unioned, then 4 collar bores + 4 windows + 4 flange reliefs
+   + 16 insert holes subtracted) plus 8 retainer bars -- drawn directly per
+   (quadrant, screw row) rather than modelled once and instanced, since a from-scratch
+   generator has no Onshape-style part-instancing step to exploit and the quadrant-frame
+   helpers make eight independent bodies exactly as cheap as one. Volume checks
+   (VeryHighCalculationAccuracy) pass to the fourth decimal on every retainer bar and
+   within the same 6% band `scripts/make_bay_cad.py`'s own Onshape-side verify() uses on
+   the shell (28,257.58 mm³ built vs 28,889.05 mm³ analytic -- the estimate is a sum of
+   prisms and cylinders that doesn't model web embedment or boss/tray overlap, so the CAD
+   is the more correct number here, same as the Onshape side always argued). A face check
+   (exact where volume on a radial hole through a curved wall is not, same reasoning as
+   `make_sled_fusion.py`'s ports) confirms all 4 collar bores at dia 8.00 mm, clocked
+   exactly 0°/0°/90°/90°. Screenshotted with everything else in the document hidden — shell,
+   collar bosses and bores, tray windows, webs and the dog-bone retainer bars with their
+   screw holes are all visibly correct, not just numerically.
+
+   **Found along the way, not assumed:** `design/bay.py`'s `retainer_volume` (a bridge plus
+   two pads) never subtracts the two M2 screw holes `cad/canard_bay.fs` actually cuts
+   through every bar ("retholes") -- 2 × π × (INSERT_DIA×0.7/2)² × RETAINER_THICKNESS =
+   11.8224 mm³ per bar, about 11.5% of one bar's volume. The Onshape-side `verify()`
+   (`scripts/make_bay_cad.py`) never caught this because it only checks the SHELL's volume
+   against `b.volume - b.retainer_volume`, never a bar's own -- this generator's own
+   per-body verify does, and its own expected figure now corrects for the holes with the
+   computation shown (measured, not assumed, same discipline as
+   `PORT_VOLUME_TOLERANCE_PER_PORT`). `design/bay.py` itself is UNCHANGED: `retainer_volume`
+   still overstates each bar's true material by that ~11.5%, which flows into
+   `BayGeometry.mass`/`.volume` and the "as flown" mass line
+   `scripts/make_bay_cad.py --assemble` prints. Small (eight bars, printed PETG-CF, a
+   fraction of a gram each) and not this migration's job to fix, but worth a line here so
+   nobody mistakes the Fusion generator's corrected constant for a discovered CAD error --
+   the CAD is right, `design/bay.py`'s analytic formula is what's loose.
+
+46. **M2 is done, same session as corrections 44-45: the servo and the hinge bearing are
+   now native Fusion geometry, both verified in the live `CanardControlModule` document.**
+   Two new files, `scripts/make_servo_cad_fusion.py` (3 bodies: case+flange with its six
+   lug/dowel holes, the output spline as a separate body since it turns and the case does
+   not, and the lower boss keep-out as a third) and `scripts/make_bearing_cad_fusion.py`
+   (1 body, OD cylinder less its bore, at journal diameter plus running clearance rather
+   than the journal diameter itself -- design/hinge.py's own header explains why that
+   distinction is the entire reason this file exists). Both port
+   `scripts/make_servo_cad.py`/`scripts/make_bearing_cad.py`'s geometry directly: every
+   feature in both parts is a plain box or cylinder along a single axis, so unlike the bay
+   neither needed FeatureScript-specific workarounds to begin with.
+
+   Both built in their own independent local frame (origin on the hinge axis, on the part's
+   own outboard-facing reference face, +Z radially outward), matching the Onshape
+   originals' own separation -- each is its own Part Studio there, with no defined relative
+   position between them. Placing four of each at their real quadrant/hinge-station
+   position in the module frame (mirroring `scripts/place_bearings.py`'s reach-along-shared-
+   axis technique) is explicitly a later milestone (M4), not this one; the two components
+   sit at the document's shared root origin for now, which is why a screenshot of both
+   together shows the bearing's cylinder buried inside the servo's case box -- an artifact
+   of two independently-drawn parts both defaulting to an identity transform, not a
+   modelling error. Isolating each confirmed both are correct on their own.
+
+   Verified: the bearing's volume matches the analytic annulus to the fourth decimal
+   (130.2462 mm³, tolerance 0.01) and its bore reads back as exactly one cylindrical face at
+   the right diameter. The servo has no natural analytic volume to check against (a real
+   servo isn't a simple density model) -- `scripts/make_servo_cad.py` itself only ever
+   PRINTED a bounding box for a human to eyeball, never asserted one; this generator's own
+   `verify()` makes that a real, automated check instead, an improvement on the Onshape
+   original rather than just a port of it.
+
+   **Two bugs found in this generator, both self-inflicted and both fixed before the parts
+   were trusted, not defects in the design itself:** (1) the lower boss's box height was
+   computed as `BOSS_Z0 - BOSS_Z1` where BOSS_Z1 > BOSS_Z0, handing Fusion a negative height
+   and a hard `RuntimeError: invalid argument height` -- fixed to `BOSS_Z1 - BOSS_Z0`.
+   (2) the servo body's own verify() first asserted its low-Z extent against the FLANGE's
+   depth (6.25 mm) when the CASE is actually deeper (16.8 mm) and is what really sets the
+   bounding box -- the geometry was right and the check's own expectation was wrong; fixed
+   to assert against `CASE_Z0`. Both were caught by the verify step itself doing its job
+   (a hard Fusion exception in the first case, a failed assertion in the second), not by
+   inspection -- exactly the point of writing the check before trusting the part.
+
+   **Next up is M3 — tube + panels + shafts**, each its own Fusion component (so a joint
+   can bind to it later), tang-cut and spline-socket folded into the same per-quadrant pass.
+   Needs the panel's sketch+extrude decision from correction 44's Architecture section
+   settled first: `TemporaryBRepManager` cannot build a swept trapezoid from box/cylinder
+   primitives alone, so the panel specifically needs Fusion's regular `Sketches`/`Extrudes`
+   API, planform corners ported from `scripts/make_cad_profiles.py`'s `fin_profile()`.
+
+47. **M3 is done, same session as corrections 44-46: the tube, all 4 canard panels and all
+   4 shafts are now native Fusion geometry, nine separate components, all nine verified
+   live in `CanardControlModule`.** One new file, `scripts/make_hinge_stack_fusion.py` --
+   the only one of the six generators that touches Fusion's parametric `Sketches`/
+   `ExtrudeFeatures` API at all, and only for one thing: the panel is a swept trapezoid,
+   which `TemporaryBRepManager` cannot build from box/cylinder primitives. To keep that
+   from becoming a second way this migration builds geometry, the panel is sketched and
+   extruded in a disposable SCRATCH component, immediately lifted into a real temporary
+   BRep body with `TemporaryBRepManager.copy()`, and the scratch component deleted -- from
+   that point on the panel is cut and injected through the same `BaseFeature` pattern as
+   every other body in the project. One deviation from what correction 46 said this
+   milestone would do: the planform corners come from `design/hinge.py`'s own
+   `RootJoint.leading_edge()`/`.trailing_edge()`, not from
+   `scripts/make_cad_profiles.py`'s `fin_profile()` as planned -- `RootJoint`'s version is
+   already expressed relative to the hinge axis and already carries the 0.500 mm standoff
+   correction between the panel's real root face (R 40.200) and the theoretical planform
+   root (R 39.700, the tube OD) that cost this project 0.36 mm once before, caught only by
+   the CAD (`selected_root_joint()`'s own docstring). Using it directly means this
+   generator cannot reintroduce that error; porting `fin_profile()` instead would have
+   risked it a second time for no reason.
+
+   Nine components: `Tube` (two concentric cylinders), `Panel0`-`Panel3` (the trapezoid
+   above, less a tang slot), `Shaft0`-`Shaft3` (a dia-6 rod, a tang boss unioned onto its
+   outboard end, a blind spline socket cut into its inboard end) -- not flat bodies in one
+   component, because the tube-to-shaft revolute and shaft-to-panel rigid joints (M5) need
+   distinct components to bind to, and building them separately from the start avoids the
+   "Create Components from Bodies" post-process correction 44 already rejected as
+   incomplete for the bay.
+
+   Every one of the nine verified to the fourth decimal against an analytic figure derived
+   from the SAME corners/dimensions the geometry is built from -- tube by the plain annulus
+   formula; panel by a shoelace-polygon area on its four corners, times thickness, less the
+   slot; shaft by a rod cylinder plus a tang box, less their overlap (a circular-zone
+   formula -- the same style `scripts/make_root_tang.py`'s own `expected_mass_change_g()`
+   used for this exact overlap on the Onshape side) and less the socket cylinder. All nine
+   came back exact (0.0000 mm³ delta) once the bug below was fixed. Screenshotted: a
+   correctly swept trapezoid panel sitting flush at the tube surface, and a top-down view
+   showing all four panels/shafts at their right quadrants alongside the bay's own
+   quadrant features.
+
+   **One real bug, caught by the verify step on the first run, not by inspection:** the
+   tang's THICKNESS and WIDTH axes were swapped in the actual geometry (though not in the
+   analytic formula, which happened to be built the right way round regardless, since
+   volume is a product and does not care which factor is which). `TANG_THICKNESS` (1.8 mm)
+   has to run tangentially -- through the panel's own 3.2 mm thickness, which is the
+   constraint that sets it -- and `TANG_WIDTH` (11.9 mm) has to run axially/chordwise,
+   which is what `design/hinge.py`'s `leading_edge_clearance`/`trailing_edge_clearance`
+   actually measure it against. Built the other way round, the tang slot cut only ~2 mm
+   wide in the chordwise direction instead of ~12 mm, and the first run came back
+   +455.68 mm³ over the analytic panel volume -- about a quarter of the intended material
+   left uncut. Fixed by swapping which quadrant-box axis each constant feeds, in both
+   `build_panel`'s slot cut and `build_shaft`'s tang boss; re-ran clean, exact match, on
+   all four panels and all four shafts alike (so the bug was not quadrant-dependent -- it
+   would have shipped identically wrong on every one of the eight bodies it touched had
+   the volume check not been there to catch it before the first one was trusted).
+
+   **Next up is M4 — the full placement pass and interference sweep**: everything built so
+   far (bay, servo, bearing, tube, panels, shafts) sits at its OWN independent local or
+   module-frame origin; servo and bearing in particular have never been positioned relative
+   to the tube/shaft they actually belong on. M4 places all of it from `design/hinge.py`'s
+   own radii/angles directly (no "copy an existing occurrence's transform" step, unlike the
+   Onshape original), then runs the pairwise boolean-intersection interference sweep from
+   correction 44's plan against both the new geometry itself and the existing hidden
+   28-body rebuild as a second oracle.
+
+48. **M4 is done, same session as corrections 44-47: the servo and bearing are placed on
+   all four real hinge axes, and the whole new assembly (bay, servo, bearing, tube, panel,
+   shaft, all four quadrants) checks clean for interference.** One new script,
+   `scripts/place_hinge_hardware_fusion.py`, copies each of the three servo bodies and the
+   one bearing body out of their M2 local hinge-axis frame and onto each of the four real
+   axes via `Matrix3D.setToAlignCoordinateSystems` (local +X, the case-length "along" axis,
+   maps to global +Z/axial; local +Y, "across", to tangential; local +Z, the shaft axis, to
+   radial -- confirmed against `design/hinge.py`'s `ServoGeometry` docstring, which itself
+   corrects an older, wrong assumption in `design/packaging.py`'s header that case WIDTH
+   rather than the shaft axis consumes radius). All sixteen placed bodies (12 servo + 4
+   bearing) land at their centre of mass exactly on the expected quadrant angle -- 0.000000°
+   delta, at a 1e-6° tolerance, on every one.
+
+   **The interference sweep**, `scripts/check_canard_interference_fusion.py`: 32 pairwise
+   boolean-intersection checks (8 physically-adjacent pairs × 4 quadrants — servo/bay,
+   bearing/bay, bearing/tube, shaft/tube, shaft/bearing, panel/shaft, panel/tube,
+   servo/bearing), all read-only (every comparison runs on `TemporaryBRepManager.copy()`
+   copies, nothing touches the real document). Every pair came back **exactly 0.0000 mm³**
+   — not just under tolerance, no measurable overlap at all. **Scope note:** this checks
+   the newly-generated geometry against itself only, not against the existing hidden
+   28-body rebuild as a second oracle the way correction 44's original plan described —
+   worth doing before M6's cutover, not done here.
+
+   **A real Fusion API gotcha, found the hard way and worth any future session reading
+   before touching body names:** renaming a `BRepBody` immediately after
+   `comp.bRepBodies.add(body, baseFeature)`, in the SAME script execution that created it,
+   does not reliably persist -- it reads back correctly off the live Python object
+   reference for the rest of that run (which is what made the first two attempts at this
+   script look like they worked), but a later, separate script run against the same
+   document sees Fusion's own default name ("Body4", "Body5", ...) instead. True whether or
+   not that same transaction also deletes an older `BaseFeature` first -- deletion isn't
+   the trigger, injecting-then-renaming into an ALREADY-POPULATED component is. Renaming a
+   body that was committed in an earlier, separate transaction always works. The generator
+   works around this by never trying to name anything in the transaction that creates it:
+   `_place_component` walks a PLACE → RENAME → CLEANUP → DONE state machine, driven by
+   which bodies are named what in the live document, so each of up to three separate script
+   runs does exactly one kind of mutation (create with default names; identify each
+   default-named body by MEASURING it — volume against the still-present old bodies, which
+   a rigid transform cannot change, and centre-of-mass angle against the four quadrants —
+   then rename; delete the old `BaseFeature`). Confirmed by direct probes against this
+   document before writing the fix, not by theory.
+
+   **Next up is M5 — joints wired for real.** Correction 44's spike (M0) already confirmed
+   the `AsBuiltJoint` API works; this milestone builds `scripts/make_canard_joints_fusion.py`
+   for real against the now-fully-placed, now-interference-clean tube/shaft/panel
+   components. The M6 cutover (deleting `Onshape_reference` and the old hidden rebuild) also
+   still needs the against-the-hidden-rebuild interference cross-check this milestone
+   skipped, folded in before or during M6.
+
+49. **M5 is done, same session as corrections 44-48: the canard mechanism now articulates
+   on entirely native Fusion geometry, with no dependency on `Onshape_reference` for the
+   one thing in this document that moves.** Two new files:
+   `scripts/make_canard_joints_fusion.py` (creates/verifies the 8 joints and drives the
+   4 revolute ones to 8° for the motion check) and its paired
+   `out/reset_canard_joints_fusion_generated.py` (resets them to 0°, kept as a separate
+   script deliberately — see below). No new dimensions needed deriving from
+   `design/hinge.py`; a joint is a relationship between already-built, already-placed,
+   already-verified occurrences, not new geometry, and the call shape itself was already
+   retired by M0's spike.
+
+   Eight joints, mirroring the hand-built ones on `Onshape_reference` exactly (correction
+   43): 4 **rigid** `Shaft{{q}}`↔`Panel{{q}}` (the tang bonded into its slot, zero DOF, no
+   geometry argument) and 4 **revolute** `Shaft{{q}}`↔`Tube` (the hinge itself, axis read
+   directly off the shaft's own cylindrical face via
+   `JointGeometry.createByCylinderOrConeFace`). All eight `AsBuiltJoint`, not regular
+   joints, for the same reason as the hand-built ones and more strongly: nothing here
+   needs snapping into place, M4 already verified every occurrence sits exactly where the
+   analytic model says it should.
+
+   **One real wrinkle, worth its own line:** the shaft has THREE cylindrical faces at two
+   different radii (the rod's own OD, and the narrower, shorter spline-socket bore) —
+   `fusion-mcp-gotchas.md` already carried a warning about exactly this from the
+   `Onshape_reference` joints, and this generator picks the LARGEST-area face
+   (`max(faces, key=lambda f: f.area)`) rather than the first one found, specifically
+   because of that warning. Worth restating: a warning written for one CAD source
+   (a STEP import) turned out to matter just as much for geometry built from scratch in
+   the same document — the shaft shape itself is what has two cylinders, independent of
+   how it was authored.
+
+   Idempotency is by INSPECTION, not by a name this generator sets itself: an existing
+   joint is found again by checking which two occurrences (by component NAME) it connects
+   and which `JointMotion` subtype it carries — after correction 48's body-naming discovery
+   a few corrections up, nothing here assumes a name assigned in the same transaction that
+   creates an object will survive to a later script run, and joints were never separately
+   spiked for that failure mode. Checking real state costs nothing and doesn't depend on
+   the assumption being true.
+
+   **Verified three ways.** (1) Existence, correct `JointMotion` type, and correct
+   occurrence pair for all 8 — passed clean, 8 new joints, first try. (2) The motion check
+   correction 43 itself insists on — "a joint that added successfully and one that turns
+   are different claims" — driving all 4 revolute joints to 8°, reading `rotationValue`
+   back exact, and screenshotting: all 4 panels visibly deflected, joint indicators
+   showing 8° at each hinge. Resetting to 0° is a **separate script**, on purpose, so a
+   screenshot can be taken from OUTSIDE either script's own transaction, in between them —
+   the same discipline M4's naming fix needed, applied here because it is the same class
+   of problem (state has to actually commit and be re-observed, not just read back off a
+   live reference before the script ends). (3) An INTERFERENCE SWEEP AT THE DRIVEN
+   POSITION, not just at rest — the earlier M4 sweep (correction 48) read bodies through
+   `component.bRepBodies`, which is local geometry and does NOT reflect a joint's
+   occurrence-level transform, so it could only ever have shown the static, undriven
+   shape no matter what any joint was doing. Reading through `occurrence.bRepBodies`
+   instead (proxies, not native bodies — same distinction `fusion-mcp-gotchas.md` already
+   flagged for `measureMinimumDistance`) at the driven 8° position, shaft-vs-bay,
+   panel-vs-bay and panel-vs-tube all came back **0.0000 mm³** on all four quadrants — the
+   mechanism has real clearance through its swing, not just when parked at zero.
+
+   **Still open before M6's cutover:** the against-the-hidden-28-body-rebuild interference
+   cross-check correction 48 also deferred, and now also: this session's 8°-driven
+   interference sweep covered three pairs (shaft/panel vs. bay/tube) by hand, ad hoc, not
+   as a checked-in, re-runnable script the way the at-rest sweep is
+   (`scripts/check_canard_interference_fusion.py`) — worth promoting to a real script,
+   parameterised by drive angle, before trusting this at any angle other than the two
+   points actually checked (0° and 8°).
+
+   **M6 — THE CUTOVER — is DONE (Sep 2026, correction 50).** Checklist, all six items
+   closed:
+     1. **DONE.** Cross-checked the new geometry against the old hidden 28-body rebuild
+        as a second interference oracle. 26 pairs (tube, bay, 4× panel/shaft/bearing/
+        servo-unioned, 8× retainer bar), matched by MEASURED centroid position rather
+        than the rebuild's ambiguous Onshape pattern-copy names — all **exactly
+        0.0000 mm³**, not just under tolerance.
+     2. **DONE.** Promoted the ad hoc 8°-driven interference sweep to
+        `scripts/check_canard_interference_driven_fusion.py`, checked in and re-runnable,
+        parameterised by drive angle: 0°/+4°/+8°/−4°/−8°/0° (correction 49's own "a few
+        more angles" ask), reading bodies through OCCURRENCE proxies so it actually
+        reflects the joints' driven position. 144 pairs (6 per quadrant × 4 quadrants ×
+        6 angles) — all **exactly 0.0000 mm³**. Joints verified reset to 0° afterward.
+     3. **DONE.** `Onshape_reference` and all 28 hidden rebuild bodies deleted from the
+        live `CanardControlModule` document, only after 1 and 2 passed clean — see
+        correction 50 for what else this step found and fixed first.
+     4. **DONE (Sep 2026, ahead of 1–3, while Fusion's MCP add-in was down; updated again
+        in correction 50 now that the deletion is real).** `docs/05-canard-module-build.md`'s
+        files table points at the eight `scripts/*_fusion.py` generators (the original six
+        plus correction 50's seal/access-bulkhead pair) instead of the Onshape scripts/
+        elements, and no longer carries `Onshape_reference` or the old 28-body rebuild as
+        rows at all — both are gone from the document, not just pending.
+     5. **DONE (Sep 2026, same session as 4).** Grepped the repo for remaining Onshape
+        document-ID references tied to this module and confirmed each is either updated
+        or intentionally left as historical record (e.g. `scripts/make_bay_cad.py`'s own
+        `DOC`/`WS` constants — they document what WAS built, not what IS current).
+        **Result: nothing needed changing.** All 16 files carrying
+        `DOC = "a8abe36ef209825f56ac7a88"` / `WS = "30c982b22d7f0010281e2c54"` point at
+        the Onshape `canard-control module` document, which "State of play" already says
+        stays untouched as the historical record for corrections 1–43 — intentionally
+        left alone. No `docs/*.md` file carries either raw ID directly.
+     6. **DONE — this entry (correction 50) is that closing summary.**
+
+50. **M6 is closed, and closing it found two more parts nobody had ported.** Asked to
+   delete `Onshape_reference` and the old hidden 28-body rebuild once checklist items 1
+   and 2 passed clean, the honest answer was "not yet" — 26 of those 28 bodies were the
+   six parts M1–M5 already migrated, but the other two, `pass_through_plate` and
+   `aft_gas_seal` (the access-bulkhead pair from correction 38 and the recovery-bulkhead
+   pair from correction 34), had never been touched by any of the six generators. Deleting
+   the rebuild as originally planned would have removed real geometry — a plate and a
+   seal this module's own interference checks depend on — with nothing standing in for it.
+   Caught by re-reading the checklist against the actual body list before deleting,
+   not by the checklist itself, which described "the 28-body rebuild" as one thing.
+
+   **Migrated both, the same way as the original six:** two new generators,
+   `scripts/make_seal_cad_fusion.py` (aft gas seal + internal bulkhead, from
+   `design/seal.py`) and `scripts/make_access_bulkhead_cad_fusion.py` (pass-through plate
+   + nose aft face, from `design/access_bulkhead.py`), each a disc cut by its own
+   overshooting hole cylinders — the simplest geometry in this whole migration, and
+   verified the same way: volume against the analytic disc-less-holes figure, to the
+   fourth decimal, matching the Onshape originals' own numbers exactly (20744.0871 mm³
+   for the seal, 10425.7648 mm³ for the pass-through plate — SAME figures the Onshape
+   `verify()` reported when these were first built in correction 34/38, confirming the
+   hole layout and disc dimensions ported without drift). The aft gas seal and
+   pass-through plate are built DIRECTLY in the module's global frame (Z 138.12→142.92
+   and Z 0→2.4, read off the live `Tube` body's own bounding box rather than assumed —
+   confirmed to the fourth decimal against the module-frame Z figures this document has
+   quoted since correction 19), the `CanardBay` precedent (correction 45) applied to a
+   flat part; the internal bulkhead and nose plate are built as parts only, unplaced, same
+   reasoning as the Onshape originals (no recovery bay or nose cavity modelled here to
+   place them in). Both placed parts cross-checked against their old-rebuild counterparts
+   before anything was deleted: **0.0000 mm³ symmetric difference on both**, and **0.0000
+   mm³ overlap against Tube and CanardBay** — clean geometry, not just a volume match.
+
+   **Then the cutover itself, done live against `CanardControlModule`:** `Onshape_reference`
+   (36 child occurrences) and the 28-body rebuild (58 root-level features spanning the
+   whole hand-built parametric tree, `Tube` through two `BaseFeature` "Onshape diff" cut-tool
+   blocks, deleted in reverse chronological order — the whole chain came out clean, zero
+   root bodies remaining afterward) are gone from the document. The at-rest interference
+   sweep (32 pairs, all eight generators' own adjacent-pair check) was re-run immediately
+   after deletion, against nothing but native geometry for the first time in this project's
+   history: **still exactly 0.0000 mm³ on every pair.** Document saved.
+
+   **One thing worth naming rather than quietly accepting:** `RecoveryInternalBulkhead`,
+   `NoseAftFace`, `AftGasSeal` and `PassThroughPlate` all default to identity transform in
+   components of their own, and the two unplaced ones (`RecoveryInternalBulkhead`,
+   `NoseAftFace`) sit at local-frame Z [0, thickness] — the SAME global coordinates the two
+   PLACED parts' own real positions partially overlap (`PassThroughPlate` spans that exact
+   Z range for real). Correction 46 already normalised this class of overlap for M2's
+   servo/bearing ("two independently-drawn parts both defaulting to identity transform, not
+   a modelling error") when NEITHER part was at its real position; here it is slightly
+   worse, because one of the four bodies sharing that coordinate range genuinely IS at its
+   real position and the other three are visually sitting on top of it. Left as-is,
+   matching the established precedent and because nothing currently checks interference
+   against either unplaced part — but the next person driving a full-document interference
+   sweep should know these two are not really there.
+
+   **The module has zero Onshape dependency now.** Every body in `CanardControlModule` is
+   native, generatable, checked-in Fusion geometry, deriving every dimension from
+   `design/*.py` the same way the Onshape-era scripts did. Onshape's `canard-control
+   module` document is untouched and remains the historical record for corrections 1–43;
+   nothing in the live Fusion document reads from it, or from the STEP export, any more.
+
+51. **The recovery bay's tube exists now, and its internal bulkhead is finally assembled
+   rather than just drawn.** Asked what Step 3's dimensioned drawing still owed after M6
+   closed, the honest answer (correction 43, restated) was two things: the recovery bay
+   (no tube, an unplaced bulkhead) and the booster + aft fins (nothing at all). Picked the
+   smaller of the two — sizing already existed (`design/recovery.py`, `design/seal.py`,
+   `design/joints.py`) and the bulkhead itself was already built (correction 50), just not
+   placed anywhere real.
+
+   **One new generator**, `scripts/make_recovery_bay_cad_fusion.py`: `RecoveryBayTube`, a
+   plain annulus (no wall bores, no ports — nothing in this project charges the recovery
+   bay with either), OD 79.4 / ID 74.8 mm matching the canard module's own tube, length
+   357.3 mm (`recovery_bay_cal = 4.5`, `design/configure.py`), built directly in the shared
+   document frame at Z 142.92 → 500.22 — continuing from the aft gas seal's own aft face,
+   which is also the canard module's own aft face (`design/joints.py`'s "canard module /
+   recovery bay" joint is exactly this interface). Volume verified to the fourth decimal
+   against the plain annulus formula (199051.3388 mm³, exact) — no radial holes here to
+   loosen the tolerance for, unlike the canard module's own `Tube`.
+
+   **The bulkhead's station is read off the packing model, not assumed.** Main compartment
+   is forward (`design/recovery.py`'s own conduit note and `design/joints.py`'s per-joint
+   notes both say so — "MAIN ejection separates here" is the forward joint, "DROGUE
+   ejection separates here" is the aft one), so: aft gas seal's aft face (142.92 mm) + main
+   compartment's packed length (`evaluate().packing`, 229.5003 mm) + 3 mm epoxy fillet
+   clearance = the bulkhead disc's forward face at 375.4203 mm, running 4.8 mm to
+   380.2203 mm, centred in the 10.8 mm `INTERNAL_BULKHEAD_STACK` allowance
+   (`design/configure.py`) rather than flush against either compartment. The occurrence was
+   TRANSLATED, not rebuilt — the disc geometry from correction 50 is unchanged, only its
+   position — and the placement was verified by reading the body's own bounding box back
+   through the occurrence proxy (not by trusting the transform matrix that was set), landing
+   exactly on the computed station. 27.3 mm of slack remains at the tube's own aft face,
+   which is where the recovery-bay/booster joint's anchored coupler half bonds in
+   (`design/joints.py`'s own budget for that joint). Interference-clean: tube vs bulkhead,
+   tube vs aft gas seal, tube vs the canard module's own tube — all exactly 0.0000 mm³.
+
+   **Still open, and stated rather than worked around:** the U-bolt, backing plate and
+   charge well this bulkhead needs are not drawn. Not an oversight — none of the three has
+   ever been SIZED by anything in this project. `scripts/make_bulkhead_cad.py`'s own
+   docstring said as much when the Onshape-era part was first built: "The backing plate is
+   the one that matters ... and it is not here." The U-bolt HOLES through the bulkhead
+   are cut (correction 50, from `design/seal.py`'s own hole layout) — what is missing is
+   the hardware standing proud of them, which needs a dimension chosen before it can be
+   drawn, the same discipline this project applied to the coupling (correction 21) and the
+   hinge collar material (correction 19) rather than inventing a number to fill the gap.
+   **Still entirely undrawn: the booster and aft fins** — no planform, no root attachment,
+   no motor mount, and no design/*.py sizing code for any of them either. That is Step 3's
+   last remaining piece.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —
