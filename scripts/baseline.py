@@ -13,8 +13,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design import (
-    access_bulkhead, aero, avionics, control, estimation, flutter, hinge, joints, ports,
-    seal, sled, trajectory, tube_section, venting,
+    access_bulkhead, aero, avionics, control, estimation, flutter, hinge, joints,
+    motor_mount, ports, recovery_hardware, seal, sled, trajectory, tube_section, venting,
 )
 # Aliased because `bay` is a local in main() -- check_direct_drive's result. Same reason
 # design/configure.py imports mass as mass_mod.
@@ -555,6 +555,74 @@ def main() -> None:
           "what it")
     print("     admits is drag along the body axis, not gravity. python "
           "scripts/estimation_trade.py")
+
+    rule("RECOVERY HARDWARE -- the U-bolt, its backing plate and the charge well")
+    rh_r = recovery_hardware.recovery_hardware_from_evaluation(ev)
+    rh_chk = recovery_hardware.check_recovery_hardware(rh_r)
+    rh_u, rh_p = rh_r.anchor.ubolt, rh_r.anchor.plate
+    print(f"  U-bolt              M{rh_u.rod_diameter * 1000:.0f} stainless on a "
+          f"{rh_u.leg_spacing * 1000:.0f} mm spacing, holes dia "
+          f"{rh_u.hole_diameter * 1000:.1f} -- NOT the M5 seal.py assumed")
+    print(f"  what governs it     the CROWN in bending, {rh_u.crown_stress / 1e6:.0f} MPa at "
+          f"{rh_u.crown_margin:.2f}x. seal.py's own aside checked the LEGS in")
+    print(f"                      SHEAR, and the legs are in TENSION "
+          f"({rh_u.leg_margin:.0f}x) and are not what breaks. A published")
+    print(f"                      U-bolt rating is for clamping a pipe, which is a different "
+          f"structure.")
+    print(f"  backing plate       G-10 {rh_p.length * 1000:.1f} x {rh_p.width * 1000:.1f} x "
+          f"{rh_p.thickness * 1000:.1f} mm: footprint R "
+          f"{rh_p.footprint_radius * 1000:.2f} mm instead of a bare")
+    print(f"                      6.00 mm nut face, so the disc's U-bolt margin goes "
+          f"{rh_r.anchor.bare_margin:.2f}x -> {rh_r.anchor.backed_margin:.2f}x")
+    print(f"  charge wells        " + "; ".join(
+        f"{w.name} dia {w.bore * 1000:.0f} x {w.depth * 1000:.1f} ({w.charge * 1e3:.4f} g)"
+        for w in rh_r.wells))
+    print(f"  QUICK LINK REQUIRED the {rh_r.webbing_width * 1000:.1f} mm webbing does NOT pass "
+          f"through a {rh_u.clear_opening * 1000:.1f} mm opening; the harness")
+    print(f"                      attaches through a link, which recovery.py has priced since "
+          f"it was written")
+    print(f"  mass                {rh_r.mass * 1000:.1f} g -- mass.py had NO line for the "
+          f"anchors; it carries 196 g now")
+    print(f"  recovery hardware   {'OK' if rh_chk.ok else 'VIOLATIONS: ' + '; '.join(rh_chk.violations)}")
+    for n in rh_chk.notes:
+        if "NOT SOLVED" in n or "SELF-LOADING" in n:
+            print(f"  OPEN                {n}")
+    print("     Full argument: python scripts/recovery_hardware_report.py")
+
+    rule("MOTOR MOUNT -- the last unsized structure, and it moved a frozen number")
+    mm_r = motor_mount.motor_mount_from_evaluation(ev)
+    mm_chk = motor_mount.check_motor_mount(mm_r)
+    print(f"  mount tube          dia {mm_r.tube.outer_diameter * 1000:.2f} / "
+          f"{mm_r.tube.inner_diameter * 1000:.2f} x {mm_r.tube.length * 1000:.2f} mm, "
+          f"{mm_r.tube.mass * 1000:.1f} g -- settles make_ork.py's 331 against docs/04's 416")
+    print(f"  forward bulkhead    G-10 {mm_r.forward_bulkhead.thickness * 1000:.1f} mm, "
+          f"{mm_r.forward_bulkhead.mass * 1000:.1f} g -- the one seal.py handed over, and it "
+          f"is the THRUST FACE")
+    print(f"  centering rings     {len(mm_r.rings)} x G-10 "
+          f"{mm_r.rings[0].thickness * 1000:.2f} mm; the aft one sits IN the fin tab band and "
+          f"is slotted {mm_r.rings[1].slots}x")
+    print(f"  thrust path         {mm_r.peak_thrust:.0f} N enters at the forward bulkhead "
+          f"({mm_r.thrust_plate_margin:.0f}x), NOT through the rings -- they carry the "
+          f"redundant path at {mm_r.ring_bond_margin:.0f}x")
+    print(f"  assembly            {mm_r.mass * 1000:.1f} g against the "
+          f"{mm_r.allowance * 1000:.0f} g mass.py has charged since that dict was written")
+    print(f"  FIN TAB DEPTH       {mm_r.fin_tab_depth * 1000:.2f} mm, DERIVED -- was a frozen "
+          f"12.00 that put the tab tip 0.85 mm")
+    print(f"                      inside any mount tube a 54 mm motor can have. "
+          f"make_cad_profiles.py and")
+    print(f"                      make_aft_fin_cad_fusion.py import it now; the four AftFin "
+          f"bodies were regenerated.")
+    print(f"  MOTOR EJECTION      the forward gap is a SEALED {mm_r.forward_gap_volume * 1e6:.1f} cm3 "
+          f"in front of the motor's own charge:")
+    print(f"                      {mm_r.motor_charge_pressure / 1e6:.1f} MPa against the disc's "
+          f"{mm_r.bulkhead_capacity / 1e6:.2f} MPa. The forward closure must be PLUGGED, and")
+    print(f"                      nothing in this project had ever asked. "
+          f"FORWARD_CLOSURE_PLUGGED = {motor_mount.FORWARD_CLOSURE_PLUGGED}")
+    print(f"  motor mount check   {'OK' if mm_chk.ok else 'VIOLATIONS: ' + '; '.join(mm_chk.violations)}")
+    for n in mm_chk.notes:
+        if "NOT SOLVED" in n:
+            print(f"  OPEN                {n}")
+    print("     Full argument: python scripts/motor_mount_report.py")
 
     rule("OPENROCKET ENTRY VALUES")
     print(f"""  Nose cone

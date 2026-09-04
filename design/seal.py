@@ -495,6 +495,13 @@ class SealResult:
     deploy_velocity: float
     descent_mass: float
     protected_by_pins: bool = True
+    # Radius of the patch the harness U-bolt's load actually arrives on, m. 6.0 mm is a BARE
+    # NUT FACE and was the only value this file could offer for as long as the backing plate
+    # did not exist. `design/recovery_hardware.py` sizes one; a caller that has it passes the
+    # real radius through `dataclasses.replace()` and `shock_margin` improves as a RESULT of
+    # the part existing. The default is unchanged so every previously reported number still
+    # reproduces.
+    shock_footprint_radius: float = 0.006
 
     @property
     def governing_pressure(self) -> float:
@@ -522,7 +529,8 @@ class SealResult:
 
     @property
     def shock_stress(self) -> float:
-        return self.bulkhead.point_load_stress(self.shock_infinite_mass, 0.006)
+        return self.bulkhead.point_load_stress(self.shock_infinite_mass,
+                                               self.shock_footprint_radius)
 
     @property
     def shock_margin(self) -> float:
@@ -590,7 +598,7 @@ def build(inner_diameter: float, packed_volume: float, compartment_length: float
           descent_mass: float, deploy_velocity: float, main_cd_a: float,
           air_density: float, n_pins: int = 3, thickness: float | None = None,
           name: str = "aft gas seal", hole_diameter: float = 0.004, n_holes: int = 2,
-          protected_by_pins: bool = True,
+          protected_by_pins: bool = True, hole_radius: float | None = None,
           ) -> SealResult:
     """Assemble the whole case for one bulkhead from the vehicle's own numbers.
 
@@ -613,7 +621,15 @@ def build(inner_diameter: float, packed_volume: float, compartment_length: float
     # chooses it. Sized against a trial plate's quiet radius, which does not depend on
     # thickness -- `quiet_radius()` is a ratio.
     trial = Bulkhead(inner_diameter, G10_SHEET_THICKNESS[0])
-    feed = FeedThrough(hole_diameter=hole_diameter, radius_in_plate=trial.quiet_radius(),
+    # `hole_radius` overrides the quiet radius when something OTHER than the stress field
+    # places the hole -- which happens exactly once, on the internal bulkhead, where the
+    # backing plates decide it (see INTERNAL_CONDUIT_RADIUS). It is a parameter rather than a
+    # second constant so that `hole_layout()` and `hole_margin` read the same number: a hole
+    # drilled at one radius and checked at another is the defect correction 43 found in the
+    # hinge, one feature further along.
+    feed = FeedThrough(hole_diameter=hole_diameter,
+                       radius_in_plate=(hole_radius if hole_radius is not None
+                                        else trial.quiet_radius()),
                        n_holes=n_holes)
 
     t = thickness if thickness is not None else size_bulkhead(
@@ -862,6 +878,7 @@ def internal_bulkhead_from_evaluation(ev, main_deploy_altitude: float = 200.0) -
         air_density=atmosphere.density(main_deploy_altitude),
         hole_diameter=recovery.CONDUIT_OUTER_DIAMETER + 0.001,
         n_holes=1,
+        hole_radius=INTERNAL_CONDUIT_RADIUS,
         protected_by_pins=False,
     )
 
@@ -888,19 +905,48 @@ def stack_length(r: SealResult, fillet: float = 0.003) -> float:
 # day. A CAD script is the worst possible place for a second copy, because a number typed
 # there becomes geometry and geometry is what everything downstream measures.
 
-# The harness anchor. An M5 U-bolt on a 25 mm leg spacing is the ordinary size for this
-# load -- 1.3 kN through two 5 mm legs is 33 MPa of shear in stainless, which is nothing --
-# and the holes are 5.5 mm so the legs go through without a fight.
+# The harness anchor.
+#
+# THIS SAID M5 AND IT WAS WRONG, in a way worth leaving on the record because the sentence
+# read as a calculation. It was: "An M5 U-bolt on a 25 mm leg spacing is the ordinary size
+# for this load -- 1.3 kN through two 5 mm legs is 33 MPa of shear in stainless, which is
+# nothing." Two errors, compounding. The legs are not in SHEAR -- the harness pulls along the
+# bolt's axis and the legs are in tension. And the legs are not what breaks: the CROWN is, in
+# bending at the two bends, which is where a U-bolt used as an anchor is actually observed to
+# straighten. A published U-bolt rating is for CLAMPING A PIPE, a mode this bolt is not in.
+#
+# `design/recovery_hardware.py` sizes it against the crown and lands on M8, so the holes are
+# 8.5. That file's `check_recovery_hardware()` compares these two constants against what it
+# sizes and fails if they drift, the same guard `configure.evaluate()` puts on `mass.py`'s
+# harness constant -- so this is not a second copy, it is a checked one.
 #
 # THE BACKING PLATE IS STRUCTURE, NOT HARDWARE, and that is a real statement about these
 # holes rather than a slogan: `point_load_stress()` goes as log(plate radius / footprint
-# radius), so what is under the nuts decides the stress, not what is in the holes.
-UBOLT_HOLE_DIAMETER = 0.0055  # m
+# radius), so what is under the nuts decides the stress, not what is in the holes. It exists
+# now -- see `SealResult.shock_footprint_radius` and `design/recovery_hardware.py`.
+UBOLT_HOLE_DIAMETER = 0.0085  # m
 UBOLT_LEG_SPACING = 0.025  # m, centre to centre
 
 # Minimum metal between any two holes, and between a hole and the disc's edge. 3 mm is a
 # working figure for a 4.8 mm G-10 plate -- enough to drill next to without breaking out.
 MIN_LIGAMENT = 0.003  # m
+
+# Radius of the internal bulkhead's conduit hole, m -- and the one hole in this vehicle whose
+# radius is NOT set by the stress field.
+#
+# It used to be `quiet_radius()` (22.6 mm) at 45 degrees, "so it is equidistant from both
+# U-bolt legs". That face turns out to be the most crowded surface in the rocket: it carries
+# a U-bolt crown, the OPPOSING U-bolt's backing plate, the conduit, and the drogue charge
+# well, because the internal bulkhead anchors a harness BOTH ways. Two U-bolts cannot share
+# two holes, so they clock 90 degrees apart, which puts a backing plate along each axis and
+# leaves the diagonal as the only clear ground. 45 degrees was right all along -- for a
+# better reason than the one given -- but it has to move OUT to 27.5 mm for the charge well
+# sitting on it to clear both plates. Moving out REDUCES the bending field, so the stress
+# argument is unharmed; `check_hole_layout()` still checks it.
+#
+# `design/recovery_hardware.py` derives 27.0 from the plate it sizes and fails if this
+# constant has drifted from it -- so this is a checked copy, not a second source.
+INTERNAL_CONDUIT_RADIUS = 0.0275  # m
 
 
 @dataclass(frozen=True)
@@ -930,8 +976,9 @@ def hole_layout(r: SealResult) -> list[Hole]:
     holes: list[Hole] = []
 
     if n == 1:
-        # The internal bulkhead: one dia 6 hole for the conduit, at 45 degrees so it is
-        # equidistant from both U-bolt legs.
+        # The internal bulkhead: one dia 6 hole for the conduit, at 45 degrees and at
+        # INTERNAL_CONDUIT_RADIUS rather than at the quiet radius -- see that constant for
+        # why the diagonal is the only clear ground on this face and why it has to move out.
         holes.append(Hole("conduit", rq * math.cos(math.pi / 4),
                           rq * math.sin(math.pi / 4), d))
     else:
@@ -981,7 +1028,8 @@ def check_hole_layout(r: SealResult, holes: list[Hole] | None = None) -> SealChe
         f"{len(hs)} holes; tightest ligament {worst_gap * mm:.1f} mm, closest approach to "
         f"the edge {worst_edge * mm:.1f} mm")
     notes.append(
-        "the U-bolt's BACKING PLATE is not modelled and it is structure -- "
-        "point_load_stress() goes as log(plate radius / footprint radius), so what sits "
-        "under the nuts sets the stress, not what is in the holes")
+        "the U-bolt's BACKING PLATE is structure and it IS modelled now, in "
+        "design/recovery_hardware.py -- point_load_stress() goes as log(plate radius / "
+        "footprint radius), so what sits under the nuts sets the stress, not what is in the "
+        "holes. Pass the sized footprint through SealResult.shock_footprint_radius to see it")
     return SealCheck(ok=not v, violations=v, notes=notes)

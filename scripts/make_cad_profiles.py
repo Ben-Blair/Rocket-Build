@@ -18,13 +18,21 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design.configure import baseline, build_vehicle
+from design.motor_mount import fin_tab_depth_for
 from design.packaging import SERVOS
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "out" / "cad"
 
 HINGE_FRAC = 0.20   # of MAC, forward of the 0.25c panel CP -> restoring. See packaging.py
-TAB_DEPTH = 0.012   # through-wall fin tab, m
+
+# THE TAB DEPTH IS DERIVED, NOT TYPED. It was 0.012 here for as long as this file has
+# existed, and 12 mm inward from the booster's OUTER radius puts the tab tip at R 27.70 --
+# 0.85 mm INSIDE the mount tube a 54 mm motor needs, and 0.70 mm off the bare motor case,
+# which is what the round number was really drawn against. `design/motor_mount.py` derives
+# it from the mount tube so the tab lands tangent on it and the two bond face to face, which
+# is what `design/flutter.py` and `scripts/baseline.py` already claim the aft fin root does.
+# See docs/09-motor-mount.md and docs/01 correction 53.
 
 
 class Dxf:
@@ -95,7 +103,8 @@ def main() -> None:
 
     # ---- aft fin planform, with through-wall tab ---------------------------------------
     d = Dxf()
-    d.poly(fin_profile(aft, tab=TAB_DEPTH), layer="PROFILE")
+    tab_depth = fin_tab_depth_for(r, p.motor)
+    d.poly(fin_profile(aft, tab=tab_depth), layer="PROFILE")
     d.write(OUT / "aft_fin_planform.dxf")
 
     # ---- canard bay cross-section, looking down the tube axis --------------------------
@@ -120,7 +129,7 @@ def main() -> None:
           f"(MAC {m*1000:.1f} mm, panel CP {x_cp:.1f} mm)")
     print(f"  aft_fin_planform.dxf    root {aft.root_chord*1000:.1f} tip {aft.tip_chord*1000:.1f} "
           f"span {aft.semispan*1000:.1f} sweep {aft.sweep_length*1000:.1f} mm, "
-          f"{TAB_DEPTH*1000:.0f} mm tab")
+          f"{tab_depth*1000:.2f} mm tab (derived -- design/motor_mount.py)")
     print(f"  canard_bay_section.dxf  OD {od_mm:.1f} ID {id_mm:.1f}, {p.n_canards} servo "
           f"footprints {sw_mm:.1f} radial x {sh_mm:.1f} circumferential")
 

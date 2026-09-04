@@ -101,13 +101,31 @@ def _inject(comp, made):
 
     Mandatory for a parametric document: a temp body only "takes" via
     `BRepBodies.add(body, baseFeature)`, per make_sled_fusion.py's own header.
+
+    RENAMING HAPPENS AFTER `finishEdit()`, VIA A FRESH QUERY -- not on the object
+    `BRepBodies.add()` itself returns, and not inside the startEdit/finishEdit
+    transaction. Confirmed by direct test: for a body sourced from Fusion's parametric
+    Sketch/Extrude API (copied out via `TemporaryBRepManager.copy()`, the technique the
+    canard panels and aft fins both use for their swept-trapezoid profile), setting
+    `.name` on the object `.add()` returns reads back correctly on THAT SAME object but
+    does not persist to the body at all -- a fresh `comp.bRepBodies` query even in the
+    same script run still shows Fusion's own default name ("Body1"). Renaming a FRESH
+    query result AFTER `finishEdit()` does persist, for both extrude-sourced and
+    primitive-sourced (box/cylinder/boolean) bodies alike, so every generator does it
+    this way now rather than the two of them disagreeing on which pattern is safe. This
+    is a DIFFERENT failure mode from `_get_or_create_component`'s own idempotency note
+    above (same-transaction rename into an ALREADY-POPULATED component) -- that one is
+    about a LATER, separate script run; this one bites inside the very run that created
+    the body.
     """
+    before = comp.bRepBodies.count
     bf = comp.features.baseFeatures.add()
     bf.startEdit()
     for (name, body) in made:
-        b = comp.bRepBodies.add(body, bf)
-        b.name = name
+        comp.bRepBodies.add(body, bf)
     bf.finishEdit()
+    for i, (name, _body) in enumerate(made):
+        comp.bRepBodies.item(before + i).name = name
 
 
 def _verify_volume(comp, want, tol, loose=(), loose_tol=None):
@@ -167,11 +185,11 @@ TUBE_LEN_MM = 357.3
 TUBE_FORWARD_Z_MM = 142.92
 TUBE_VOLUME_MM3 = 199051.33880578235
 
-MAIN_LEN_MM = 229.5002841989068
+MAIN_LEN_MM = 231.51642282270265
 BULKHEAD_STACK_MM = 10.8
 FILLET_CLEARANCE_MM = 3.0
 BULKHEAD_DISC_MM = 4.800000000000001
-DROGUE_LEN_MM = 89.71517276410853
+DROGUE_LEN_MM = 91.42419164171461
 
 # Where the bulkhead DISC's own forward face lands, in the shared document frame.
 BULKHEAD_FORWARD_Z_MM = TUBE_FORWARD_Z_MM + MAIN_LEN_MM + FILLET_CLEARANCE_MM

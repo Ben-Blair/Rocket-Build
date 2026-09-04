@@ -63,6 +63,16 @@ DEFAULT_RECOVERY_BUDGET: dict[str, float] = {
     "shock_cord_and_links": 0.186,
     "ejection_hardware_charges": 0.060,
     "nomex_protectors": 0.070,
+    # 191 g of harness anchors -- four U-bolts and four backing plates, sized in
+    # design/recovery_hardware.py. NOTHING IN THIS FILE HAD EVER CARRIED THEM. The BOM
+    # lists them independently at 120 g, recovery.py's own
+    # `SoftGood("2 x U-bolt", 0.030, ...)` entries are dead code (measured_volume overrides
+    # the mass and no code sums Compartment.hardware masses), and the two have never been
+    # reconciled with each other or with anything here. They are 191 g because the U-bolt
+    # is M8 rather than the M5 seal.py assumed -- see recovery_hardware.py's headline. Sixth
+    # allowance-shaped hole found by drawing the part, and the first one that was not even
+    # an allowance: it was nothing at all.
+    "harness_anchors": 0.191,
 }
 
 DEFAULT_STRUCTURE_BUDGET: dict[str, float] = {

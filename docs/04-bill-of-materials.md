@@ -19,7 +19,7 @@ were gathered August 2026.
 | Body tube, G12 fiberglass | 3 in, 79.4 mm OD / 74.8 mm ID, 2.3 mm wall. Need 1043 mm; buy one 48 in (1219 mm) length | 1 | 1.075 kg | ~$130 | |
 | Nose cone, fiberglass | 3 in, 4:1 tangent ogive, 318 mm, **1 cal hollow shoulder** — its bore is usable nav bay, see `design/joints.py`. **Drawn in CAD** (docs/01 correction 43); real volume is 0.293 kg, not the 0.180 kg wetted-area estimate this line quoted until Sep 2026 — the estimate never counted the shoulder | 1 | 0.293 kg | ~$75 | the instrumentation module; meant to come off |
 | Coupler tube, fiberglass | 3 in, for 3 bay joints | 1 length | in structure | ~$50 | |
-| Bulkheads and centering rings | G10 or birch ply, 3 in | set | 0.300 kg | ~$35 | |
+| Bulkheads and centering rings | G10, 3 in. Sheet stock for the aft gas seal, internal bulkhead, booster forward bulkhead, 2 centering rings, 4 backing plates and both access plates — all sized, none budgeted | set | 0.300 kg | ~$35 | the centering rings are in the propulsion section now; this line is the sheet |
 
 Bay lengths, nose to tail: nav 127 mm, canard module 143 mm, recovery 357 mm, booster
 416 mm. Total airframe length 1361 mm.
@@ -42,8 +42,11 @@ Flutter margins 1.97× and 4.46×.
 |---|---|---|---|---|---|
 | Cesaroni Pro54 3-grain casing | P54-3G, reusable | 1 | 0.498 kg | **$98.20** | ✅ |
 | Cesaroni reload | 1261J449-15A Blue Streak, 1260 N·s | 1 | 0.624 kg prop | **$136.50** | ✅ |
-| Motor mount tube | 54 mm, 416 mm long | 1 | 0.250 kg | ~$25 | |
-| Motor retainer | 54 mm screw-on (Aeropack or equivalent) | 1 | in structure | ~$45 | |
+| Motor mount tube | 54 mm ID 54.5 / OD 57.1, **1.3 mm wall, 332 mm long** | 1 | 0.140 kg | ~$25 | **sized, not budgeted** — docs/09. 332 mm reconciles `make_ork.py`'s 331 against this table's own 416, which was the booster's length copied by mistake |
+| Centering rings | G-10 3.2 mm, ⌀74.8 / 57.1; **the aft one is SLOTTED** 4 × 3.2 × 8.85 mm for the fin tabs | 2 | 0.021 kg | ~$10 | they are **not** thrust structure — thrust enters at the booster's forward bulkhead |
+| Booster forward bulkhead | **G-10 4.8 mm**, ⌀74.8, 3 holes | 1 | 0.039 kg | ~$15 | the disc `seal.py` handed to the motor mount: drogue closure, thrust face and drogue U-bolt anchor in one part |
+| Motor retainer | 54 mm screw-on (Aeropack or equivalent), base bonded 15 mm on the mount tube OD | 1 | 0.031 kg | ~$45 | |
+| **Plugged forward closure** | Pro54, **no ejection charge** | 1 | — | ~$25 | **NOT OPTIONAL.** The motor's own charge fires into a sealed 25.9 cm³ at 10.2 MPa against a disc that lets go at 6.69. docs/09, docs/01 correction 53 |
 
 Requires **Level 2 certification**. Budget 5 reloads for the GV-1…GV-5 campaign
 (+$546), plus separate cert motors.
@@ -262,7 +265,7 @@ Two more things about this bay:
 |---|---|---|---|---|---|
 | Drogue parachute | 18 in, deployed at apogee | 1 | 0.070 kg | ~$35 | |
 | Main parachute | **56 in** solved; buy the Fruity Chutes Iris Ultra 60" Compact (nearest real size, lands slower). 193 g, 38.2 cu in packed | 1 | 0.280 kg budgeted | ~$110 | |
-| Shock cord, quick links, swivels | **3/4" tubular nylon, 2 × 3.40 m** (2500 lbf) + links/swivels | set | **0.186 kg** | ~$50 | **sized, not budgeted** — 4.2× on the 1.32 kN opening shock after a knot derating. 1" nylon is 6.7× and costs a quarter of the bay. Kevlar packs smaller but does not stretch: use a Kevlar **leader** at the charge end, not a Kevlar harness. docs/01 correction 33 |
+| Shock cord, quick links, swivels | **3/4" tubular nylon, 2 × 3.40 m** (2500 lbf) + links/swivels | set | **0.186 kg** | ~$50 | **sized, not budgeted** — 3.7× on the 1.51 kN opening shock after a knot derating. 1" nylon costs a quarter of the bay. Kevlar packs smaller but does not stretch: use a Kevlar **leader** at the charge end, not a Kevlar harness. docs/01 correction 33 |
 | Nomex protectors | | 2 | 0.070 kg | ~$30 | |
 | Ejection charge hardware, shear pins | | set | 0.060 kg | ~$25 | |
 
@@ -273,13 +276,15 @@ Sized Aug 2026; `design/seal.py`, argument in `out/seal_report.txt`, docs/05.
 | Item | Spec | Qty | Mass | Price | |
 |---|---|---|---|---|---|
 | Aft gas seal disc | **G-10 sheet, 4.8 mm**, cut to 74.8 mm | 1 | 0.039 kg | ~$15 | thickness set by the wire hole, not the plate |
-| Internal bulkhead disc | **G-10 sheet, 4.8 mm**, 1 × ⌀6 mm conduit feed-through | 1 | 0.039 kg | ~$15 | no shear pins protect this one |
-| Harness U-bolt + backing plate | M5 stainless, with a backing plate — the plate is structure | 4 | 0.120 kg | ~$32 | 4 cm³ each of envelope out of the packing volume |
-| Charge well + 2-pole terminal block | Bulkhead-mount, aft face | 2 | — | ~$10 | in `ejection_hardware_charges` |
+| Internal bulkhead disc | **G-10 sheet, 4.8 mm**, 1 × ⌀6 mm conduit feed-through at **R 27.5 / 45°** | 1 | 0.039 kg | ~$15 | no shear pins protect this one; it anchors a harness BOTH ways, so its two U-bolts clock 90° apart and its conduit radius is set by the backing plates, not by the stress field |
+| Harness U-bolt | **M8 stainless**, 25 mm leg spacing, crown R 12.5 | 4 | 0.173 kg | ~$40 | **NOT M5** — a U-bolt used as an anchor bends at the CROWN, and a published U-bolt rating is for clamping a pipe. docs/10 |
+| Backing plate | **G-10 39.0 × 22.5 × 3.2**, ⌀8.5 holes; **the two on the internal bulkhead are relieved** 9.5 × 3.5 mm | 4 | 0.018 kg | ~$8 | takes the disc's U-bolt margin 4.95× → 7.98×. It is structure, and this is the part three CAD scripts refused to draw |
+| Quick links | 6 mm stainless, harness to U-bolt | 4 | in harness | ~$16 | **required, not optional** — 19.1 mm of webbing does not pass through a 17.0 mm opening. docs/10 |
+| Charge well + 2-pole terminal block | Bulkhead-mount, fired face. Main **⌀12 × 19.0** at R 22.6; drogue **⌀8 × 20.5** at R 27.5 / 45° | 2 | 0.013 kg | ~$10 | each sits over its own charge's lead hole, so neither needs a new hole in a pressure boundary |
 | Shear pins | **3 × 2-56 nylon** per separation joint | pack | — | ~$6 | the intended fuse; buy spares, they are consumed |
 | High-temp RTV, potting | 315 °C service, **forward face only** | 1 | — | ~$10 | |
-| Wiring conduit | ⌀5 mm thin-wall, ~240 mm, drogue circuit through the main compartment | 1 | 0.010 kg | ~$5 | costs 1.2 mm of the bay's margin, which is **+8.4 mm** after docs/01 correction 42 |
-| Black powder | **1.17 g** per main charge, sized at a 2.0× separation factor | — | — | ~$20 | **ground test twice; the calculation is not the arbiter** |
+| Wiring conduit | ⌀5 mm thin-wall, ~240 mm, drogue circuit through the main compartment | 1 | 0.010 kg | ~$5 | costs 1.2 mm of the bay's margin, which is **+4.6 mm** after docs/01 correction 54 |
+| Black powder | **1.14 g** main and **0.45 g** drogue, sized at a 2.0× separation factor | — | — | ~$20 | **ground test twice; the calculation is not the arbiter** |
 
 Descent 100 s, landing 5.0 m/s at 50 ft·lbf, ~0.93 km walk in a 15 mph wind. Ground-test
 ejection charges twice before flying.

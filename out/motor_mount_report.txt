@@ -1,0 +1,168 @@
+MOTOR MOUNT -- the last unsized structure in the vehicle
+Model: design/motor_mount.py   Verdict carried by: scripts/baseline.py
+Motor: J449BS  dia 54.0 x 321.0 mm, 1.122 kg loaded / 0.498 kg dry
+
+============================================================================================
+WHY THIS WAS NEVER SIZED, AND WHAT IT WAS HIDING
+============================================================================================
+  design/mass.py:70 carries motor_mount_centering_rings = 0.250 kg and :229 puts it
+  at the motor's own mid-station. That is the whole of the design. scripts/make_ork.py
+  needed SOMETHING to hand OpenRocket and typed 54 mm ID / 1.5 mm wall / 331 mm long
+  into itself; docs/04 says 416 mm for the same part. Neither number is imported by
+  anything in design/, and the two have never been reconciled.
+
+  An allowance nobody turned into a part, for the fifth time -- after correction 20's
+  bulkhead, correction 33's harness, correction 38's access plates and correction 41's
+  sled. The pattern is now reliable enough to be a search strategy.
+
+============================================================================================
+THE FIRST FINDING -- the frozen 12 mm fin tab and a 54 mm mount tube cannot coexist
+============================================================================================
+  scripts/make_cad_profiles.py's TAB_DEPTH = 12.00 mm is measured inward from the
+  booster tube's OUTER radius, so the tab tip sits at R 27.70 mm.
+
+    booster OD                          R    39.70 mm
+    booster ID                          R    37.40 mm
+    tab tip at the frozen 12.00 mm      R    27.70 mm
+    mount tube OD (this file)           R    28.55 mm   <- the tab was 0.85 mm INSIDE it
+    mount tube ID                       R    27.25 mm
+    bare motor case                     R    27.00 mm   <- 0.70 mm clear: what 12.00 was really drawn against
+
+  So the 12 mm tab describes a fin bonded to the BARE MOTOR CASE, while design/flutter.py
+  and scripts/baseline.py both quote the aft-fin flutter margin for a tab 'bonded
+  through the wall to the MOTOR MOUNT'. Four AftFin bodies already occupy R 27.70 in
+  the Fusion document. This was never going to survive an interference check; it
+  survived because there was nothing yet to check it against.
+
+  DERIVED, NOT CHOSEN: tab depth = booster OR - mount tube OR = 11.15 mm.
+  The tab then stands 8.85 mm proud of the airframe bore and lands tangent on the mount tube,
+  giving 1777 mm2 of tab-to-tube bond across 4 fins with no fillet credited.
+
+============================================================================================
+THE SECOND FINDING -- the forward bulkhead and the thrust face are the same part
+============================================================================================
+  booster tube                          416.28 mm
+  motor, aft-flush                      321.00 mm
+  forward margin                         95.28 mm
+    less coupler engagement          -   79.40 mm
+    less joints.BULKHEAD_ALLOWANCE   -   12.00 mm
+    = what the BUDGET leaves              3.88 mm
+
+  There is no room for a separate thrust plate and there does not need to be. One
+  disc closes the drogue compartment on its forward face, anchors the drogue harness's
+  aft U-bolt there, and presents its aft face to the motor. That is exactly why
+  design/seal.py handed this part to the motor mount rather than sizing it as a third
+  bulkhead -- a reason seal.py stated without knowing.
+
+  The disc as sized is 4.8 mm, not the 12.0 mm the allowance charges, so the real clear
+  gap is 11.08 mm. That is not slack to spend.
+
+============================================================================================
+THE THIRD FINDING -- that gap is a closed volume in front of a live ejection charge
+============================================================================================
+  The Cesaroni Pro54 ships with an ejection charge in its forward closure. This
+  vehicle deploys on an independent altimeter, and nothing in this project has ever
+  said what happens to the motor's own charge.
+
+  volume bounded by mount tube bore, forward closure and this disc:  25.85 cm3
+  disc capacity (seal.py's own expression):                          6.69 MPa
+
+    charge      pressure      over capacity
+     0.8 g       6.78 MPa      1.01x
+     1.0 g       8.48 MPa      1.27x
+     1.2 g      10.17 MPa      1.52x
+     1.4 g      11.87 MPa      1.77x
+     1.6 g      13.56 MPa      2.03x
+
+  It fails at every plausible charge mass, so the conclusion does not turn on the
+  assumed figure -- which is just as well, because Cesaroni does not publish one.
+  DESIGN ANSWER: a PLUGGED forward closure (a purchase, not a modification), recorded
+  as motor_mount.FORWARD_CLOSURE_PLUGGED = True. Venting the gap is the
+  alternative and it is worse: a hole through a pressure boundary to solve what a
+  different part number solves for nothing.
+
+============================================================================================
+THE PART -- stations local to the booster tube's forward face, positive aft
+============================================================================================
+  forward bulkhead / thrust face     dia  74.80 x 4.80     79.40 ..   84.20     39.0 g
+  mount tube                         dia  57.10 / 54.50     84.20 ..  416.28    140.0 g
+  forward centering ring             dia  74.80 / 57.10 x 3.20    266.22 ..  269.42     10.9 g
+  aft centering ring (slotted)       dia  74.80 / 57.10 x 3.20    398.08 ..  401.28     10.2 g [4 x 3.2 x 8.85 slots]
+  retainer (bought, Aeropack class)  bond 15 mm on the tube OD            401.28 ..  416.28     31.0 g
+  motor, aft-flush                   dia  54.00 x 321.00     95.28 ..  416.28
+  aft fin tab band                   depth 11.15 mm             271.42 ..  410.28
+
+  ASSEMBLY 231.1 g against the 250 g design/mass.py has charged -- +18.9 g.
+  Mount tube length 332.08 mm settles make_ork.py's 331 against
+  docs/04's 416: neither, and 416 was the booster's own length copied by mistake.
+
+============================================================================================
+WHAT CARRIES WHAT -- and the headline is that the rings do not carry thrust
+============================================================================================
+  peak thrust                               586.9 N
+  thrust into the forward bulkhead           6.60 MPa       73x   annular land 10.15 mm
+  drogue stuck-joint pressure              121.82 MPa      3.9x   at 1699 kPa
+  drogue U-bolt, bare 6 mm footprint        96.73 MPa      5.0x   at 1504 N
+  ring glue lines, REDUNDANT path            0.51 MPa       12x   293 N each
+  retainer base bond                         0.05 MPa      115x   at 147 N
+  mount tube, full thrust (redundant)        2.58 MPa      186x   buckling 39x
+
+  THRUST ENTERS THE AIRFRAME AT THE FORWARD BULKHEAD, not through the rings. The
+  motor's forward closure bears on that disc through the mount tube's bore, and the
+  load travels forward into the vehicle it is pushing. The rings align the motor, tie
+  the fin tabs in, and carry the motor's mass laterally. They are checked against the
+  full thrust anyway, as the redundant path -- a load path with one member is not one.
+
+  Neither the tube wall nor the ring thickness is set by stress:
+    mount tube wall   1.30 mm -- the practical minimum wall -- two rings and a retainer base bond to this tube's outside; local buckling alone would have cleared 2x at 0.9 mm
+    ring thickness    3.20 mm -- the practical minimum gauge -- a thinner ring tips in its own fillet and cannot be bonded square; the glue line alone would have cleared 2x at 1.6 mm
+  Same shape of result as design/access_bulkhead.py's two plates and design/venting.py's
+  port sizing: the model gives the floor, practice gives the design point.
+
+============================================================================================
+THE HOLES IN THE FORWARD BULKHEAD
+============================================================================================
+  drogue charge feed-through   x  +22.60  y   +0.00  dia  4.0  edge 12.80 mm
+  U-bolt leg A                 x   +0.00  y  +12.50  dia  8.5  edge 20.65 mm
+  U-bolt leg B                 x   +0.00  y  -12.50  dia  8.5  edge 20.65 mm
+
+  Positions come from design/motor_mount.hole_layout(), reusing seal.Hole, so the CAD
+  script types nothing -- the same rule seal.py and access_bulkhead.py already follow.
+
+============================================================================================
+VERDICT
+============================================================================================
+  motor mount    OK
+    note  forward gap 11.08 mm between the bulkhead's aft face and the motor's forward closure. The booster's whole forward margin is 95.28 mm; the coupler takes 79.4 and joints.BULKHEAD_ALLOWANCE budgets 12.0 more, which would leave 3.88 mm. The disc as actually sized is 4.8 mm, so the real gap is bigger than the budget -- and it is a CLOSED VOLUME, which is the only reason anyone should care how big it is
+    note  assembled stack 10.8 mm inside the 12.0 mm joints.BULKHEAD_ALLOWANCE -- the third bulkhead in this vehicle to be checked against that typed number
+    note  FIN TAB DEPTH IS 11.15 mm, NOT THE 12.00 mm THAT WAS FROZEN. The tab is measured inward from the booster OD, so 12.00 put its tip at R 27.70 mm -- 0.85 mm inside this mount tube's own wall, and only 0.70 mm clear of the bare motor case, which is what it was really drawn against. scripts/make_cad_profiles.py and scripts/make_aft_fin_cad_fusion.py must import motor_mount.fin_tab_depth() and the four AftFin bodies must be regenerated
+    note  tab stands 8.85 mm proud of the airframe bore and lands tangent on the mount tube; 4 tabs x 3.2 mm x 138.9 mm gives 1777 mm2 of tab-to-tube bond, fillets not credited
+    note  forward closure PLUGGED (a purchase, not a modification). Flying it live would put 1.2 g into 25.8 cm3 -- 10.2 MPa against the disc's 6.69 MPa capacity, 1.5x over. Nothing in this project had ever asked
+    note  thrust 587 N enters the airframe at the forward bulkhead, not through the rings: 6.6 MPa in the 10.15 mm annular land between the motor's bearing circle and the tube wall, 73x
+    note  same disc, same vessel as the internal bulkhead: 1699 kPa stuck-joint case gives 3.9x, design case 246 kPa
+    note  drogue harness U-bolt 1504 N on a bare 6 mm footprint gives 5.0x -- the FOURTH U-bolt, the one recovery.default_soft_goods() has priced since it was written and that had no bulkhead to stand on until this file
+    note  rings carry the REDUNDANT path only -- 293 N each if the bulkhead's bond let go -- at 12x. Their real job is alignment and tying the fin tabs in
+    note  retainer holds 147 N (498 g dry at 30 g) over a 15 mm bond, 115x -- the DRY mass, because the propellant is gone before descent begins
+    note  forward centering ring clears the tab LE by 2.00 mm
+    note  aft centering ring (slotted) sits inside the tab band and is slotted 4 x 3.2 x 8.85 mm; an unslotted ring at that station is 4 interferences
+    note  assembly 231.1 g against the 250 g mass.py has charged: tube 140.0, rings 21.0, bulkhead 39.0, retainer 31.0
+    note  mount tube wall governed by: the practical minimum wall -- two rings and a retainer base bond to this tube's outside; local buckling alone would have cleared 2x at 0.9 mm
+    note  ring thickness governed by: the practical minimum gauge -- a thinner ring tips in its own fillet and cannot be bonded square; the glue line alone would have cleared 2x at 1.6 mm
+    note  forward bulkhead: 3 holes, tightest ligament 12.8 mm
+    note  NOT SOLVED, stated: the fin ROOT MOMENT this tab bond carries has never been computed by anything in this project -- design/flutter.py says the same about its own ideal-rigid-root assumption. Area and clearance are checked here; strength is not, and swinging the finished fin is what would settle it
+    note  worst margin here is 3.9x, under 4x -- get the supplier's own datasheet before quoting a third digit, and remember these are G-10 SHEET numbers standing in for a filament-wound tube
+
+============================================================================================
+WHAT IS STILL OPEN
+============================================================================================
+  * THE FIN ROOT MOMENT. The tab-to-mount-tube bond is checked here for AREA and for
+    CLEARANCE. The moment it carries has never been computed by anything in this
+    project, and design/flutter.py says the same about its own ideal-rigid-root
+    assumption. Swinging the finished fin is what settles it.
+  * THE MOUNT TUBE'S MATERIAL. Every margin above uses G-10 SHEET properties for a
+    filament-wound tube, because design/materials.py has nothing else. The margins
+    that matter are all well clear, which is the only reason that is tolerable.
+  * THE MOTOR'S EJECTION CHARGE MASS. Assumed, not obtained. The conclusion does not
+    turn on it -- see the table above -- but the number should be replaced.
+  * MOUNT_TUBE_WALL_OPTIONS is the band the common 54 mm offerings fall in, not a
+    quoted catalogue. Confirm the vendor's own list before ordering.

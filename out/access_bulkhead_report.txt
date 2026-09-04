@@ -20,10 +20,10 @@ THE HEADLINE: NEITHER PLATE IS SIZED BY STRESS
   ------------------------------------------------------------------------
   thickness, mm                                     2.4              3.2
   mass, g                                          19.5             26.0
-  governing pressure, Pa                            5.5          14943.3
-  plate margin                                  302112x             199x
-  feed-through margin                           162150x             107x
-  point-load margin                                 n/a             121x
+  governing pressure, Pa                            5.5          14363.8
+  plate margin                                  302112x             207x
+  feed-through margin                           162150x             111x
+  point-load margin                                 n/a             126x
   assembled stack, mm                               5.4              6.2
 
   Both clear the thinnest stocked G-10 sheet by more than 25x on every load this
@@ -65,14 +65,14 @@ THE NOSE AFT FACE -- the module interface and the payload mount
 
   Two loads, neither of them the aft gas seal's kind:
 
-  1. TRAPPED DIFFERENTIAL, pad to apogee      14.94 kPa
+  1. TRAPPED DIFFERENTIAL, pad to apogee      14.36 kPa
      CONSERVATIVE, and said plainly rather than assumed away: nobody has ever
      modelled whether the nose cavity is vented. design/avionics.py and
      design/venting.py both stop at the nav bay. If the nose needs its own vent,
      that is a real open item this file surfaces rather than closes -- until it
      exists, the plate is checked as though the cavity is fully sealed.
 
-  2. THE PAYLOAD MOUNT   300 g at 8.1 g boost accel = 23.8 N
+  2. THE PAYLOAD MOUNT   300 g at 7.8 g boost accel = 22.9 N
      seal.py: this disc 'is what a future payload of up to about 300 g would hang
      from.' A tapered nose cone has nowhere else flat enough to cantilever a sled
      from, so that sentence is taken as the design intent -- a point load on a
@@ -96,9 +96,9 @@ VERDICT
 
   nose aft face                    OK
     note  feed-through clears the disc edge by 10.8 mm
-    note  nose aft face: 107x on the worst modelled load (trapped differential, pad to apogee -- CONSERVATIVE: the nose cavity's own venting has never been modelled anywhere in this project, so this checks the fully-sealed case rather than assume one exists) at the thinnest stocked sheet -- stress does not govern this plate
+    note  nose aft face: 111x on the worst modelled load (trapped differential, pad to apogee -- CONSERVATIVE: the nose cavity's own venting has never been modelled anywhere in this project, so this checks the fully-sealed case rather than assume one exists) at the thinnest stocked sheet -- stress does not govern this plate
     note  governed by: the practical minimum gauge -- handling and repeated fasteners set this; the feed-through hole alone would have cleared 2x at 1.6 mm
-    note  point load case: 300 g payload provision (correction 32) at 8.1 g boost acceleration -- the provision ceiling, not the 105 g of avionics actually flying
+    note  point load case: 300 g payload provision (correction 32) at 7.8 g boost acceleration -- the provision ceiling, not the 105 g of avionics actually flying
     note  pressure case: trapped differential, pad to apogee -- CONSERVATIVE: the nose cavity's own venting has never been modelled anywhere in this project, so this checks the fully-sealed case rather than assume one exists
     note  assembled stack 6.2 mm (disc + one 3 mm fillet -- one bonded face, one flush mating face) inside the 12.0 mm joints.BULKHEAD_ALLOWANCE, which until now was a typed number nothing had checked
 

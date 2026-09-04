@@ -100,13 +100,31 @@ def _inject(comp, made):
 
     Mandatory for a parametric document: a temp body only "takes" via
     `BRepBodies.add(body, baseFeature)`, per make_sled_fusion.py's own header.
+
+    RENAMING HAPPENS AFTER `finishEdit()`, VIA A FRESH QUERY -- not on the object
+    `BRepBodies.add()` itself returns, and not inside the startEdit/finishEdit
+    transaction. Confirmed by direct test: for a body sourced from Fusion's parametric
+    Sketch/Extrude API (copied out via `TemporaryBRepManager.copy()`, the technique the
+    canard panels and aft fins both use for their swept-trapezoid profile), setting
+    `.name` on the object `.add()` returns reads back correctly on THAT SAME object but
+    does not persist to the body at all -- a fresh `comp.bRepBodies` query even in the
+    same script run still shows Fusion's own default name ("Body1"). Renaming a FRESH
+    query result AFTER `finishEdit()` does persist, for both extrude-sourced and
+    primitive-sourced (box/cylinder/boolean) bodies alike, so every generator does it
+    this way now rather than the two of them disagreeing on which pattern is safe. This
+    is a DIFFERENT failure mode from `_get_or_create_component`'s own idempotency note
+    above (same-transaction rename into an ALREADY-POPULATED component) -- that one is
+    about a LATER, separate script run; this one bites inside the very run that created
+    the body.
     """
+    before = comp.bRepBodies.count
     bf = comp.features.baseFeatures.add()
     bf.startEdit()
     for (name, body) in made:
-        b = comp.bRepBodies.add(body, bf)
-        b.name = name
+        comp.bRepBodies.add(body, bf)
     bf.finishEdit()
+    for i, (name, _body) in enumerate(made):
+        comp.bRepBodies.item(before + i).name = name
 
 
 def _verify_volume(comp, want, tol, loose=(), loose_tol=None):
@@ -162,13 +180,13 @@ AFT_FACE_MM = 142.92
 
 SEAL_RADIUS_MM = 37.400000000000006
 SEAL_THICKNESS_MM = 4.8
-SEAL_HOLES = [('feed-through 0', 22.59775238156248, 0.0, 4.0), ('feed-through 1', -22.59775238156248, 2.7674265122004967e-15, 4.0), ('U-bolt leg A', 0.0, 12.5, 5.5), ('U-bolt leg B', 0.0, -12.5, 5.5)]
-SEAL_WANT_MM3 = 20744.08708810078
+SEAL_HOLES = [('feed-through 0', 22.59775238156248, 0.0, 4.0), ('feed-through 1', -22.59775238156248, 2.7674265122004967e-15, 4.0), ('U-bolt leg A', 0.0, 12.5, 8.5), ('U-bolt leg B', 0.0, -12.5, 8.5)]
+SEAL_WANT_MM3 = 20427.41454861893
 
 INTERNAL_RADIUS_MM = 37.400000000000006
 INTERNAL_THICKNESS_MM = 4.8
-INTERNAL_HOLES = [('conduit', 15.979023948577284, 15.97902394857728, 6.0), ('U-bolt leg A', 0.0, 12.5, 5.5), ('U-bolt leg B', 0.0, -12.5, 5.5)]
-INTERNAL_WANT_MM3 = 20729.007443363545
+INTERNAL_HOLES = [('conduit', 19.445436482630058, 19.445436482630054, 6.0), ('U-bolt leg A', 0.0, 12.5, 8.5), ('U-bolt leg B', 0.0, -12.5, 8.5)]
+INTERNAL_WANT_MM3 = 20412.334903881696
 
 OVER_MM = 1.0
 

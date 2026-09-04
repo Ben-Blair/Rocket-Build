@@ -4,7 +4,7 @@ BASELINE VEHICLE
 ============================================================================================
   airframe            79.4 mm OD fiberglass, 1361 mm long, L/D 17.1
   motor               J449BS  (1260 N s, class J, needs L2)
-  wet / dry mass      6.30 / 5.68 kg
+  wet / dry mass      6.51 / 5.89 kg
   feasible            YES
   WARNING             nav bay budget 515 g against 401 g of D7-selected parts (+80 g wiring, +150 g sled) -- the budget is 114 g heavy since D7 closed. Not applied: it is forward of the CG, so it costs static margin, and the board's mass is a layout target. D8 did NOT settle this -- nothing but a scale will. docs/01 step 5
 
@@ -26,10 +26,10 @@ MASS BUDGET
 ============================================================================================
 component                               mass (kg)    x (m)    moment
 --------------------------------------------------------------------
-recovery (budget)                           0.666    0.766    0.5103
+recovery (budget)                           0.857    0.766    0.6566
 aft fins                                    0.637    1.259    0.8026
 propellant                                  0.624    1.201    0.7492
-contingency                                 0.516    0.681    0.3512
+contingency                                 0.535    0.681    0.3642
 avionics bay (budget)                       0.515    0.381    0.1963
 motor case (dry)                            0.498    1.201    0.5979
 tube: booster                               0.429    1.153    0.4947
@@ -48,35 +48,35 @@ structure: rail_buttons_fasteners           0.060    1.153    0.0692
 canard servos x4                            0.036    0.516    0.0186
 ballast rod hardware                        0.034    0.242    0.0081
 --------------------------------------------------------------------
-DRY TOTAL                                   5.676    0.781
-WET TOTAL (incl. propellant)                6.300    0.823
+DRY TOTAL                                   5.886    0.780
+WET TOTAL (incl. propellant)                6.510    0.821
 
 ============================================================================================
 FLIGHT
 ============================================================================================
-  T/W at ignition          7.16
-  rail exit velocity       22.6 m/s
-  max acceleration          8.1 g
-  burnout                  2.85 s at    275 m, 171.6 m/s
-  max Mach                0.513
-  max dynamic pressure    18.13 kPa
-  apogee                   1326 m (4349 ft) at 16.7 s
-  static margin range      2.27 to 2.76 cal
-  usable control window    11.2 s (q > 500 Pa after burnout)
+  T/W at ignition          6.93
+  rail exit velocity       22.5 m/s
+  max acceleration          7.8 g
+  burnout                  2.85 s at    265 m, 165.7 m/s
+  max Mach                0.495
+  max dynamic pressure    16.89 kPa
+  apogee                   1271 m (4169 ft) at 16.5 s
+  static margin range      2.30 to 2.77 cal
+  usable control window    10.9 s (q > 500 Pa after burnout)
 
 ============================================================================================
 STATIC STABILITY at max coast dynamic pressure
 ============================================================================================
   component          CNa (/rad)    CP (mm)    share
-  aft_fins                21.63       1259    67.3%
-  canards                  6.47        507    20.1%
-  nose                     2.32        148     7.2%
-  body_lift                1.71        756     5.3%
-  TOTAL                   32.13       1001
+  aft_fins                21.38       1259    67.3%
+  canards                  6.39        507    20.1%
+  nose                     2.29        148     7.2%
+  body_lift                1.69        756     5.3%
+  TOTAL                   31.76       1001
 
-  CG 781 mm, CP 1001 mm, static margin 2.76 cal
-  Cm_alpha -88.8 /rad
-  same airframe with canards removed: 4.33 cal
+  CG 780 mm, CP 1001 mm, static margin 2.77 cal
+  Cm_alpha -88.1 /rad
+  same airframe with canards removed: 4.34 cal
   --> the canards cost 1.57 cal of static margin. That is the price of control authority,
       and it is why you cannot simply make the canards bigger.
 
@@ -84,15 +84,15 @@ STATIC STABILITY at max coast dynamic pressure
 PITCH AUTHORITY vs DEFLECTION
 ============================================================================================
    delta   a_trim  lat accel  canard a  hinge Nm  wn (Hz)  stall
-      2d    0.25d      0.40g     2.25d    0.0131     4.24  ok
-      4d    0.50d      0.79g     4.50d    0.0261     4.24  ok
-      6d    0.76d      1.19g     6.76d    0.0392     4.24  ok
-      8d    1.01d      1.59g     9.01d    0.0523     4.24  ok
-     10d    1.26d      1.99g    11.26d    0.0653     4.24  ok
-     12d    1.51d      2.38g    13.51d    0.0784     4.24  STALL
+      2d    0.25d      0.35g     2.25d    0.0120     4.00  ok
+      4d    0.50d      0.70g     4.50d    0.0241     4.00  ok
+      6d    0.75d      1.06g     6.75d    0.0361     4.00  ok
+      8d    1.00d      1.41g     9.00d    0.0481     4.00  ok
+     10d    1.25d      1.76g    11.25d    0.0602     4.00  ok
+     12d    1.50d      2.11g    13.50d    0.0722     4.00  STALL
 
-  Cm_delta 11.18 /rad
-  one-sided manoeuvre crossrange at 8 deg: 340 m over 11.5 s
+  Cm_delta 11.02 /rad
+  one-sided manoeuvre crossrange at 8 deg: 297 m over 11.3 s
 
 ============================================================================================
 ROLL AUTHORITY  --  the canard / aft-fin interference problem
@@ -101,38 +101,38 @@ ROLL AUTHORITY  --  the canard / aft-fin interference problem
   aligned (0 deg offset)
     canard-to-fin spacing          9.47 cal
     interference strength         0.162
-    Cl_delta from canards        +5.590 /rad
-    Cl_delta from aft fins       -4.133 /rad  (opposing)
-    Cl_delta NET                 +1.457 /rad
+    Cl_delta from canards        +5.526 /rad
+    Cl_delta from aft fins       -4.085 /rad  (opposing)
+    Cl_delta NET                 +1.440 /rad
     cancellation                   73.9% of canard authority lost
     SIGN correct
-    Cl_p (roll damping)          -69.60 /rad
-    roll accel at 2 deg          3497 deg/s^2
-    steady roll rate                181 deg/s
+    Cl_p (roll damping)          -68.79 /rad
+    roll accel at 2 deg          3116 deg/s^2
+    steady roll rate                175 deg/s
 
   interdigitated (45 deg)
     canard-to-fin spacing          9.47 cal
     interference strength         0.037
-    Cl_delta from canards        +5.590 /rad
-    Cl_delta from aft fins       -0.936 /rad  (opposing)
-    Cl_delta NET                 +4.654 /rad
+    Cl_delta from canards        +5.526 /rad
+    Cl_delta from aft fins       -0.926 /rad  (opposing)
+    Cl_delta NET                 +4.600 /rad
     cancellation                   16.8% of canard authority lost
     SIGN correct
-    Cl_p (roll damping)          -69.60 /rad
-    roll accel at 2 deg         11168 deg/s^2
-    steady roll rate                578 deg/s
+    Cl_p (roll damping)          -68.79 /rad
+    roll accel at 2 deg          9951 deg/s^2
+    steady roll rate                558 deg/s
 
   Sensitivity: where does the net roll moment change sign?
   Sweeping aft fin semispan (which sets how much fin area sits in the canard
   wake) against interference strength, aligned canards:
 
      aft span     SM  Cl_d can  Cl_d fin      net    lost  verdict
-         0.85   0.66    +4.886    -1.176   +3.709   24.1%  ok
-         1.05   1.42    +5.213    -1.829   +3.384   35.1%  ok
-         1.25   2.04    +5.416    -2.635   +2.782   48.6%  ok
-         1.45   2.55    +5.545    -3.595   +1.949   64.8%  ok
-         1.65   2.96    +5.627    -4.709   +0.918   83.7%  fragile
-         1.85   3.29    +5.682    -5.976   -0.295  105.2%  REVERSED
+         0.85   0.67    +4.829    -1.163   +3.666   24.1%  ok
+         1.05   1.43    +5.153    -1.808   +3.345   35.1%  ok
+         1.25   2.05    +5.354    -2.604   +2.749   48.6%  ok
+         1.45   2.56    +5.480    -3.554   +1.927   64.8%  ok
+         1.65   2.97    +5.562    -4.655   +0.907   83.7%  fragile
+         1.85   3.30    +5.616    -5.907   -0.291  105.2%  REVERSED
 
   Read this table carefully -- it is the core engineering argument of the project. Growing
   the aft fins raises static margin (good for a safe flight) while simultaneously feeding
@@ -170,30 +170,30 @@ ACTUATOR CHECK
   shaft, off case centre +5.61 mm (6.14 mm from the near end, not 11.75)
   spline above flange 8.45 mm, against 2.3 mm of wall to cross
   servo travel        +/-60 deg, so +/-8 deg of canard uses 13% of it
-  peak hinge moment   0.0542 N m per panel at q = 18.1 kPa
+  peak hinge moment   0.0498 N m per panel at q = 16.9 kPa
   hinge balance       restoring (hinge fwd of panel CP)
   usable servo torque 0.2080 N m (stall x 0.4 derate, gear 1.0:1)
-  torque margin       3.8x  OK
-  panel normal force  22.9 N, so 0.663 N m of bending where the shaft leaves the tube
-  hinge bearing       dia 6 journal in a 6.0 mm plain bearing, 21 MPa peak, margin 3.8x
+  torque margin       4.2x  OK
+  panel normal force  21.1 N, so 0.610 N m of bending where the shaft leaves the tube
+  hinge bearing       dia 6 journal in a 6.0 mm plain bearing, 19 MPa peak, margin 4.1x
   hinge fits          running clearance 0.030 mm, spline engagement 2.900 mm (91%)
   hinge stack         OK
-  root joint          1.8 x 11.9 mm tang, 25.5 mm engaged; tang 2.4-6.5x, skin 2.7x, LE clearance 6.2 mm
+  root joint          1.8 x 11.9 mm tang, 25.5 mm engaged; tang 2.6-7.0x, skin 2.9x, LE clearance 6.2 mm
   root joint check    OK
-  tube at the hinge   4 x dia 8.00 bores take 13% of the section; worst margin 3.5x (bearing seat crush)
+  tube at the hinge   4 x dia 8.00 bores take 13% of the section; worst margin 3.8x (bearing seat crush)
   tube section check  OK
   servo speed         0.09 s/60deg --> 667 deg/s slew rate
-  pitch mode          4.3 Hz; loop rate should be >= 86 Hz
+  pitch mode          4.1 Hz; loop rate should be >= 81 Hz
 
 ============================================================================================
 FIN FLUTTER
 ============================================================================================
-  worst case 174 m/s at 241 m altitude. Flutter speed scales as
+  worst case 168 m/s at 232 m altitude. Flutter speed scales as
   1/sqrt(ambient pressure), so the danger is speed low down, not Mach at apogee.
 
     fin set     semispan   thick    AR     t/c  V_flutter  margin
-    aft fins      123.1mm    3.2mm  1.13  0.0212       355   2.04x  OK   (>=1.5x needs 2.6 mm)
-    canards        67.5mm    3.2mm  1.43  0.0474       885   5.09x  OK   (>=1.5x needs 1.4 mm)
+    aft fins      123.1mm    3.2mm  1.13  0.0212       355   2.12x  OK   (>=1.5x needs 2.5 mm)
+    canards        67.5mm    3.2mm  1.43  0.0474       885   5.27x  OK   (>=1.5x needs 1.4 mm)
 
   Built from G10 at the stated thickness with the tab bonded through to the motor mount.
   Shear modulus is the weak input here -- published G10 spans 3 to 7 GPa and the result
@@ -203,19 +203,19 @@ FIN FLUTTER
 ============================================================================================
 RECOVERY -- the aft gas seal
 ============================================================================================
-  ejection charge     1.13 g black powder, 3 x 2-56 nylon shear pins
+  ejection charge     1.14 g black powder, 3 x 2-56 nylon shear pins
   design pressure     246 kPa (1082 N on the disc); joint releases at 123 kPa
-  stuck-joint case    1659 kPa (7289 N) -- the same charge in the packed free volume, and this is what sizes the disc
-  bulkhead            G-10 4.8 mm, 39 g; plate 4.0x, feed-through 2.2x, bond 12.2x
-  main opening shock  1398 N through the U-bolt (5.3x) -- 15x vehicle weight at a 1.0 shock factor
+  stuck-joint case    1673 kPa (7353 N) -- the same charge in the packed free volume, and this is what sizes the disc
+  bulkhead            G-10 4.8 mm, 39 g; plate 4.0x, feed-through 2.1x, bond 12.1x
+  main opening shock  1504 N through the U-bolt (5.0x) -- 15x vehicle weight at a 1.0 shock factor
   governed by         the feed-through hole
   aft gas seal check  OK
-  internal bulkhead   G-10 4.8 mm, 39 g; plate 4.0x, feed-through 2.2x -- NO shear pins protect it
+  internal bulkhead   G-10 4.8 mm, 39 g; plate 3.9x, feed-through 2.4x -- NO shear pins protect it
   bulkhead allowance  10.8 mm assembled against recovery.BULKHEAD_THICKNESS 12.0 mm
   internal bhd check  OK
-  harness             3/4" tubular nylon, 2 x 3.40 m, 136 g -- 4.0x on the 1398 N opening shock after a knot derating
-    sized, not budgeted; it was 1" nylon at 6.4x and a quarter of the bay
-  packing             FITS   recovery bay     need 330.0 mm, have 338.4 mm (  +8.4 mm)  2 compartments, 80% full
+  harness             3/4" tubular nylon, 2 x 3.40 m, 136 g -- 3.7x on the 1504 N opening shock after a knot derating
+    sized, not budgeted; it was 1" nylon at 5.9x and a quarter of the bay
+  packing             FITS   recovery bay     need 333.7 mm, have 338.4 mm (  +4.6 mm)  2 compartments, 81% full
      Full argument: python scripts/seal_report.py
 
 ============================================================================================
@@ -266,7 +266,7 @@ THE NAV BAY'S STATIC PORTS -- station and clocking, which nothing had
   band                aft coupler bond, 397.00 -> 444.64 mm -- the ONLY drillable wall in this bay
   edge distance       23.82 mm each side; inner mouth 7.89 mm clear of anything on the sled
   conventions broken  1.30 cal aft of the shoulder (rule: 2.0), 0.78 cal fwd of the canards (rule: 1.0) -- both UNREACHABLE
-  position error      Cp -0.0174 from the nose: 26.9 m at max q, 0.69 m at the main's 200 m under
+  position error      Cp -0.0172 from the nose: 24.7 m at max q, 0.69 m at the main's 200 m under
                       drogue. It is only read where q is small, so the station is
                       set by edge distance and not by aerodynamics.
   port check          OK
@@ -276,7 +276,7 @@ THE NAV BAY'S STATIC PORTS -- station and clocking, which nothing had
 ACCESS BULKHEADS -- the two seal.py never sized
 ============================================================================================
   pass-through plate  G-10 2.4 mm, 19.5 g; 302112x plate, 162150x feed-through -- governed by the practical minimum gauge -- handling and repeated fasteners set this; the feed-through hole alone would have cleared 2x at 1.6 mm
-  nose aft face       G-10 3.2 mm, 26.0 g; 199x plate, 121x payload mount (300 g provision at 8.1 g)
+  nose aft face       G-10 3.2 mm, 26.0 g; 207x plate, 126x payload mount (300 g provision at 7.8 g)
   neither is stress-governed -- both clear the thinnest stocked sheet by 25x+.
   the nose cavity's OWN venting has never been modelled anywhere in this project;
   its plate is checked against the fully-sealed trapped-differential case until
@@ -315,13 +315,49 @@ THE NAV BAY SLED -- the allowance nobody turned into a part
      correction 5 before touching geometry. python scripts/avionics_report.py
   state estimation    OK
   D8 architecture     D. IMU + baro + GNSS + magnetometer, to L3
-  roll rate seen      578 deg/s at the 2 deg roll cap, 2313 deg/s at the 8 deg limit -- the cap is what keeps the gyro in range
-  IMU sample rate     1000 Hz minimum, NOT the 85 Hz control loop rate: quaternion propagation at
-                      100 Hz drifts 30.7 deg/s with a PERFECT gyro
-  attitude, unaided   8.4 deg RSS by apogee, led by 'gyro scale factor at roll rate'
+  roll rate seen      558 deg/s at the 2 deg roll cap, 2232 deg/s at the 8 deg limit -- the cap is what keeps the gyro in range
+  IMU sample rate     1000 Hz minimum, NOT the 80 Hz control loop rate: quaternion propagation at
+                      100 Hz drifts 27.6 deg/s with a PERFECT gyro
+  attitude, unaided   7.9 deg RSS by apogee, led by 'gyro scale factor at roll rate'
   D8 carries 7 notes that do not fit here, including the one that matters most:
      an |a|-magnitude gate on the accelerometer correction opens AT BURNOUT and what it
      admits is drag along the body axis, not gravity. python scripts/estimation_trade.py
+
+============================================================================================
+RECOVERY HARDWARE -- the U-bolt, its backing plate and the charge well
+============================================================================================
+  U-bolt              M8 stainless on a 25 mm spacing, holes dia 8.5 -- NOT the M5 seal.py assumed
+  what governs it     the CROWN in bending, 119 MPa at 2.02x. seal.py's own aside checked the LEGS in
+                      SHEAR, and the legs are in TENSION (12x) and are not what breaks. A published
+                      U-bolt rating is for clamping a pipe, which is a different structure.
+  backing plate       G-10 39.0 x 22.5 x 3.2 mm: footprint R 16.71 mm instead of a bare
+                      6.00 mm nut face, so the disc's U-bolt margin goes 4.96x -> 8.00x
+  charge wells        main charge dia 12 x 19.0 (1.1432 g); drogue charge dia 8 x 20.5 (0.4515 g)
+  QUICK LINK REQUIRED the 19.1 mm webbing does NOT pass through a 17.0 mm opening; the harness
+                      attaches through a link, which recovery.py has priced since it was written
+  mass                205.3 g -- mass.py had NO line for the anchors; it carries 196 g now
+  recovery hardware   OK
+  OPEN                NOT SOLVED, stated: idealised as a STRAIGHT beam instead of an arch the crown runs 187 MPa, 1.28x -- under 2.0x. The arch model is the right one and the straight beam is a different structure, not a bound; but this is the single most safety-critical joint in the vehicle and a destructive pull test on the actual bolt is what settles it. It has not been done
+  OPEN                THE ANCHOR IS SELF-LOADING: its 191 g is in the recovery budget, so it raises the descent mass and therefore the opening shock it carries. One pass settles it because the rod size is discrete, and M8 survives the round trip at 2.02x. It is thin: the next thing to gain mass anywhere in this vehicle may push it to M10
+     Full argument: python scripts/recovery_hardware_report.py
+
+============================================================================================
+MOTOR MOUNT -- the last unsized structure, and it moved a frozen number
+============================================================================================
+  mount tube          dia 57.10 / 54.50 x 332.08 mm, 140.0 g -- settles make_ork.py's 331 against docs/04's 416
+  forward bulkhead    G-10 4.8 mm, 39.0 g -- the one seal.py handed over, and it is the THRUST FACE
+  centering rings     2 x G-10 3.20 mm; the aft one sits IN the fin tab band and is slotted 4x
+  thrust path         587 N enters at the forward bulkhead (73x), NOT through the rings -- they carry the redundant path at 12x
+  assembly            231.1 g against the 250 g mass.py has charged since that dict was written
+  FIN TAB DEPTH       11.15 mm, DERIVED -- was a frozen 12.00 that put the tab tip 0.85 mm
+                      inside any mount tube a 54 mm motor can have. make_cad_profiles.py and
+                      make_aft_fin_cad_fusion.py import it now; the four AftFin bodies were regenerated.
+  MOTOR EJECTION      the forward gap is a SEALED 25.8 cm3 in front of the motor's own charge:
+                      10.2 MPa against the disc's 6.69 MPa. The forward closure must be PLUGGED, and
+                      nothing in this project had ever asked. FORWARD_CLOSURE_PLUGGED = True
+  motor mount check   OK
+  OPEN                NOT SOLVED, stated: the fin ROOT MOMENT this tab bond carries has never been computed by anything in this project -- design/flutter.py says the same about its own ideal-rigid-root assumption. Area and clearance are checked here; strength is not, and swinging the finished fin is what would settle it
+     Full argument: python scripts/motor_mount_report.py
 
 ============================================================================================
 OPENROCKET ENTRY VALUES
@@ -365,18 +401,18 @@ OPENROCKET ENTRY VALUES
     avionics bay          add 0.515 kg
     nose cone             add 0.105 kg (telemetry radio + tracker)
                           plus the 100 g ballast at 191 mm
-    recovery              add 1.034 kg
+    recovery              add 1.225 kg
 
   Simulation settings
     launch rod / rail     3.66 m (12 ft), 5 deg from vertical
     motor                 J449BS
 
   Cross-check against this tool:
-    expected CG           781 mm from nose tip (dry-ish, mid coast)
+    expected CG           780 mm from nose tip (dry-ish, mid coast)
     expected CP           1001 mm
-    expected margin       2.76 cal
-    expected apogee       1326 m (4349 ft)
-    expected max Mach     0.51
+    expected margin       2.77 cal
+    expected apogee       1271 m (4169 ft)
+    expected max Mach     0.49
 
   If OpenRocket disagrees by more than about 15% on CP or apogee, find out why before
   trusting either result. Disagreement is information, not an inconvenience.

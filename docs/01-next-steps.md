@@ -1,9 +1,36 @@
 # Ordered plan
 
-## State of play — August 2026
+## State of play — September 2026
 
 Read this first if you are picking the project back up.
 
+- **STEP 3'S DIMENSIONED DRAWING IS CLOSED (Sep 2026, corrections 53 and 54).** The two
+  genuinely unsized items — the motor mount, and the recovery bay's U-bolt / backing plate /
+  charge well — are both sized, checked, in `baseline.py`, and drawn.
+  `design/motor_mount.py` + `docs/09-motor-mount.md`; `design/recovery_hardware.py` +
+  `docs/10-recovery-hardware.md`. **Nothing in this vehicle is an allowance any more.**
+  Between them they turned up four things worth knowing before anything else is built:
+  - **The frozen 12 mm aft-fin tab and a 54 mm motor mount tube cannot both exist.** The tab
+    is measured from the booster's OUTER radius, so its tip sat at R 27.70 — 0.85 mm inside
+    any mount tube a 54 mm motor can have, and 0.70 mm off the bare motor case, which is what
+    the round number was really drawn against. It is **11.15 mm** and derived now. **The four
+    `AftFin` bodies and the four booster tab slots must be rebuilt in Fusion.**
+  - **The Pro54's own forward-closure ejection charge fires into a sealed 25.9 cm³** between
+    the motor and the booster's forward bulkhead — 10.2 MPa against a disc that lets go at
+    6.69, and it fails at every plausible charge mass. **Buy the plugged forward closure.**
+    Nothing in this project had ever asked what happens to the motor's own charge.
+  - **The M5 U-bolt `seal.py` assumed does not carry its own load.** Its aside checked the
+    LEGS in SHEAR; the legs are in tension and the CROWN is what bends. **M8**, and the
+    ⌀5.5 holes already placed in both bulkheads become ⌀8.5.
+  - **The 3/4" harness does not pass through the U-bolt** (19.1 mm of webbing, 17.0 mm of
+    opening). It was never meant to: the harness attaches through a **quick link**, which
+    `recovery.py` has priced since it was written.
+  Vehicle level, from 191 g of harness anchors `mass.py` had no line for at all: dry
+  **5.68 → 5.89 kg**, apogee **1326 → 1271 m**, crossrange **340 → 297 m**, static margin
+  **2.30–2.77 cal**, recovery bay margin **+8.35 → +4.63 mm**. No requirement moves out of
+  bounds. **What is left is CAD execution, not design:** the two Fusion generators are
+  written and their emitted scripts verified offline, and running them in Fusion — with the
+  fin rebuild first — is the remaining step.
 - **CAD moved from Onshape to Fusion, and full-module migration is DONE (Sep 2026).**
   Everything below this bullet through the end of "State of play" predates that move and
   is Onshape-only history — read it for the ENGINEERING content (the hinge, the joints,
@@ -54,7 +81,8 @@ Read this first if you are picking the project back up.
   (correction 51) are what's left of Step 3's dimensioned-drawing deliverable.**
 - **Steps 0, 1, 2 are closed.** Sizing tool built, range access and certification path
   resolved, OpenRocket cross-check done and agreeing (CNa to 0.3%, CP to 0.17 cal).
-- **Step 3 is nearly closed.** The airframe is frozen in `design/configure.py` — that file
+- **Step 3 is closed** (corrections 53 and 54; see the top bullet). The airframe is frozen
+  in `design/configure.py` — that file
   is the single source of truth for the vehicle and every script imports from it. The BOM
   is drafted (`04-bill-of-materials.md`). **The dimensioned drawing now covers the whole
   vehicle except the motor mount and the recovery bay's U-bolt/backing-plate/charge-well**
@@ -2177,6 +2205,126 @@ that silently recurs:
    backing-plate/charge-well from correction 51. Between them, that is what is left of Step
    3's "a dimensioned drawing" deliverable.
 
+53. **The motor mount is sized, and sizing it moved a frozen number and found a live
+   ejection charge pointed at a sealed volume.** `design/motor_mount.py`,
+   `scripts/motor_mount_report.py`, verdict in `baseline.py`, geometry in
+   `scripts/make_motor_mount_cad_fusion.py`, write-up in `docs/09-motor-mount.md`. It is the
+   fifth allowance in this project to be paid for without existing -- `mass.py`'s
+   `motor_mount_centering_rings = 0.250`, with no ring count, ring diameter, ring station,
+   mount tube or retainer behind it anywhere. **231.1 g against that 250.** The part
+   `design/seal.py` explicitly handed over -- the booster's forward bulkhead -- is sized here
+   too, and the handover turned out to be right for a reason `seal.py` could not have known.
+
+   **THE HEADLINE IS THAT THE CENTERING RINGS ARE NOT THRUST STRUCTURE.** Thrust enters the
+   airframe at the booster's forward bulkhead: the motor's forward closure bears on that disc
+   through the mount tube's bore, and the load travels forward into the vehicle it is
+   pushing. The rings align the motor, tie the fin tabs in, and carry its mass laterally.
+   Sizing them as though 587 N ran through them would have produced a heavier, wronger part
+   and hidden all three findings. They are checked against the full thrust anyway, as the
+   redundant path, because a load path with one member is not a load path.
+
+   **FINDING 1: THE FROZEN 12 mm FIN TAB AND A 54 mm MOUNT TUBE CANNOT BOTH EXIST.**
+   `make_cad_profiles.py`'s `TAB_DEPTH = 0.012` is measured inward from the booster's OUTER
+   radius, so the tab tip sat at R 27.70 -- **0.85 mm inside any mount tube a 54 mm motor can
+   have, and 0.70 mm off the bare motor case, which is what the round number was really drawn
+   against.** Meanwhile `design/flutter.py` and `baseline.py` both quote the 1.97x aft-fin
+   flutter margin for a tab "bonded through the wall to the MOTOR MOUNT". Four `AftFin` bodies
+   already occupied R 27.70 in the Fusion document; this was never going to survive an
+   interference check, and it survived because there was nothing yet to check it against.
+   Depth is **derived** now -- booster OR less mount tube OR, **11.15 mm** -- and
+   `make_cad_profiles.py` and `make_aft_fin_cad_fusion.py` import
+   `motor_mount.fin_tab_depth_for()` rather than each carrying the literal. **The four fin
+   panels and the four booster tab slots must be rebuilt in Fusion.**
+
+   **FINDING 2: THE FORWARD BULKHEAD AND THE THRUST FACE ARE THE SAME PART.** The booster's
+   1.2 cal margin is 95.28 mm; the coupler takes 79.40 and `joints.BULKHEAD_ALLOWANCE` budgets
+   12.00 more, leaving **3.88 mm**. There is no room for a separate thrust plate and there
+   does not need to be -- one disc closes the drogue compartment, anchors the drogue harness's
+   aft U-bolt, and presents its aft face to the motor.
+
+   **FINDING 3, AND IT IS A FLIGHT SAFETY ONE.** The disc as sized is 4.80 mm rather than the
+   12.00 the allowance charges, so the real clear gap is 11.08 mm -- and that gap is a
+   **sealed 25.85 cm3 directly in front of the Pro54's own forward-closure ejection charge.**
+   This vehicle deploys on an independent altimeter and nothing in this project had ever said
+   what happens to the motor's charge. `seal.ejection_pressure()` puts 1.2 g in there at
+   **10.17 MPa against a disc whose capacity is 6.69** -- and it fails at every charge mass
+   from 0.8 g up, so the conclusion does not turn on the assumed figure. **The forward closure
+   must be PLUGGED** (Cesaroni sells one; a purchase, not a modification), recorded as
+   `FORWARD_CLOSURE_PLUGGED` so the check fails loudly if anyone ever sets it False.
+
+   **Settled on the way past:** the mount tube is **332.08 mm**, which reconciles
+   `make_ork.py`'s 331 against `docs/04`'s 416 -- the latter was the booster's own length
+   copied by mistake. **Still open and stated rather than solved:** the fin ROOT MOMENT that
+   tab bond carries has never been computed by anything here, and `flutter.py` says the same
+   about its own ideal-rigid-root assumption.
+
+54. **The U-bolt, backing plate and charge well are sized -- and the U-bolt this project
+   assumed does not carry its own load.** `design/recovery_hardware.py`,
+   `scripts/recovery_hardware_report.py`, verdict in `baseline.py`, geometry in
+   `scripts/make_recovery_hardware_cad_fusion.py`, write-up in `docs/10-recovery-hardware.md`.
+
+   **`seal.py` had carried this since it was written, and it read as a calculation:** *"An M5
+   U-bolt on a 25 mm leg spacing is the ordinary size for this load -- 1.3 kN through two 5 mm
+   legs is 33 MPa of shear in stainless, which is nothing."* Two errors, compounding. **The
+   legs are not in shear** -- the harness pulls along the bolt's axis and they are in tension.
+   **And the legs are not what breaks** -- the CROWN is, in bending at the two bends, which is
+   where a U-bolt used as an anchor is actually observed to straighten. A published U-bolt
+   rating is for CLAMPING A PIPE, which is a different structure. Sized against the mode that
+   governs: **M8, 2.01x**, and the dia 5.5 holes already placed in both bulkheads become
+   dia 8.5. They are not drilled yet, so the finding costs nothing but the drill. **The
+   straight-beam idealisation gives 1.28x and is left visible rather than argued away** -- the
+   arch model is the right one, but this is the most safety-critical joint in the vehicle and
+   a destructive pull test on the bought bolt is what settles it.
+
+   **THE BACKING PLATE IS WHAT `make_bulkhead_cad.py` SAID IT WAS.**
+   `Bulkhead.point_load_stress()` goes as log(disc radius / footprint radius) and `seal.py`
+   passed a hardcoded 6.0 mm -- a bare nut face -- with a comment saying a real plate would
+   replace it. Replaced: **4.95x becomes 7.98x.** A result of the part existing, not a retune;
+   `seal.py`'s default is unchanged, so every previously reported number still reproduces.
+
+   **FINDING: THE HARNESS DOES NOT FIT THROUGH THE U-BOLT.** `recovery.size_harness()` picks
+   3/4" tubular nylon, 19.1 mm; an M8 U-bolt on a 25 mm spacing leaves 17.0 mm. Two sized
+   parts of this vehicle, and nothing had ever put them next to each other. Opening it up
+   drives the rod to M10 and ~310 g across four anchors, which is not the answer -- **the
+   webbing was never meant to pass through it.** `HARNESS_HARDWARE_KG` has priced links and
+   swivels since it was written. Recorded as a requirement rather than left as the thing
+   everybody happens to do: the harness attaches through a **quick link**, and the link goes
+   through the U-bolt.
+
+   **FINDING: THE INTERNAL BULKHEAD'S FACE IS THE MOST CROWDED SURFACE IN THE ROCKET.** It
+   anchors a harness both ways, so it carries a U-bolt on each face -- and two U-bolts cannot
+   share two holes. They clock **90 degrees apart**, which puts a backing plate along each
+   axis and leaves only the diagonal clear. Each plate is then **relieved** with 9.5 x 3.50 mm
+   edge notches where the opposing legs reach under it, and the conduit hole -- at 45 degrees
+   "so it is equidistant from both legs", which was right for as long as that face held only
+   holes -- has to move **out to R 27.5 mm** so the drogue charge well sitting on it clears
+   both plates. Moving out reduces the bending field, so the hole margin *improves*, 2.17x ->
+   2.41x. `seal.INTERNAL_CONDUIT_RADIUS` is the only hole radius in this vehicle set by a part
+   rather than by the stress field, and the check re-derives the window it must lie in.
+
+   **THE MASS LINE THAT DID NOT EXIST.** `mass.py` had no line for the anchors at all;
+   `recovery.py`'s own `SoftGood("2 x U-bolt", 0.030, ...)` is dead code (`measured_volume`
+   overrides it and nothing sums `Compartment.hardware` masses); `docs/04` independently said
+   120 g for four. Three numbers for one part, none reconciled, and the real one is **191 g**
+   because the bolt is M8. Sixth allowance-shaped hole found by drawing the part -- and the
+   first that was not even an allowance. It was nothing at all. **The anchor is also
+   SELF-LOADING**, which nothing else here is: its mass raises the descent mass and therefore
+   the opening shock it carries. One pass settles it because the rod size is discrete and M8
+   survives at 2.01x; the next thing to gain mass anywhere in this vehicle may push it to M10.
+
+   **What it costs.** One anchor displaces 5.95 cm3 against `UBOLT_ENVELOPE_VOLUME`'s
+   estimated 3.00, and the charge wells are rigid too -- `default_soft_goods()` said in as
+   many words that they "do not consume packing volume", and a dia 12 tube standing 19 mm off
+   the face is directly in the canopy's way. Both are priced now, and the well envelope is a
+   **converged** figure rather than a typed one: the well displaces packing, the packing sets
+   the compartment volume, the volume sets the charge, and the charge sizes the well -- two
+   passes, the same fixed point `add_conduit()` already runs. Recovery bay margin **+8.35 ->
+   +4.63 mm**, and nothing was resized to keep it there. Vehicle level, from 191 g the budget
+   did not have: dry **5.68 -> 5.89 kg**, apogee **1326 -> 1271 m**, one-sided crossrange at
+   8 deg **340 -> 297 m**, lateral authority **1.59 -> 1.41 g** against R8's 0.5, static margin
+   **2.27-2.76 -> 2.30-2.77 cal**. No requirement moves out of bounds, and R6's 1600 m apogee
+   cap has more room rather than less.
+
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —
 corrections 35 and 36.
@@ -2251,7 +2399,7 @@ right to cite either tool.
 Deliverable: `docs/03-openrocket-correlation.md` with a side-by-side table and an
 explanation of each discrepancy. **Done.**
 
-## Step 3 — Freeze the airframe — **YOU ARE HERE**
+## Step 3 — Freeze the airframe — **CLOSED (Sep 2026), pending the CAD rebuild**
 
 Step 2 is closed and the range-access blockers are answered, so this is now unblocked.
 The motor half is already done: 102 real `.eng` curves are in `data/motors/`, the sweep

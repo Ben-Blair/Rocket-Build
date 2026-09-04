@@ -1,0 +1,187 @@
+RECOVERY HARDWARE -- the U-bolt, its backing plate and the charge well
+Model: design/recovery_hardware.py   Verdict carried by: scripts/baseline.py
+One load, four anchors: 1503.6 N, the main's infinite-mass opening shock, which design/configure.py
+already uses for the harness. One load, three parts, no chance of them disagreeing.
+
+============================================================================================
+THE HEADLINE -- a U-bolt used as an anchor is not loaded the way a U-bolt is rated
+============================================================================================
+  design/seal.py has carried this sentence since it was written, and it read as a
+  calculation:
+
+      "An M5 U-bolt on a 25 mm leg spacing is the ordinary size for this load --
+       1.3 kN through two 5 mm legs is 33 MPa of shear in stainless, which is
+       nothing."
+
+  Two errors, and they compound.
+
+  1. THE LEGS ARE NOT IN SHEAR. The harness pulls along the bolt's axis, away from
+     the plate. The legs are in TENSION and the nuts react it. Shear never enters.
+  2. THE LEGS ARE NOT WHAT BREAKS. The CROWN is, in bending, at the two bends where
+     it meets the legs -- which is exactly where a U-bolt used as an anchor is
+     observed to straighten. A published U-bolt rating is for CLAMPING A PIPE, where
+     the crown bears on the pipe and nothing bends. That rating describes a
+     different structure.
+
+  mode                                   stress   margin
+  crown, arch model (DESIGN)               119 MPa    2.02x
+  crown, straight-beam idealisation        187 MPa    1.28x
+  legs, TENSION (not shear)                 21 MPa    11.7x
+
+  Sized against the mode that governs: M8, not M5. The holes
+  already placed in both bulkheads go from 5.5 to 8.5 mm.
+  They are not drilled yet, so the finding costs nothing but the drill.
+
+  THE STRAIGHT-BEAM ROW DOES NOT CLEAR 2.0x AND THAT IS LEFT VISIBLE. The arch model
+  is the right one -- a curved crown carries most of the pull in direct tension along
+  the rod, which is why U-bolts work at all -- and a straight beam is a different
+  structure rather than a bound on this one. But this is the single most
+  safety-critical joint in the vehicle, and what settles it is a destructive pull
+  test on the actual bolt. That has not been done.
+
+============================================================================================
+THE SECOND FINDING -- the harness does not fit through the U-bolt
+============================================================================================
+  recovery.size_harness() selects 3/4" tubular nylon -- 19.1 mm of webbing.
+  An M8 U-bolt on a 25 mm spacing leaves a 17.0 mm clear opening.
+
+  Two sized parts of this vehicle, and nothing had ever put them next to each other.
+  Opening the U up until the webbing passes needs 21 mm of clear opening, which
+  drives the rod to M10 and about 310 g of stainless across four anchors -- more than
+  the whole motor mount. That is not the answer.
+
+  THE ANSWER IS THAT THE WEBBING WAS NEVER MEANT TO PASS THROUGH IT.
+  recovery.HARNESS_HARDWARE_KG has priced 50 g of
+  'links and swivels' since it was written. REQUIREMENT, recorded rather than left as
+  the thing everybody happens to do: the harness attaches through a QUICK LINK and
+  the link goes through the U-bolt. A 6 mm link needs 8 mm of opening, not 21, and
+  there is 9.0 mm to spare.
+
+============================================================================================
+THE BACKING PLATE -- the part scripts/make_bulkhead_cad.py said was the one that mattered
+============================================================================================
+  G-10 39.0 x 22.5 x 3.2 mm, 4.5 g, one per anchor.
+  Same stock the bulkheads are cut from -- one material, one offcut, one supplier.
+
+  check                                  stress   margin
+  its own bending                         53.8 MPa       9x
+  bearing under the nut washers            3.5 MPa     107x
+
+  ITS OWN BENDING ASKS FOR 1.2 mm. What sets it is that it must not dish under the
+  nuts, because if it dishes the footprint the log term assumes is not there. Same
+  shape of result as design/access_bulkhead.py's two plates: the model gives the
+  floor, practice gives the design point.
+
+  WHAT IT IS FOR is seal.Bulkhead.point_load_stress(), which goes as
+  log(disc radius / footprint radius). seal.py passed a hardcoded 6.0 mm there -- a
+  bare nut face -- and said in a comment that a real plate would replace it:
+
+      footprint R 6.00 mm (bare nut)   ->   96.7 MPa, 4.96x
+      footprint R 16.71 mm (this plate)  ->   60.0 MPa, 8.00x
+
+  That is a RESULT of the part existing, not a retune. Nothing was softened to get
+  it, and seal.py's default is unchanged, so every previously reported number still
+  reproduces -- SealResult.shock_footprint_radius is a field a caller passes.
+
+    aft gas seal, aft face (main harness fwd)         4.96x ->  8.00x
+    internal bulkhead, fwd face (main harness aft)    4.96x ->  8.00x
+    internal bulkhead, aft face (drogue harness fwd)  4.96x ->  8.00x
+    booster forward bulkhead (drogue harness aft)     4.96x ->  8.00x
+
+============================================================================================
+THE THIRD FINDING -- the conduit hole is in the worst place for a backing plate
+============================================================================================
+  seal.hole_layout() puts the internal bulkhead's conduit hole at 45 degrees, 'so it
+  is equidistant from both U-bolt legs'. That was right for as long as the only things
+  on that face were holes.
+
+  A backing plate spans the legs, so it is 39 mm long across them and 22.5 mm wide the
+  other way. 45 degrees is precisely where it reaches furthest. Moved to 0 degrees --
+  PERPENDICULAR to the legs, where the plate is narrow -- the hole clears instead of
+  landing underneath. Same radius, same stress field, same ligament to the legs: the
+  placement loses nothing it was chosen for.
+
+============================================================================================
+THE CHARGE WELLS
+============================================================================================
+  well                charge     bore x depth     holds   used    at R    mass
+  main charge        1.1432 g    dia 12 x 19.0    2.15 cm3    98%   22.6   6.44 g
+  drogue charge      0.4515 g     dia 8 x 20.5    1.03 cm3    99%   27.5   6.07 g
+
+  Both sit over their own charge's LEAD HOLE -- the main over a feed-through, the
+  drogue over the conduit hole -- so neither needs a new hole through a pressure
+  boundary. Bore is picked as the smallest whose well stands no more than
+  21 mm proud: a deep narrow well is a worse part than a short fat one -- harder to fill,
+  harder to see into, and a lever the canopy can catch on.
+
+  THE DROGUE CHARGE IS PRINTED HERE FOR THE FIRST TIME. seal.internal_bulkhead_from_evaluation()
+  has computed 0.4515 g since it was written and no report in this project has ever
+  shown it; docs/04 lists only the main's.
+
+============================================================================================
+WHAT IT COSTS -- and the mass line that did not exist
+============================================================================================
+  one anchor (U-bolt + nuts + plate)             47.80 g
+  x 4 anchors                                   191.21 g
+  2 wells + terminal blocks + charges            14.10 g
+  TOTAL                                         205.31 g
+
+  design/mass.py had NO LINE for any of the anchors. recovery.py's own
+  SoftGood("2 x U-bolt", 0.030, ...) entries are dead code -- measured_volume
+  overrides the mass and nothing sums Compartment.hardware masses -- and docs/04
+  independently lists 120 g for four. Three numbers for one part, none reconciled,
+  and the real one is 196 g because the U-bolt is M8.
+
+  mass.DEFAULT_RECOVERY_BUDGET['harness_anchors'] = 0.196 kg carries it now.
+  Sixth allowance-shaped hole found by drawing the part -- and the first that was
+  not even an allowance. It was nothing at all.
+
+  PACKING. One anchor displaces 5.95 cm3 against the 3.00 cm3
+  recovery.py estimated -- low by 2.0x, because the U-bolt it described was M5.
+  And the wells are rigid too: recovery.py's default_soft_goods() said in as many
+  words that charge wells 'do not consume packing volume'. A 12 mm tube standing
+  19.0 mm off the face is directly in the canopy's way.
+  Recovery bay margin: +8.35 mm -> +4.63 mm. Still fits, and
+  nothing was resized to keep it there.
+
+============================================================================================
+VERDICT
+============================================================================================
+  recovery hardware   OK
+    note  U-bolt M8 on a 25 mm spacing: crown 119 MPa, 2.02x -- governed by the crown in bending. THE CROWN, not the legs, which run 21 MPa in TENSION at 11.7x
+    note  NOT SOLVED, stated: idealised as a STRAIGHT beam instead of an arch the crown runs 187 MPa, 1.28x -- under 2.0x. The arch model is the right one and the straight beam is a different structure, not a bound; but this is the single most safety-critical joint in the vehicle and a destructive pull test on the actual bolt is what settles it. It has not been done
+    note  M8 SUPERSEDES seal.py's assumed M5: the holes already placed in both bulkheads go from 8.5 to 8.5 mm. seal.py's own aside checked the legs in SHEAR, and the legs are in tension and are not what breaks
+    note  THE WEBBING DOES NOT PASS THROUGH THE U-BOLT: 19.1 mm of 3/4" tubular nylon against a 17.0 mm clear opening. It was never meant to -- recovery.HARNESS_HARDWARE_KG has priced links and swivels since it was written. REQUIREMENT: the harness attaches through a QUICK LINK, and the link goes through the U-bolt. Opening the U up until the webbing passes drives it to M10 and ~310 g across four anchors
+    note  clear opening 17.0 mm takes the 8 mm quick link with 9.0 mm to spare
+    note  backing plate G-10 39.0 x 22.5 x 3.2 mm, 4.5 g: bending 9x, bearing 107x. Its own bending asks for 1.2 mm -- what sets it is not dishing under the nuts
+    note  aft gas seal, aft face (main harness fwd): footprint R 16.71 mm instead of the bare 6.00 -- 96.7 MPa at 4.96x becomes 60.0 MPa at 8.00x
+    note  internal bulkhead, fwd face (main harness aft): footprint R 16.71 mm instead of the bare 6.00 -- 96.7 MPa at 4.96x becomes 60.0 MPa at 8.00x
+    note  internal bulkhead, aft face (drogue harness fwd): footprint R 16.71 mm instead of the bare 6.00 -- 96.7 MPa at 4.96x becomes 60.0 MPa at 8.00x
+    note  booster forward bulkhead (drogue harness aft): footprint R 16.71 mm instead of the bare 6.00 -- 96.7 MPa at 4.96x becomes 60.0 MPa at 8.00x
+    note  main charge well dia 12 x 19.0 deep at R 22.6 mm holds 1.1432 g at 98% of its own volume, standing 19.0 mm proud
+    note  drogue charge well dia 8 x 20.5 deep at R 27.5 mm holds 0.4515 g at 99% of its own volume, standing 20.5 mm proud
+    note  aft gas seal / aft: main charge well clears the aft gas seal crown by 11.60 mm
+    note  internal bulkhead / fwd: the backing plate here is RELIEVED for 2 opposing U-bolt legs at (-0.0, +12.5), (+0.0, -12.5) -- 9.5 x 3.50 mm notches in its edge, not holes, because the leg centres are OUTSIDE the plate. Two U-bolts on one disc cost this; it is the price of clocking them 90 degrees apart, which is itself the price of two bolts not being able to share two holes
+    note  internal bulkhead / aft: drogue charge well clears the internal bulkhead backing plate by 3.20 mm
+    note  internal bulkhead / aft: drogue charge well clears the internal bulkhead crown by 10.45 mm
+    note  internal bulkhead / aft: the backing plate here is RELIEVED for 2 opposing U-bolt legs at (-12.5, +0.0), (+12.5, -0.0) -- 9.5 x 3.50 mm notches in its edge, not holes, because the leg centres are OUTSIDE the plate. Two U-bolts on one disc cost this; it is the price of clocking them 90 degrees apart, which is itself the price of two bolts not being able to share two holes
+    note  seal.INTERNAL_CONDUIT_RADIUS 27.5 mm inside the 27.2..29.4 mm the diagonal allows -- that hole's radius is set by THIS file's backing plate, not by the stress field, and it is the only hole in the vehicle of which that is true
+    note  one anchor displaces 5.95 cm3 of packing against the 3.00 cm3 recovery.py estimated -- it called that its loosest number and it was low by 2.0x, because the U-bolt it described was M5
+    note  AND THE CHARGE WELLS ARE RIGID TOO: recovery.py's default_soft_goods() said in as many words that they 'mount on the bulkhead face and do not consume packing volume'. A 12 mm tube standing 19.0 mm off the face is directly in the canopy's way; both are priced now
+    note  4 anchors + 2 wells + charges = 205.3 g, of which the U-bolts and plates are 191.2 g. design/mass.py has NO line for any of it -- recovery.py's SoftGood("2 x U-bolt", 0.030) is dead code, overridden by measured_volume and summed by nothing
+    note  THE ANCHOR IS SELF-LOADING: its 191 g is in the recovery budget, so it raises the descent mass and therefore the opening shock it carries. One pass settles it because the rod size is discrete, and M8 survives the round trip at 2.02x. It is thin: the next thing to gain mass anywhere in this vehicle may push it to M10
+    note  worst margin here is 2.02x, under 4x -- and the part it belongs to is bought, so its real allowable is a supplier's certificate rather than a table
+
+============================================================================================
+WHAT IS STILL OPEN
+============================================================================================
+  * THE CROWN MODEL. The straight-beam idealisation gives 1.28x, under 2.0x. A
+    destructive pull test on the bought bolt settles it and has not been done.
+  * THE DROGUE HARNESS'S OWN OPENING SHOCK has never been computed by anything here.
+    All four anchors are sized against the MAIN's, which is conservative for the two
+    on the drogue and buys one part number in four places -- but the number does not
+    exist.
+  * BP_BULK_DENSITY is 900 kg/m3 against a real 900-1100 band, and the well is sized
+    on the low end deliberately: a well too big is a nuisance, a well too small
+    cannot hold the charge at all.
+  * No e-match or terminal block part number is chosen.

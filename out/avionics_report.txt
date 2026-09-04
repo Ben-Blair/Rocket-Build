@@ -144,17 +144,17 @@ THE NOSE AS A SWAPPABLE MODULE -- and what a future payload may weigh
        independent tracker sharing the flight computer's battery is not independent.
 
     -> ITS MASS IS PART OF THE STABILITY SOLUTION. 105 g at station 300 mm sits
-       forward of the 781 mm CG, so it is doing the same job as the nose
+       forward of the 780 mm CG, so it is doing the same job as the nose
        ballast. Swap it for something heavier and the margin moves:
 
     nose payload   SM min   SM max   verdict
   --------------------------------------------------
-            0 g     2.15     2.65   ok
-           50 g     2.21     2.70   ok
-          105 g     2.27     2.76   ok  <- instrumentation
-          200 g     2.37     2.87   ok
-          300 g     2.47     2.97   ok
-          500 g     2.67     3.16   SM over 3.0 -- over-stable
+            0 g     2.18     2.66   ok
+           50 g     2.24     2.72   ok
+          105 g     2.30     2.77   ok  <- instrumentation
+          200 g     2.39     2.87   ok
+          300 g     2.49     2.97   ok
+          500 g     2.68     3.16   SM over 3.0 -- over-stable
 
   SO: ANYTHING UP TO ABOUT 300 g GOES IN WITH NO OTHER CHANGE, and past that the
   vehicle turns over-stable rather than unstable -- it weathercocks and gives up

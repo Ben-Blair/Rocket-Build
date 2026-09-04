@@ -765,15 +765,19 @@ sheet sizes and about 23 g.
 ### The part
 
 **G-10 sheet, 4.8 mm, 39 g**, bonded into the aft end of the module with a fillet either
-side. On its aft face: the charge well, a two-pole terminal block, and the harness U-bolt
-**with a backing plate**. Feed-through: **2 × ⌀4.0 mm at R 22.6 mm**, potted.
+side. On its aft face: the charge well (⌀12 × 19.0 at R 22.6), a two-pole terminal block,
+and the harness U-bolt — **M8, not M5** — with its backing plate; all three sized in
+`design/recovery_hardware.py`, see docs/10 — the backing plate especially, which this
+section called for and which nothing sized until Sep 2026.
+Feed-through: **2 × ⌀4.0 mm at R 22.6 mm**, potted; the U-bolt legs are **⌀8.5 at
+(0, ±12.5)**, not the ⌀5.5 an M5 would have taken.
 
 | | |
 |---|---|
 | plate bending, simply supported | 118 MPa, **4.1×** |
 | same, edge clamped | 75 MPa — reported, deliberately **not** used |
 | feed-through, Kt 2.0 | 196 MPa, **2.45×** |
-| U-bolt point load | 84 MPa, 5.7× |
+| U-bolt point load | 60.1 MPa, **8.0×** with the backing plate `design/recovery_hardware.py` sizes — 96.9 MPa, 4.95× on the bare 6 mm nut face this line used to quote. docs/10 |
 | glue line | 2.84 MPa, 12.3× |
 | centre deflection, stuck case | 1.32 mm (0.20 mm at design pressure) |
 
@@ -839,7 +843,10 @@ inside it will ever catch.
    the compartment rather than going through the fill limit. `Compartment.hardware` is that
    distinction, and once the conduit and the four U-bolts are in it the recovery bay's margin
    goes **+13.0 → +6.8 mm**. The U-bolts cost more than the conduit: 24 cm³ of envelope
-   against 4.7. Still fits.
+   against 4.7. Still fits. *(Those are correction 33's numbers and they are kept as history.
+   The envelope was cut to 12 cm³ when the bounding box was replaced by a wire loop, and it is
+   **23.8 cm³** again now that the loop is M8 rather than M5 — plus 4.5 cm³ of charge wells,
+   which `recovery.py` had explicitly said cost no packing volume. docs/01 correction 54.)*
 2. **The internal bulkhead** is now the same model applied a second time —
    `seal.internal_bulkhead_from_evaluation()`. **G-10 4.8 mm, 39 g**, 1 × ⌀6 mm feed-through
    for the conduit, plate 4.0× and feed-through 2.2×. Two things it is worth knowing: it is

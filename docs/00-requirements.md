@@ -127,7 +127,7 @@ Values marked *(computed)* are outputs of `scripts/sweep.py` and
 | R8 | Commanded lateral acceleration authority early in coast | ≥ 0.5 g | Enough for a measurable, visible correction. Baseline achieves **1.82 g** at 8°, for **400 m** of crossrange |
 | R9 | Roll authority | Net Cl_delta must retain correct sign at all conditions, with ≥ 50% of canard-only authority surviving interference | See §5 |
 | R10 | Control loop rate | ≥ 100 Hz | Baseline pitch mode is 4.3 Hz, so 100 Hz gives ~23x margin. `baseline.py` derives a ≥87 Hz floor from it |
-| R11 | Recovery | Dual deploy: 18 in drogue at apogee, **56 in** main at 200 m (650 ft). 5.0 m/s landing, 50 ft·lbf, 100 s descent. Harness **3/4" tubular nylon, 2 × 3.40 m**, 4.2× on the opening shock after knots | Sized by `design/recovery.py`, drogue fixed at 18 in and main solved for the landing rate. Landing energy is inside the ~75 ft·lbf guidance; confirm the current figure with your prefect |
+| R11 | Recovery | Dual deploy: 18 in drogue at apogee, **56 in** main at 200 m (650 ft). 5.0 m/s landing, 50 ft·lbf, 100 s descent. Harness **3/4" tubular nylon, 2 × 3.40 m**, 3.7× on the opening shock after knots, through **quick links** — the webbing does not pass through the U-bolt (docs/10) | Sized by `design/recovery.py`, drogue fixed at 18 in and main solved for the landing rate. Landing energy is inside the ~75 ft·lbf guidance; confirm the current figure with your prefect |
 | R12 | Canards centered + locked on any fault, loss of nav, or after burnout+N s | Mandatory | Safety, and required to get range approval |
 
 ---
@@ -292,8 +292,8 @@ On the selected Cesaroni J449 Blue Streak:
 | Aft fins | 4 panels, 151 root / 68 tip / **123.1 mm semispan**, 87 mm sweep |
 | Mass | **5.68 kg dry, 6.30 kg wet** (includes 100 g nose ballast; +156 g since Sep 2026 correction 43, when the nose cone was finally drawn and its real volume replaced a wetted-area estimate) |
 | Static margin | **2.27 cal at rail exit, 2.76 cal in coast** |
-| Flight | apogee **1326 m (4349 ft)**, max Mach **0.513**, max q 18.1 kPa, 8.1 g peak, T/W 7.2 |
-| Control | **1.71 g** lateral at 8° deflection, **340 m** crossrange over an 11.5 s window |
+| Flight | apogee **1271 m (4169 ft)**, max Mach **0.494**, max q 16.9 kPa, 7.8 g peak, T/W 6.9 — after docs/01 correction 54 put 191 g of harness anchors into a budget that had no line for them |
+| Control | **1.41 g** lateral at 8° deflection, **297 m** crossrange over an 11.3 s window |
 | Roll | Cl_delta +5.66 /rad canards vs −0.95 /rad aft fins interdigitated (16.8% cancellation) |
 | Actuator | KST X08 Plus V6.0, 3.6× torque margin, 79 mm of arc needed against 188 mm (§4.2) |
 | Hinge | 0.0577 N·m per panel, hinge at 0.20c of MAC — forward of the 0.25c panel CP, so restoring at any sweep |

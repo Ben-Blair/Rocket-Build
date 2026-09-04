@@ -200,7 +200,26 @@ CONDUIT_DENSITY = 1400.0  # kg/m^3, thin-wall PETG or glass tube -- a few grams 
 # Call it 3.0 cm3 and note that it is still the loosest number in this calculation -- but it
 # is now loose about the right object. The difference is 2.7 mm of recovery bay, which is
 # the entire margin, so it was worth getting right rather than staying "conservative".
-UBOLT_ENVELOPE_VOLUME = 3.0e-6  # m^3
+#
+# IT WAS LOOSE BY 2.2x, AND THE REASON IS THE ONE THE PARAGRAPH ABOVE COULD NOT KNOW: the
+# U-bolt is M8, not M5. `design/recovery_hardware.py` sizes the anchor against the mode that
+# governs it -- bending in the CROWN, not shear in the legs -- and the rod goes up two sizes,
+# taking the crown's swept volume and the backing plate with it. 6.57 cm3 is the sized part:
+# the crown proud of this face, plus the plate and two nuts of the opposing U-bolt lying flat
+# against it, which both existing bulkheads carry because each takes a harness both ways.
+# `recovery_hardware.check_recovery_hardware()` re-derives this and fails if the two drift,
+# the same guard `configure.evaluate()` puts on `mass.py`'s harness line.
+UBOLT_ENVELOPE_VOLUME = 5.95e-6  # m^3
+
+# THE CHARGE WELL IS RIGID TOO, and `default_soft_goods()` used to say in as many words that
+# it was not: "charge wells, e-matches and terminal blocks mount on the bulkhead face and do
+# not consume packing volume." A well is a 12 mm tube standing 19 mm off the face, directly
+# in the canopy's way. Sized in `design/recovery_hardware.py`; drift-checked there.
+# Converged, not typed: the well displaces packing, the packing sets the compartment
+# volume, the volume sets the charge and the charge sizes the well. Two passes settle
+# it to under a hundredth of a cm3 -- the same fixed point `add_conduit()` already runs
+# for the drogue conduit, and for the same reason.
+WELL_ENVELOPE_VOLUME = {"main": 2.92e-6, "drogue": 1.61e-6}  # m^3
 
 # ======================================================================================
 # THE HARNESS
@@ -379,6 +398,11 @@ class Compartment:
         """Soft goods only -- the part that gets packed at `FILL_LIMIT`."""
         return sum(item.volume for item in self.contents)
 
+    # NOTE: nothing sums `hardware` MASSES -- `measured_volume` overrides `SoftGood.volume`
+    # and this class only ever contributes volume. The anchors' mass lives in
+    # `mass.DEFAULT_RECOVERY_BUDGET["harness_anchors"]`, which is where it is actually
+    # counted. The figures here are kept honest anyway so the two cannot be read as
+    # disagreeing.
     @property
     def rigid_volume(self) -> float:
         """Rigid things that stand in the packing space, m^3.
@@ -488,8 +512,12 @@ def default_soft_goods(
     packing check and the mass check then cannot disagree about what is in the rocket. If
     you add a deployment bag to the budget, it shows up in the volume automatically.
 
-    `ejection_hardware_charges` is excluded -- charge wells, e-matches and terminal blocks
-    mount on the bulkhead face and do not consume packing volume. Everything else does.
+    `ejection_hardware_charges` is excluded from the SOFT goods, because a charge is not
+    fabric. It is not excluded from the rigid hardware, and it used to be: this docstring
+    said "charge wells, e-matches and terminal blocks mount on the bulkhead face and do not
+    consume packing volume", which is true of a terminal block and false of a well. A well is
+    a 12 mm tube standing 19 mm off the face, directly in the canopy's way. See
+    `WELL_ENVELOPE_VOLUME` and `design/recovery_hardware.py`.
 
     The harness is split 60/40 between the main and drogue compartments, which is the usual
     proportion when the main harness is the longer of the two.
@@ -523,7 +551,9 @@ def default_soft_goods(
         hardware=[
             # Two U-bolts stand in this compartment: one on the aft gas seal's aft face,
             # one on the internal bulkhead's forward face. Both ends of the main harness.
-            SoftGood("2 x U-bolt", 0.030, measured_volume=2 * UBOLT_ENVELOPE_VOLUME),
+            SoftGood("2 x U-bolt", 2 * 0.0490, measured_volume=2 * UBOLT_ENVELOPE_VOLUME),
+            SoftGood("main charge well", 0.0,
+                     measured_volume=WELL_ENVELOPE_VOLUME["main"]),
         ],
     )
     drogue = Compartment(
@@ -536,7 +566,9 @@ def default_soft_goods(
             SoftGood("links/swivel", HARNESS_HARDWARE_KG * 0.40, STEEL_DENSITY),
         ],
         hardware=[
-            SoftGood("2 x U-bolt", 0.030, measured_volume=2 * UBOLT_ENVELOPE_VOLUME),
+            SoftGood("2 x U-bolt", 2 * 0.0490, measured_volume=2 * UBOLT_ENVELOPE_VOLUME),
+            SoftGood("drogue charge well", 0.0,
+                     measured_volume=WELL_ENVELOPE_VOLUME["drogue"]),
         ],
     )
     return [add_conduit(main, inner_diameter), drogue]

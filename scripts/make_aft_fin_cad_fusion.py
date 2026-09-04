@@ -65,6 +65,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design.configure import baseline, build_vehicle
+from design.motor_mount import fin_tab_depth_for
 from scripts.fusion_common import FUSION_PRELUDE
 
 MM = 1000.0
@@ -74,7 +75,11 @@ TUBE_VOLUME_TOLERANCE_MM3 = 0.01
 SLOT_TOLERANCE_PER_SLOT_MM3 = 0.5   # measured-class residual, see module docstring
 PANEL_VOLUME_TOLERANCE_MM3 = 0.02
 
-TAB_DEPTH_MM = 12.0   # matches scripts/make_cad_profiles.py's TAB_DEPTH = 0.012 m
+# TAB DEPTH IS DERIVED NOW, in geometry() -- it used to be 12.0 here, matching
+# make_cad_profiles.py's own literal. Both were wrong the same way: 12 mm inward from the
+# booster's OUTER radius puts the tab tip at R 27.70, which is 0.85 mm INSIDE the mount tube
+# a 54 mm motor needs and 0.70 mm off the bare motor case. design/motor_mount.py derives it
+# from the mount tube so the tab lands tangent on it. See docs/01 correction 53.
 TAB_INSET_MM = 6.0    # matches fin_profile()'s hardcoded 6.0 mm inset each side
 
 AFT_FIN_CLOCK_DEG = 45.0   # see module docstring -- not encoded anywhere in design/*.py
@@ -124,12 +129,13 @@ def geometry():
         tube_or_mm, tube_ir_mm, booster_forward_z_mm, booster_len_mm,
         aft.root_chord * MM, aft.tip_chord * MM, aft.semispan * MM,
         aft.sweep_length * MM, aft.thickness * MM, aft.count, root_le_z_mm,
+        fin_tab_depth_for(r, p.motor) * MM,
     )
 
 
 def emit() -> str:
     (tube_or, tube_ir, tube_fwd_z, tube_len, root_chord, tip_chord, semispan,
-     sweep, thickness, count, root_le_z) = geometry()
+     sweep, thickness, count, root_le_z, TAB_DEPTH_MM) = geometry()
 
     wall = tube_or - tube_ir
     annulus_volume = math.pi * (tube_or**2 - tube_ir**2) * tube_len
@@ -159,7 +165,7 @@ Regenerate rather than patch.
 
 BoosterTube  OD {2*tube_or:.3f} / ID {2*tube_ir:.3f} x {tube_len:.3f} long, Z {tube_fwd_z:.3f} .. {tube_fwd_z + tube_len:.3f}
 AftFin{{q}}     root R {tube_or:.3f}, tip R {tube_or + semispan:.3f}, root chord Z {root_le_z:.3f} .. {root_le_z + root_chord:.3f}
-             {TAB_DEPTH_MM:.1f} mm through-wall tab, clocked {{q}} x 90 + {AFT_FIN_CLOCK_DEG:.1f} deg
+             {TAB_DEPTH_MM:.2f} mm through-wall tab (DERIVED -- design/motor_mount.py), clocked {{q}} x 90 + {AFT_FIN_CLOCK_DEG:.1f} deg
 Volumes      tube {tube_volume:.4f} (less {count} slots, ~{slot_volume_flat:.4f} mm3 each, loosened)
              panel {panel_volume:.4f} mm3 (each x{count})
 """
