@@ -163,6 +163,15 @@ fully instrumented vehicle.
 
 ## Still open
 
+- **THE WIDER GYRO IS NO LONGER OPTIONAL-IF-CONVENIENT — IT IS THE HIGHEST-LEVERAGE
+  DECISION LEFT, AND IT EXPIRES AT LAYOUT** (`docs/01` correction 55). Way out 2 above
+  ("pick a wider part") was written as one of three options. It is now the one that matters:
+  the 2° roll cap that keeps a ±2000 dps part in range is costing **a factor of four in roll
+  rate**, and roll rate sets how fast the lateral-g vector can be re-aimed. At the cap a 180°
+  bank reversal takes **0.81 s** mid-coast; at 8° with a ±4000 dps part it takes **0.31 s**.
+  Correction 55 evaluated three alternative control architectures — canted-fin spin-and-pulse,
+  a freewheeling tail, and cold-gas/jet vanes — and **this part swap beats all three**, on an
+  airframe that needs no change. Confirm the full-scale range before the schematic freezes.
 - ~~**D8, state estimation.**~~ **CLOSED** — `07-state-estimation.md`. It added a
   magnetometer to this board and two requirements to the table above, and it found the gyro
   error corrected in the section before this one. All three were free before layout and

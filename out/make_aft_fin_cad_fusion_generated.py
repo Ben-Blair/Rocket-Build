@@ -4,7 +4,7 @@ Regenerate rather than patch.
 BoosterTube  OD 79.400 / ID 74.800 x 416.280 long, Z 500.220 .. 916.500
 AftFin{q}     root R 39.700, tip R 162.770, root chord Z 765.640 .. 916.500
              11.15 mm through-wall tab (DERIVED -- design/motor_mount.py), clocked {q} x 90 + 45.0 deg
-Volumes      tube 227820.9773 (less 4 slots, ~1022.0096 mm3 each, loosened)
+Volumes      tube 227467.6973 (less 4 slots, ~1110.3296 mm3 each, loosened)
              panel 48242.5141 mm3 (each x4)
 """
 
@@ -185,7 +185,7 @@ TUBE_OR_MM = 39.699999999999996
 TUBE_IR_MM = 37.400000000000006
 TUBE_LEN_MM = 416.28
 TUBE_FWD_Z_MM = 500.21999999999997
-TUBE_VOLUME_MM3 = 227820.97732368056
+TUBE_VOLUME_MM3 = 227467.69732368056
 TUBE_VOLUME_TOLERANCE_MM3 = 0.01
 SLOT_TOLERANCE_MM3 = 2.0
 
@@ -196,6 +196,7 @@ ROOT_CHORD_MM = 150.85999999999999
 ROOT_R_MM = 39.699999999999996
 TAB_DEPTH_MM = 11.15
 TAB_INSET_MM = 6.0
+SLOT_INSET_MM = 0.0   # slot spans the FULL root chord -- the tab ramps, see the generator
 ROOT_LE_Z_MM = 765.6399999999996
 
 FIN_CORNERS_RZ = [(39.699999999999996, 765.6399999999996), (162.76999999999998, 852.9799999999997), (162.76999999999998, 920.8669999999997), (39.699999999999996, 916.4999999999997), (28.549999999999997, 910.4999999999997), (28.549999999999997, 771.6399999999996)]
@@ -224,8 +225,8 @@ def build_tube(root):
 
     # Four tab slots, one per fin -- built at angle 0 (quadrant helper's own convention)
     # then rotated to each fin's real clocking, same technique as the panels below.
-    z_lo = ROOT_LE_Z_MM + TAB_INSET_MM
-    z_hi = ROOT_LE_Z_MM + ROOT_CHORD_MM - TAB_INSET_MM
+    z_lo = ROOT_LE_Z_MM + SLOT_INSET_MM
+    z_hi = ROOT_LE_Z_MM + ROOT_CHORD_MM - SLOT_INSET_MM
     for q in range(N_FINS):
         slot = _quadrant_box(tbm, 0, TUBE_IR_MM - OVER_MM, TUBE_OR_MM + OVER_MM,
                              -PANEL_THICKNESS_MM / 2.0, PANEL_THICKNESS_MM / 2.0,

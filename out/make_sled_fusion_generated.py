@@ -303,7 +303,14 @@ def verify(comp):
                     bad.append("%s: a port is clocked %.4f deg, wanted %.4f"
                                % (name, got_th, want_th))
 
-    STRUCTURE = ("nav bay tube", "nose shoulder", "nose plate")
+    # Bodies that are AIRFRAME, not sled, and so are not required to pass the shoulder bore.
+    # "aft coupler" was missing here: correction 42 added that body to this component so the
+    # static ports could be drilled through the tube and the bonded coupler together, and did
+    # not extend this list. The coupler is bonded inside the tube at R 37.400 against a
+    # 35.100 mm bore radius, so the check called the airframe a sled part and failed --
+    # 2.3 mm, from a body that never moves. Latent since correction 42 because this generator
+    # was not re-run until correction 56 had to rebuild NavBay.
+    STRUCTURE = ("nav bay tube", "nose shoulder", "nose plate", "aft coupler")
     worst, who = 0.0, ""
     for b in comp.bRepBodies:
         if b.name in STRUCTURE:

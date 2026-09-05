@@ -140,11 +140,23 @@ def emit() -> str:
     wall = tube_or - tube_ir
     annulus_volume = math.pi * (tube_or**2 - tube_ir**2) * tube_len
 
-    # Slot: a box through the wall, tangential width = fin thickness, axial span = the
-    # tab's own axial extent (root_chord - 2 x inset). Radial extent is clipped to real
-    # material by the tube's own OD/ID -- see module docstring on why this box's r bounds
-    # can safely overshoot past the wall.
-    tab_axial_span = root_chord - 2.0 * TAB_INSET_MM
+    # Slot: a box through the wall, tangential width = fin thickness, axial span = THE FULL
+    # ROOT CHORD. Radial extent is clipped to real material by the tube's own OD/ID -- see
+    # module docstring on why this box's r bounds can safely overshoot past the wall.
+    #
+    # IT USED TO BE `root_chord - 2 x TAB_INSET_MM`, WHICH IS THE TAB'S FULL-DEPTH BAND AND
+    # NOT ITS FOOTPRINT. `fin_profile()` ramps the tab from the root LE down to full depth
+    # over TAB_INSET_MM, so there is tab material at every station of the root chord -- and
+    # all of it is inboard of the tube OD, i.e. inside the wall. Slotting only the
+    # full-depth band left the two ramps passing through solid G-10: 79.15 mm3 per fin,
+    # four fins, sitting in this document since the fins were first drawn (correction 52
+    # claimed "fin-to-tube ... all exactly 0.0000 mm3", which the document disagreed with).
+    # Same root cause as the forward centering ring landing in the ramp -- one geometric
+    # fact that two different consumers each modelled as a rectangle. See docs/01
+    # correction 56. SLOT_INSET_MM is a separate name from TAB_INSET_MM on purpose: they
+    # answer different questions and collapsing them is what caused this.
+    SLOT_INSET_MM = 0.0
+    tab_axial_span = root_chord - 2.0 * SLOT_INSET_MM
     slot_volume_flat = wall * thickness * tab_axial_span   # flat-box approximation
     # The flat-box formula does not know the slot's tangential faces are chords across a
     # curved wall, not the wall's own surface -- same class of residual
@@ -191,6 +203,7 @@ ROOT_CHORD_MM = {root_chord!r}
 ROOT_R_MM = {tube_or!r}
 TAB_DEPTH_MM = {TAB_DEPTH_MM!r}
 TAB_INSET_MM = {TAB_INSET_MM!r}
+SLOT_INSET_MM = 0.0   # slot spans the FULL root chord -- the tab ramps, see the generator
 ROOT_LE_Z_MM = {root_le_z!r}
 
 FIN_CORNERS_RZ = [{corners_repr}]
@@ -219,8 +232,8 @@ def build_tube(root):
 
     # Four tab slots, one per fin -- built at angle 0 (quadrant helper's own convention)
     # then rotated to each fin's real clocking, same technique as the panels below.
-    z_lo = ROOT_LE_Z_MM + TAB_INSET_MM
-    z_hi = ROOT_LE_Z_MM + ROOT_CHORD_MM - TAB_INSET_MM
+    z_lo = ROOT_LE_Z_MM + SLOT_INSET_MM
+    z_hi = ROOT_LE_Z_MM + ROOT_CHORD_MM - SLOT_INSET_MM
     for q in range(N_FINS):
         slot = _quadrant_box(tbm, 0, TUBE_IR_MM - OVER_MM, TUBE_OR_MM + OVER_MM,
                              -PANEL_THICKNESS_MM / 2.0, PANEL_THICKNESS_MM / 2.0,

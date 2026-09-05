@@ -156,6 +156,20 @@ RING_THICKNESS_FLOOR = 0.0032  # m
 # to stop the ring landing ON the tab's forward end where a fillet has nowhere to go.
 RING_TAB_CLEARANCE = 0.002  # m
 
+# THE TAB DOES NOT START WHERE IT REACHES FULL DEPTH. `make_cad_profiles.fin_profile()`
+# builds the tab as a TRAPEZOID -- `[(0,0), ..., (r,0), (r - 6.0, -d), (6.0, -d)]` -- so its
+# forward edge RAMPS from the root leading edge down to full depth over this length, and
+# there is tab material at every station in between. This module used to fold the 6 mm into
+# `tab_forward` and treat that as the tab's leading edge, which is right for the BOND (only
+# the full-depth run lands on the mount tube edge on) and wrong for CLEARANCE: the forward
+# ring was placed against the full-depth station and landed in the ramp, 22.59 mm3 into each
+# of the four fins. The check meant to catch it used the same station and reported a 2.00 mm
+# clearance that did not exist -- so a check whose datum is wrong is worse than no check.
+# Found only by building it in CAD; see docs/01 correction 56. The literal is duplicated in
+# `fin_profile()` and in `make_aft_fin_cad_fusion.TAB_INSET_MM`, which is correction 4
+# material and is recorded rather than silently re-typed a fourth time.
+TAB_RAMP_LENGTH = 0.006  # m
+
 # Adhesive allowable for every bonded joint in this assembly, Pa. The G-10-to-G-10 practical
 # ceiling and the structural epoxy figure disagree, so the lower governs, and it is derated
 # by `DATASHEET_CONFIDENCE_MARGIN` because these are datasheet numbers for a hand-laid joint.
@@ -308,7 +322,8 @@ class MotorMountResult:
     motor_forward_station: float  # m, local to the booster forward face
     bulkhead_station: float  # m, forward face, local
     coupler_engagement: float  # m
-    fin_tab_forward: float  # m, local
+    fin_tab_forward: float  # m, local -- where the tab reaches FULL DEPTH (bond datum)
+    fin_tab_material_forward: float  # m, local -- where tab MATERIAL begins (clearance datum)
     fin_tab_aft: float  # m, local
     fin_thickness: float  # m
     n_fins: int
@@ -607,8 +622,13 @@ def motor_mount_from_evaluation(ev, landing_decel_g: float = 30.0) -> MotorMount
 
     # --- the centering rings -------------------------------------------------------------
     aft = ev.rocket.aft_fins
-    tab_forward = aft.x_root_le - booster_station + 0.006  # fin_profile()'s 6 mm inset
-    tab_aft = tab_forward + aft.root_chord - 2.0 * 0.006
+    # Two datums, deliberately: the tab ramps from the root LE to full depth over
+    # TAB_RAMP_LENGTH (see the constant). `tab_forward` is the FULL-DEPTH station and is what
+    # the bond runs between; `tab_material_forward` is where tab material actually starts and
+    # is what anything sharing radius with the tab has to clear.
+    tab_material_forward = aft.x_root_le - booster_station
+    tab_forward = tab_material_forward + TAB_RAMP_LENGTH
+    tab_aft = tab_forward + aft.root_chord - 2.0 * TAB_RAMP_LENGTH
     tab_depth = (booster.outer_diameter - tube.outer_diameter) / 2.0
 
     ring_t, ring_reason = size_ring(peak_thrust / N_CENTERING_RINGS,
@@ -616,7 +636,7 @@ def motor_mount_from_evaluation(ev, landing_decel_g: float = 30.0) -> MotorMount
     rings = [
         CenteringRing(
             "forward centering ring", tube.outer_diameter, booster.inner_diameter, ring_t,
-            tab_forward - RING_TAB_CLEARANCE - ring_t),
+            tab_material_forward - RING_TAB_CLEARANCE - ring_t),
         # The aft ring sits INSIDE the fin tab band and is slotted for the four tabs, so the
         # tab, the mount tube and the airframe are tied together at one station. Its aft face
         # is set by the retainer's bond line, not by the fin.
@@ -645,6 +665,7 @@ def motor_mount_from_evaluation(ev, landing_decel_g: float = 30.0) -> MotorMount
         bulkhead_station=bulkhead_station,
         coupler_engagement=coupler,
         fin_tab_forward=tab_forward,
+        fin_tab_material_forward=tab_material_forward,
         fin_tab_aft=tab_aft,
         fin_thickness=aft.thickness,
         n_fins=aft.count,
@@ -848,12 +869,18 @@ def check_motor_mount(r: MotorMountResult) -> MotorMountCheck:
 
     # --- the parts have to fit next to each other ----------------------------------------
     fwd_ring, aft_ring = r.rings[0], r.rings[1]
-    gap_fwd = r.fin_tab_forward - fwd_ring.aft_station
+    # Measured to where tab MATERIAL starts, not to the full-depth station. Using the latter
+    # is what let a 2.76 mm overlap report as a 2.00 mm clearance -- see TAB_RAMP_LENGTH.
+    gap_fwd = r.fin_tab_material_forward - fwd_ring.aft_station
     if gap_fwd < 0.0:
         v.append(
-            f"{fwd_ring.name} overlaps the fin tab's leading edge by {-gap_fwd * mm:.2f} mm")
+            f"{fwd_ring.name} overlaps the fin tab's leading edge by {-gap_fwd * mm:.2f} mm "
+            f"-- measured to the tab's RAMP start, {r.fin_tab_material_forward * mm:.2f} mm, "
+            f"not its full-depth station at {r.fin_tab_forward * mm:.2f} mm")
     else:
-        notes.append(f"{fwd_ring.name} clears the tab LE by {gap_fwd * mm:.2f} mm")
+        notes.append(
+            f"{fwd_ring.name} clears the tab's ramp start by {gap_fwd * mm:.2f} mm "
+            f"({(r.fin_tab_forward - fwd_ring.aft_station) * mm:.2f} mm to full depth)")
 
     if not (r.fin_tab_forward <= aft_ring.station and aft_ring.aft_station <= r.fin_tab_aft):
         notes.append(

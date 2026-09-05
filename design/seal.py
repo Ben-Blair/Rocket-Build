@@ -990,6 +990,18 @@ def hole_layout(r: SealResult) -> list[Hole]:
     half = UBOLT_LEG_SPACING / 2.0
     holes.append(Hole("U-bolt leg A", 0.0, +half, UBOLT_HOLE_DIAMETER))
     holes.append(Hole("U-bolt leg B", 0.0, -half, UBOLT_HOLE_DIAMETER))
+
+    # THE INTERNAL BULKHEAD CARRIES A U-BOLT ON EACH FACE, SO IT NEEDS TWO PAIRS.
+    # `INTERNAL_CONDUIT_RADIUS`'s own comment above has said "two U-bolts cannot share two
+    # holes, so they clock 90 degrees apart" since correction 54, and
+    # `recovery_hardware.py` gives the aft anchor `clocking_deg = 90` -- but this function
+    # emitted ONE pair for every bulkhead, so the 90 deg bolt's legs landed on undrilled
+    # G-10. The CAD found it as 482.55 mm3 of UBolt2 inside the disc, which is exactly
+    # 2 x pi x 4^2 x 4.8: two full legs, no holes at all. A decision recorded in a comment
+    # and implemented on one side only. See docs/01 correction 56.
+    if n == 1:
+        holes.append(Hole("U-bolt leg C (90 deg)", +half, 0.0, UBOLT_HOLE_DIAMETER))
+        holes.append(Hole("U-bolt leg D (90 deg)", -half, 0.0, UBOLT_HOLE_DIAMETER))
     return holes
 
 

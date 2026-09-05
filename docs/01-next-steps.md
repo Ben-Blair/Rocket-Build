@@ -4,6 +4,47 @@
 
 Read this first if you are picking the project back up.
 
+- **STEP 3'S CAD IS BUILT — the whole vehicle is now real geometry, and building it found
+  six defects (Sep 2026, correction 56).** The three queued generators were finally RUN.
+  Booster tube + four aft fins at the derived **11.15 mm** tab, the **motor mount** (forward
+  bulkhead, mount tube, two centering rings, motor envelope) and the **recovery hardware**
+  (4 U-bolts, 4 backing plates, 2 charge wells) are all built and verified against their
+  analytic volumes, most at **delta +0.0000**. Interference **12 pairs → 5**.
+  **One geometric fact caused three of the six: the fin tab is a TRAPEZOID, not a
+  rectangle** — `fin_profile()` ramps it from the root LE to full depth over 6 mm, and both
+  the forward centering ring and the tube's own slots were placed as if it began at the
+  6 mm station. Fixed by naming the two datums apart (`fin_tab_forward` for the bond,
+  `fin_tab_material_forward` for clearance, `SLOT_INSET_MM = 0.0`). Also fixed: the internal
+  bulkhead had **one** U-bolt hole pair where correction 54's own comment called for two at
+  90°; both bulkheads still carried **⌀5.5** holes after correction 54 took them to ⌀8.5;
+  `make_sled_fusion.py`'s bore check had excluded airframe bodies by name and never learned
+  about correction 42's `aft coupler`, so it failed a bonded part for not fitting through a
+  bore; and a **duplicate orphan fin** (`DiagFin`, 100% coincident with `AftFin0`) was
+  deleted. **No vehicle number moves** — feasible, apogee 1270.8 m, dry 5.886 kg.
+  **Two real defects are left and both need a decision, not CAD**: UBolt3's legs protrude
+  **4.12 mm** into the motor, and **nothing has a hole for the M6 ballast rod** where it
+  passes through the nose plate. Two more remaining interferences are duplicate-context or
+  deliberately-unplaced bodies, itemised in correction 56.
+- **THE CONTROL ARCHITECTURE WAS RE-OPENED AND SURVIVED — AND ONE SENSOR LINE ITEM NOW HAS
+  A DEADLINE (Sep 2026, correction 55).** Asked whether the vehicle could fly sharp,
+  precomputed direction changes instead of one slow biased curve, three alternative
+  architectures were evaluated and **all three lost to the bank-to-turn design already
+  built**: canted fins + spin-and-pulse (its spin rate is a *decaying schedule* that sweeps
+  the **4.1 Hz pitch mode**, and a direction change costs half a revolution — 0.25 s early
+  but **1.64 s** late), a freewheeling tail (removes **86%** of the vehicle's roll damping,
+  and is a passive substitute for an active roll loop this vehicle already has), and
+  cold-gas/jet vanes (blocked outright — hardware in a certified motor's exhaust).
+  **The actionable finding is that `ROLL_COMMAND_CAP_DEG = 2.0` is costing a factor of four
+  in roll rate purely because a ±2000 dps gyro saturates at 8°.** A wider part takes a 180°
+  bank reversal from 0.81 s to **0.31 s** at mid-coast and beats every rejected architecture
+  everywhere. `docs/06` already names the fix in one line. **It is free before the schematic
+  and unrecoverable after it — decide it before layout.** Also corrected on the way past:
+  the vehicle does not respond sluggishly (pitch quarter-period is **60–68 ms** across every
+  geometry tried) — "slow curve" is a lateral-g magnitude problem, not a bandwidth one, so
+  the authority/altitude menu in correction 55 is the knob, and **it is left open, not
+  taken: `configure.py` still carries 0.85/1.55.** Every number in that correction is from a
+  throwaway probe rather than a checked-in script, and all of it sits downstream of the
+  unmeasured `Cl_delta`.
 - **STEP 3'S DIMENSIONED DRAWING IS CLOSED (Sep 2026, corrections 53 and 54).** The two
   genuinely unsized items — the motor mount, and the recovery bay's U-bolt / backing plate /
   charge well — are both sized, checked, in `baseline.py`, and drawn.
@@ -437,7 +478,7 @@ these, because they moved once already when the altimeter went into the budget
 on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
 so instead of hiding it.
 
-Forty-three corrections are worth knowing about — 38's, 40's and 41's own numbered entries are
+Fifty-six corrections are worth knowing about — 38's, 40's and 41's own numbered entries are
 still only the bullets above. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
@@ -2324,6 +2365,214 @@ that silently recurs:
    8 deg **340 -> 297 m**, lateral authority **1.59 -> 1.41 g** against R8's 0.5, static margin
    **2.27-2.76 -> 2.30-2.77 cal**. No requirement moves out of bounds, and R6's 1600 m apogee
    cap has more room rather than less.
+
+55. **Asked whether the vehicle could manoeuvre aggressively rather than lean through one
+   slow curve, three alternative control architectures were evaluated and all three lost to
+   the one already built -- and the winning change is a sensor line item, not an airframe
+   change.** The question was whether this vehicle can fly a sequence of sharp,
+   precomputed direction changes rather than the single one-sided bias `achievable_crossrange()`
+   models. Nothing was changed by this correction. **`design/configure.py` is untouched and
+   the frozen geometry still stands** -- what follows is a trade study and one open decision.
+
+   **THE ANSWER IS A WIDER-RANGE GYRO, AND IT HAS A DEADLINE.** `ROLL_COMMAND_CAP_DEG = 2.0`
+   exists because a +/-2000 dps part saturates at the 8 deg deflection limit (2378 deg/s,
+   correction 36 and `docs/06`). That cap is currently costing a factor of four in roll rate,
+   and roll rate is what sets how fast the lateral-g vector can be re-aimed. Time for a
+   180 deg bank reversal, from `roll_authority()` at the interdigitated interference model:
+
+   | t (s) | V (m/s) | at the 2 deg cap | at 8 deg, wider gyro |
+   |---|---|---|---|
+   | 3.4 | 157 | 528 deg/s -> 0.40 s | 2110 deg/s -> **0.15 s** |
+   | 9.0 | 79 | 268 deg/s -> 0.81 s | 1070 deg/s -> **0.31 s** |
+   | 14.6 | 24 | 80 deg/s -> 2.74 s | 320 deg/s -> **1.05 s** |
+
+   `docs/06` already records the fix in one line -- *"Some IMUs reach +/-4000 deg/s. It is a
+   line in a datasheet and costs nothing at design time, if you check before layout"* -- and
+   it is now the single highest-leverage decision left on the board. **Free before the
+   schematic, unrecoverable after it.** Same shape as every other D8 finding.
+
+   **REJECTED 1: CANTED AFT FINS + SPIN-AND-PULSE.** Cant the aft fins, let the vehicle spin,
+   and pulse a canard pair phase-locked to the rotation (reversing every half revolution, so
+   the force integrates in one ground direction). Two things kill it, and the first is
+   geometric:
+
+   | cant | t=3.4 s | t=9.0 s | t=14.6 s |
+   |---|---|---|---|
+   | 0.25 deg | 1.00 Hz | 0.51 Hz | 0.15 Hz |
+   | 0.50 deg | 2.00 Hz | 1.02 Hz | 0.31 Hz |
+   | 1.00 deg | **4.01 Hz** | 2.04 Hz | 0.61 Hz |
+   | 2.00 deg | 8.02 Hz | **4.07 Hz** | 1.22 Hz |
+
+   **Pitch mode is 4.1 Hz**, so 1 deg of cant starts the flight AT roll-pitch resonance and
+   2 deg sweeps down THROUGH it mid-coast. Only cant <= 0.5 deg stays clear for the whole
+   flight, because **spin rate is not a design number -- it is a decaying schedule**, falling
+   with velocity by 6.5x across the coast. Second, and this corrects a claim made earlier in
+   the same session: **a direction change under spin-and-pulse is not free, it costs half a
+   revolution**, and that latency grows as the vehicle slows -- 0.25 s at burnout, 0.49 s at
+   mid-coast, 1.64 s at the q=300 cutoff. Against the wider-gyro column above it loses at
+   every point in the flight, *and* it pays a flat **2/pi = 63.7%** force penalty (the average
+   of |cos| over a revolution) that bank-to-turn does not. It would also add permanent induced
+   drag, put the magnetometer -- by then the PRIMARY phase reference -- next to servo current
+   spikes synchronised to the spin, and introduce gyroscopic pitch/roll coupling that nothing
+   in this project models. **The servos are NOT the obstacle**: at 0.5 deg cant the half-period
+   is 250 ms against a 24 ms full +/-8 deg traverse at the X08 Plus's 667 deg/s, so half-rev
+   square-wave reversal is comfortable. That was the one part of the idea that held up.
+
+   **REJECTED 2: FREEWHEELING / ROLL-DECOUPLED TAIL.** Put the aft fin unit on a bearing so
+   it cannot transmit roll torque into the body. It does cleanly remove the canard/aft-fin
+   roll cancellation -- and it removes **86% of the vehicle's roll damping** with it, which is
+   the same fins doing the same job seen from the other side. Split of `roll_damping_cl_p()`
+   at the baseline: canards **-9.6**, aft fins **-59.7**, total **-69.3 /rad**. Damping is what
+   lets a commanded bank angle be *arrived at* rather than overshot, so the technique makes
+   pointing less precise, not snappier -- it adds no force and no torque, because it is not an
+   actuator. It also wants a rotating bearing joint in the primary thrust path, which
+   `design/joints.py` has no model for. **Worth recording why the technique exists at all**,
+   since it is real and widely used: it is a passive substitute for an active roll loop, for
+   vehicles that cannot afford a gyro + magnetometer + control law (unit cost at scale, gun-launch
+   shock survival, sub-second flight times, seeker isolation). This vehicle already pays for
+   the active version, so it would be buying the cheap fallback on top of the good answer.
+
+   **REJECTED 3: COLD-GAS RCS / JET VANES.** Solves low-q roll authority off the rail --
+   a problem nothing in this project has ever found. Jet vanes also mean hardware in the
+   exhaust of a **certified** Pro54 reload, which voids the motor certification and the club's
+   waiver with it. Not a cost trade; not available.
+
+   **THE "SLOW CURVE" DIAGNOSIS WAS WRONG, AND THAT MATTERS FOR WHICH KNOB TO TURN.** The
+   suspicion was that the vehicle responds sluggishly. It does not: quarter-period of the
+   pitch mode is **60-68 ms across every geometry in the menu below**, and it barely moves
+   with fin size. What makes a manoeuvre read as a slow lean is not response lag, it is
+   **lateral-g magnitude** -- 1.41 g needs seconds of integration before displacement is
+   visible. So the lever is authority, not bandwidth, and the pitch dynamics are not the
+   thing to change.
+
+   **OPEN DECISION, NOT TAKEN HERE: the authority/altitude menu.** From
+   `robustness.optimise()` and `evaluate()`, all at the 8 deg limit:
+
+   | | canard/aft (cal) | lat g | xrange | apogee | P(SM<1.0) | flutter | torque |
+   |---|---|---|---|---|---|---|---|
+   | baseline today | 0.85 / 1.55 | 1.41 | 297 m | 1271 m | 0.1% | 2.12x | 3.3x |
+   | A shrink aft fin | 0.85 / 1.40 | 1.51 | 323 m | **1295 m (+24)** | 0.7% | 2.39x | 3.2x |
+   | B balanced | 1.00 / 1.70 | 1.67 | 346 m | 1238 m (-33) | 0.1% | 1.91x | 2.8x |
+   | C optimiser max | 1.30 / 1.85 | 2.27 | 456 m | 1196 m (-75) | 0.5% | 1.75x | 2.0x |
+
+   **A is the odd one: it buys authority AND altitude**, because a smaller aft fin is less
+   mass, less drag, and fights the canards less. **C is where to stop** -- it is the
+   optimiser's own pick, it passes every constraint, and it lands on torque margin **exactly**
+   at the 2.0x floor with flutter at 1.75x against a 1.5x floor. Two constraints at their
+   limits simultaneously, with an airframe mass model still +/-30% until parts are swung, is
+   not a design point. **Nothing here is adopted; `configure.py` still carries 0.85/1.55.**
+
+   **STATED RATHER THAN SOLVED.** Every figure in this correction came from a throwaway probe,
+   not from a checked-in script -- **none of it is regenerable by anything in `scripts/`**,
+   which is this project's own standard and this correction does not meet it. The one
+   cross-check that was run: the jink simulator reproduces the documented one-sided crossrange
+   at **296.7 m against `evaluate()`'s 297 m**, which is why its jink numbers (an 8-segment
+   profile spends **9.2 of 11.2 s** slewing rather than accelerating) are quoted at all. If any
+   of this is acted on, `design/spin.py` and a jink-capable crossrange model have to exist
+   first. **And the deeper caveat applies to the whole study: every roll number above is
+   downstream of `Cl_delta`, which this document already calls the weakest figure in the
+   analysis, and which GV-2's open-loop deflection sweep exists to measure.** This was
+   precision arithmetic on an unmeasured coefficient.
+
+56. **Step 3's CAD was executed, and running it found six defects the models could not see
+   -- five of them in parts this document already called finished.** The three queued
+   generators were run against `CanardControlModule` for the first time. Everything that was
+   only ever "written and verified offline" is now built: the booster tube and four aft fins
+   at the derived **11.15 mm** tab, the **motor mount** (forward bulkhead, mount tube, two
+   centering rings, motor envelope), and the **recovery hardware** (4 U-bolts, 4 backing
+   plates, 2 charge wells). Every body verifies against its analytic volume, most at
+   **delta +0.0000**. Interference went **12 pairs -> 5**, and the five that remain are
+   itemised at the end.
+
+   **ONE GEOMETRIC FACT CAUSED THREE OF THE SIX, AND IT IS THAT THE TAB IS NOT A RECTANGLE.**
+   `make_cad_profiles.fin_profile()` builds the through-wall tab as a TRAPEZOID --
+   `[(0,0), (sw,s), (sw+t,s), (r,0), (r-6.0,-d), (6.0,-d)]` -- so its forward edge RAMPS from
+   the root leading edge down to full depth over 6 mm, and there is tab material at every
+   station of the root chord. Two separate consumers each modelled it as a rectangle
+   starting at the 6 mm station:
+   - **The forward centering ring landed in the ramp**, 22.59 mm3 into each of the four fins.
+     `motor_mount.py` placed it against `tab_forward = x_root_le + 0.006`. The tab crosses the
+     ring's own outer radius at x = 2.3 x 6/11.15 = **1.2377 mm**, i.e. Z 766.878 -- which is
+     the observed overlap start **to three decimals**.
+   - **The tube's tab slots were cut only across the full-depth band**, so both ramps ran
+     through solid wall: **79.15 mm3 per fin, four fins**, sitting in this document since the
+     fins were first drawn. Correction 52 claims *"fin-to-tube ... all exactly 0.0000 mm3"*;
+     the document disagreed, and had done all along.
+   - **The check that existed to catch the first one shared its datum.** `gap_fwd` measured
+     to the full-depth station and printed *"clears the tab LE by 2.00 mm"* over a 2.76 mm
+     overlap. **A check whose datum is wrong is worse than no check** -- correction 14's
+     lesson, recurring.
+
+   Fixed by naming the two datums apart rather than by moving a number: `TAB_RAMP_LENGTH`,
+   `fin_tab_forward` (full depth -- the BOND datum, since only the full-depth run lands on
+   the mount tube) and `fin_tab_material_forward` (ramp start -- the CLEARANCE datum), plus
+   `SLOT_INSET_MM = 0.0` so the slot spans the full root chord. Forward ring moves to
+   Z 760.44..763.64; tube volume drops **353.28 mm3 = 4 x 12 x 3.2 x 2.3**, exactly the extra
+   slot. The check now reads *"clears the tab's ramp start by 2.00 mm (8.00 mm to full
+   depth)"*. **No vehicle number moves**: feasible, no violations, apogee 1270.8 m, dry
+   5.886 kg.
+
+   **A DECISION RECORDED IN A COMMENT AND IMPLEMENTED ON ONE SIDE ONLY.**
+   `INTERNAL_CONDUIT_RADIUS`'s own comment has said since correction 54 that the internal
+   bulkhead carries a U-bolt on each face and *"they clock 90 degrees apart"*, and
+   `recovery_hardware.py` duly gives the aft anchor `clocking_deg = 90` -- but
+   `seal.hole_layout()` appended **one** pair at 0 deg for every bulkhead, so the 90 deg
+   bolt's legs landed on undrilled G-10. The CAD priced it exactly: **482.55 mm3 =
+   2 x pi x 4^2 x 4.8**, two full legs, no holes at all. Two more holes added;
+   `check_hole_layout()` re-run and still OK.
+
+   **THE STALE-CAD ONE.** `AftGasSeal` and `RecoveryInternalBulkhead` were still carrying
+   the **5.5 mm** U-bolt holes they were built with before correction 54 took them to 8.5.
+   `seal.UBOLT_HOLE_DIAMETER` was already 8.5 -- the DESIGN was right and the geometry was
+   old, which is the reverse of this project's usual failure. Rebuilt: each disc lost
+   **316.67 mm3 = 2 x pi (4.25^2 - 2.75^2) x 4.8**, to the last decimal.
+
+   **A LATENT CHECK BUG, FOUND ONLY BECAUSE NAVBAY HAD TO BE REBUILT.**
+   `make_sled_fusion.py`'s bore check excludes airframe bodies from "must pass the 70.20 mm
+   shoulder bore" by name, and its list was `("nav bay tube", "nose shoulder", "nose
+   plate")`. **Correction 42 added an `aft coupler` body to that component** -- so the ports
+   could be drilled through tube and bonded coupler together -- and did not extend the list.
+   The check therefore demanded that a coupler bonded at R 37.400 pass a 35.100 mm bore and
+   failed by 2.3 mm, on a body that never moves. Latent since correction 42 because the
+   generator was not re-run until now. `"aft coupler"` added; the check reports its real
+   answer again, **34.80 mm against 35.10**, correction 41's own 0.3 mm.
+
+   **AN ORPHAN DUPLICATE FIN.** `DiagFin/Body1` -- byte-identical to `AftFin0` (same volume,
+   same bounding box, same centre of mass to three decimals) and sitting at the same
+   coordinates, i.e. **100% overlap**. Nothing in the repo creates or references it, and its
+   body carried Fusion's default name, which is the signature of correction 52's own
+   rename-persistence bug. A diagnostic article from that session, never cleaned up.
+   Deleted. It was ~90 g of phantom G-10 to anything that reads mass off this document.
+
+   **TWO PROCESS FAILURES OF MINE, RECORDED BECAUSE BOTH WILL RECUR.**
+   - **Catching a generator's exception defeats Fusion's rollback.** The wrapper used to run
+     these scripts caught and printed the traceback, so nothing propagated, so Fusion
+     committed the work of two scripts that had FAILED their own verify -- 15 unverified
+     components left in the document. `fusion-mcp-gotchas.md` says a raising script is rolled
+     back; that is true only if you let it raise. Deleted and re-verified; later runs let it
+     propagate.
+   - **`body.deleteMe()` on ONE body of a shared BaseFeature destroys ALL of them.** The
+     existing note says the SECOND deletion in a loop raises. It is worse than that: NavBay's
+     15 bodies are one BaseFeature, and deleting `nose shoulder` alone took the component to
+     **0 bodies**. Restored by re-running the generator -- which is only possible because
+     every part in this document is generated. **Do not delete individual bodies from a
+     multi-body BaseFeature; change the generator and rebuild.**
+
+   **THE FIVE REMAINING INTERFERENCES, and only two are defects.**
+   | pair | mm3 | what it is |
+   |---|---|---|
+   | nose shoulder <-> nose shell | 41594.53 | **duplicate representation.** The sled generator draws the shoulder as context; correction 43 gave the nose an INTEGRAL shoulder. One part, two bodies. Not used by any check (the bore check compares against a number, not this body). Remove it from `make_sled_fusion.py` -- not by deleting the body, see above. |
+   | pass-through plate <-> nose aft face | 10425.76 | **known and documented.** Both discs sit at Z 0 because `NoseAftFace` is deliberately unplaced -- correction 38, "a part only, its cavity is unmodelled". |
+   | **motor envelope <-> u-bolt 3** | **414.19** | **REAL, and needs a decision.** UBolt3's legs run to Z 599.62; the motor's forward face is at 595.50, so they protrude **4.12 mm** into it. `UBOLT_LEG_STANDOUT = 20 mm` is not padding -- backing plate 3.2 + bulkhead 4.8 + washer 1.6 + M8 nyloc ~8 + two threads ~2.5 = 20.1. There is 11.08 mm aft of the bulkhead and the stack needs 15.2. Options: move the forward bulkhead forward (costs 4.12 of a **+4.63 mm** recovery-bay margin -- nearly all of it), a jam nut plus flush thread (~5.5 mm, loses the nyloc), counterbore the bulkhead for the nuts, or a different anchor at that station. **Not chosen here.** |
+   | **nose plate <-> ballast rod** | **90.48** | **REAL.** `pi x 3^2 x 3.2` exactly: the M6 ballast rod passes through the full 3.2 mm of plate and **neither** the context plate nor the real `NoseAftFace` has a central hole -- `NOSE_HOLES` carries one dia 8 feed-through at R 22.598 and nothing on the axis. Same class as the U-bolt holes above. |
+   | nose plate <-> nose shell | 1.19 | small, at the context plate's edge against the shell. |
+
+   **WHAT THIS SAYS ABOUT THE PROJECT'S OWN RULE.** Every one of the six was invisible to a
+   model that agreed with itself, and five were in parts already written up as finished. The
+   two that only appeared after `RecoveryInternalBulkhead` was moved to its real station had
+   been reporting a clean **0.0000 mm3** while the part sat at the origin -- *a zero between
+   two things that are nowhere near each other is not a pass*, which is the interference-check
+   version of correction 40's "volume and mass agreement is not model agreement".
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —
