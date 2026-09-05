@@ -88,7 +88,7 @@ Every one of these comes out of the flight model, not a tutorial. `board_require
 
 | requirement | value | why |
 |---|---|---|
-| **gyro full scale** | **≥ ±2000 °/s**, *and the roll command capped* | see the correction below — 594 °/s at the 2° roll cap, **2378 °/s at the 8° limit** |
+| **gyro full scale** | **≥ ±2000 °/s**, *and the roll command capped*. Prefer a part with **selectable** FS to ±4000, **run at ±2000** | see the correction below — 594 °/s at the 2° roll cap, **2378 °/s at the 8° limit**. The wider range is an option to hold, not to use: correction 58 |
 | **IMU output data rate** | **≥ 1 kHz** | not the loop rate: quaternion propagation at 100 Hz drifts 33.3 °/s with a perfect gyro (D8) |
 | **magnetometer** | **required** | roll angle is unobservable without one, and L1 is the minimum success criterion (D8) |
 | accelerometer | ≥ ±16 g | peak axial 8.3 g, plus ignition and ejection transients |
@@ -163,15 +163,33 @@ fully instrumented vehicle.
 
 ## Still open
 
-- **THE WIDER GYRO IS NO LONGER OPTIONAL-IF-CONVENIENT — IT IS THE HIGHEST-LEVERAGE
-  DECISION LEFT, AND IT EXPIRES AT LAYOUT** (`docs/01` correction 55). Way out 2 above
-  ("pick a wider part") was written as one of three options. It is now the one that matters:
-  the 2° roll cap that keeps a ±2000 dps part in range is costing **a factor of four in roll
-  rate**, and roll rate sets how fast the lateral-g vector can be re-aimed. At the cap a 180°
-  bank reversal takes **0.81 s** mid-coast; at 8° with a ±4000 dps part it takes **0.31 s**.
-  Correction 55 evaluated three alternative control architectures — canted-fin spin-and-pulse,
-  a freewheeling tail, and cold-gas/jet vanes — and **this part swap beats all three**, on an
-  airframe that needs no change. Confirm the full-scale range before the schematic freezes.
+- **SPECIFY A GYRO WITH SELECTABLE FULL SCALE TO ±4000 dps — AND RUN IT AT ±2000**
+  (`docs/01` correction 58, which reverses correction 55). Way out 1 above — *"cap the roll
+  command — not optional"* — is still the right answer, and way out 2 ("pick a wider part")
+  does **not** let you lift the cap. Correction 55 claimed it did, on the saturation
+  arithmetic alone. Running `estimation.attitude_error_budget()` at both operating points
+  settles it:
+
+  | | roll rate | RSS attitude error at apogee |
+  |---|---|---|
+  | ICM-42688-P at the 2° cap | 558 °/s | **7.94°** |
+  | ±4000 dps part at the 8° limit | 2232 °/s | **62.89°** |
+
+  Both are dominated by **gyro scale factor at roll rate**, and the roll rate that saturates
+  the part is the same one that drives that term — so range does not buy the ability to use
+  it, and uncapped the wide part is **8× worse**. L1 is *hold roll angle*.
+
+  So what is free before the schematic is the **option**, not the capability: a selectable-FS
+  part costs nothing, keeps today's resolution and scale-factor behaviour at ±2000, and
+  leaves ±4000 one register write away if the estimator ever earns it. **The lever that
+  actually moves the dominant term is scale-factor CALIBRATION** — the 0.5% in the budget is
+  a datasheet spec limit; measured per unit against a rate table it is nearer 0.05–0.1%,
+  which is 5–10× off 99% of the budget, for a procedure and no hardware.
+
+  **And the number that would decide this does not exist yet:** `attitude_error_budget()` is
+  gyro-only — there is no magnetometer term in it — so 62.89° is the *unaided* figure, while
+  bounding roll angle is the whole reason D8 added the magnetometer. Build the aided model
+  before revisiting the cap.
 - ~~**D8, state estimation.**~~ **CLOSED** — `07-state-estimation.md`. It added a
   magnetometer to this board and two requirements to the table above, and it found the gyro
   error corrected in the section before this one. All three were free before layout and

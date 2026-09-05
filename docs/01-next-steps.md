@@ -37,11 +37,16 @@ Read this first if you are picking the project back up.
   but **1.64 s** late), a freewheeling tail (removes **86%** of the vehicle's roll damping,
   and is a passive substitute for an active roll loop this vehicle already has), and
   cold-gas/jet vanes (blocked outright — hardware in a certified motor's exhaust).
-  **The actionable finding is that `ROLL_COMMAND_CAP_DEG = 2.0` is costing a factor of four
-  in roll rate purely because a ±2000 dps gyro saturates at 8°.** A wider part takes a 180°
-  bank reversal from 0.81 s to **0.31 s** at mid-coast and beats every rejected architecture
-  everywhere. `docs/06` already names the fix in one line. **It is free before the schematic
-  and unrecoverable after it — decide it before layout.** Also corrected on the way past:
+  **`ROLL_COMMAND_CAP_DEG = 2.0` costs a factor of four in roll rate, and correction 55
+  concluded a wider gyro should buy it back. CORRECTION 58 REVERSED THAT** — running
+  `attitude_error_budget()` gives **7.94° capped against 62.89° uncapped**, because the roll
+  rate that saturates the gyro is the same one that drives the dominant error term (scale
+  factor at roll rate). L1 is *hold roll angle*, so uncapping breaks the thing it was meant
+  to enable. At layout: specify **selectable** FS to ±4000 dps and **run at ±2000** — the
+  option is free, the capability is not. The real lever is scale-factor **calibration**
+  (0.5% spec limit vs ~0.05–0.1% measured), and the real gap is that
+  `attitude_error_budget()` has **no magnetometer term at all**, so the aided number — the
+  one that decides whether the cap can ever move — does not exist yet. Also corrected on the way past:
   the vehicle does not respond sluggishly (pitch quarter-period is **60–68 ms** across every
   geometry tried) — "slow curve" is a lateral-g magnitude problem, not a bandwidth one, so
   the authority/altitude menu in correction 55 is the knob, and **it is left open, not
@@ -481,7 +486,7 @@ these, because they moved once already when the altimeter went into the budget
 on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
 so instead of hiding it.
 
-Fifty-seven corrections are worth knowing about — 38's, 40's and 41's own numbered entries are
+Fifty-eight corrections are worth knowing about — 38's, 40's and 41's own numbered entries are
 still only the bullets above. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
@@ -2377,7 +2382,16 @@ that silently recurs:
    models. Nothing was changed by this correction. **`design/configure.py` is untouched and
    the frozen geometry still stands** -- what follows is a trade study and one open decision.
 
-   **THE ANSWER IS A WIDER-RANGE GYRO, AND IT HAS A DEADLINE.** `ROLL_COMMAND_CAP_DEG = 2.0`
+   **THE ANSWER IS A WIDER-RANGE GYRO, AND IT HAS A DEADLINE.**
+   **>> SUPERSEDED BY CORRECTION 58 -- THIS SECTION'S CONCLUSION IS WRONG. <<** The
+   saturation arithmetic below is correct; what does not follow is that a wider part lets
+   the cap lift. Uncapping multiplies the DOMINANT attitude-error term (gyro scale factor
+   at roll rate) by 4x from the rate and ~2x from the wider part's looser tolerance:
+   `attitude_error_budget()` gives **7.94 deg capped against 62.89 deg uncapped**, and L1
+   is "hold roll angle". The reversal times below are real; the estimate that would have to
+   fly them is not. Read correction 58 before acting on anything in this section.
+
+   `ROLL_COMMAND_CAP_DEG = 2.0`
    exists because a +/-2000 dps part saturates at the 8 deg deflection limit (2378 deg/s,
    correction 36 and `docs/06`). That cap is currently costing a factor of four in roll rate,
    and roll rate is what sets how fast the lateral-g vector can be re-aimed. Time for a
@@ -2389,10 +2403,13 @@ that silently recurs:
    | 9.0 | 79 | 268 deg/s -> 0.81 s | 1070 deg/s -> **0.31 s** |
    | 14.6 | 24 | 80 deg/s -> 2.74 s | 320 deg/s -> **1.05 s** |
 
-   `docs/06` already records the fix in one line -- *"Some IMUs reach +/-4000 deg/s. It is a
-   line in a datasheet and costs nothing at design time, if you check before layout"* -- and
-   it is now the single highest-leverage decision left on the board. **Free before the
-   schematic, unrecoverable after it.** Same shape as every other D8 finding.
+   `docs/06` already records the option in one line -- *"Some IMUs reach +/-4000 deg/s. It is
+   a line in a datasheet and costs nothing at design time, if you check before layout"*.
+   **Correction 58 revises what to do with it**: specify a part with SELECTABLE full scale to
+   +/-4000 and RUN IT AT +/-2000, because what is free before the schematic is the option,
+   not the capability. The lever that actually moves the dominant term is scale-factor
+   CALIBRATION (a 0.5% spec limit measures nearer 0.05-0.1%), which is a procedure and not a
+   purchase.
 
    **REJECTED 1: CANTED AFT FINS + SPIN-AND-PULSE.** Cant the aft fins, let the vehicle spin,
    and pulse a canard pair phase-locked to the rotation (reversing every half revolution, so
@@ -2652,6 +2669,61 @@ that silently recurs:
    recovery-bay placement, and re-check the interference, after any batch that rebuilds
    components** -- an unplaced part reports clean zeros against everything it should be
    touching, which is how correction 56's two worst findings hid in the first place.
+
+58. **CORRECTION 55'S HEADLINE ANSWER IS WRONG, AND THIS FILE'S OWN MODEL SAID SO BEFORE IT
+   WAS WRITTEN.** Correction 55 concluded that a wider-range gyro was "the single
+   highest-leverage decision left" because `ROLL_COMMAND_CAP_DEG = 2.0` exists only to keep a
+   +/-2000 dps part out of saturation, so a +/-4000 dps part would buy back a factor of four
+   in roll rate. **The saturation arithmetic is right and the conclusion does not follow.**
+   Run `estimation.attitude_error_budget()` at both operating points:
+
+   | | roll rate | RSS attitude error at apogee |
+   |---|---|---|
+   | ICM-42688-P at the 2 deg cap (as designed) | 558 deg/s | **7.94 deg** |
+   | +/-4000 dps part at the 8 deg limit | 2232 deg/s | **62.89 deg** |
+
+   Both are dominated by the SAME term -- **gyro scale factor at roll rate**, 7.86 deg
+   against 62.84 deg -- and uncapping multiplies it by 4x from the rate and about 2x again
+   from the wider part's looser scale-factor tolerance. **L1 is "hold roll angle", and a
+   62.9 deg roll-angle error makes L1 meaningless.** The roll rate that saturates the gyro is
+   the same roll rate that drives the dominant error term, so buying range does not buy the
+   ability to use it. Uncapped, the wide part is **8x worse** than the capped narrow one.
+
+   **THIS WAS ALREADY WRITTEN DOWN.** `docs/07` finding 4 says scale factor at roll rate
+   "leads by an order of magnitude, and it leads because of the same roll rate that made D7's
+   gyro line tight -- one root cause, and capping the roll rate is what" fixes it. And
+   `GYRO_WIDE`'s own note in `design/estimation.py` says it exists **"to price the 'just buy
+   more range' answer to the saturation problem"**. Correction 55 anchored on `docs/06`'s
+   saturation table and never ran the budget that was written to answer exactly this. Same
+   failure as correction 14's: **a datum was right and the question asked of it was wrong.**
+
+   **WHAT TO DO AT LAYOUT INSTEAD.** Specify a gyro with **SELECTABLE full scale up to
+   +/-4000 dps and run it at +/-2000.** What is free before the schematic is the OPTION, not
+   the capability: the register write costs nothing, today's resolution and scale-factor
+   behaviour are unchanged, and the range is there if the estimator ever earns it. Buying the
+   range and USING it is what the table above forbids.
+
+   **AND THE LEVER THAT ACTUALLY MOVES THE DOMINANT TERM IS NOT A PART.** Scale-factor error
+   is `tolerance x rate x time`, and the tolerance in the budget is a **datasheet spec
+   limit** (0.5%). Measured per unit against a rate table it is nearer 0.05-0.1% -- **5 to 10x
+   off the term that is 99% of the budget**, for a calibration procedure and no hardware.
+   That, not a part number, is what would let the roll cap lift.
+
+   **THE REAL GAP, AND IT IS THE ONE WORTH CLOSING: `attitude_error_budget()` IS GYRO-ONLY.**
+   Every term in it is a gyro mechanism propagating open-loop; there is **no magnetometer
+   term at all**. But bounding roll angle is the entire reason D8 put a magnetometer on the
+   board -- "roll angle is observed by the magnetometer or by nothing" (`docs/07` finding 3).
+   So **62.89 deg is the UNAIDED number, and the aided number does not exist anywhere in this
+   project.** Scale-factor error is a DRIFT between absolute references, and a magnetometer
+   correcting roll phase bounds it rather than letting it integrate to apogee -- but nothing
+   here models that, so how much of the 62.89 survives aiding is unknown. **No gyro decision
+   should be taken on the strength of a budget that omits the sensor added specifically to
+   fix the axis in question.** Closing that is firmware-adjacent work, not a purchase, and it
+   is what actually decides whether `ROLL_COMMAND_CAP_DEG` can move.
+
+   Three claims introduced by correction 55 are corrected in place rather than left to be
+   found: its own "THE ANSWER IS A WIDER-RANGE GYRO" section, the State of play bullet above
+   it, and the open item this finding put at the top of `docs/06`.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —
