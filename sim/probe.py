@@ -24,13 +24,19 @@ pitch dynamics agree to 0.5%. T2 does not, and the honest summary has two halves
   `clalpha_single_fin` is already body-area-referenced. Verified exactly, in both directions
   (2.7185x on the aft fins, 0.6439x on the canards, each matching Af/A_ref to 5 figures).
 
-  NOT SETTLED. With that removed, RocketPy still gives ~1.7x the repo's Cl_p, because the two
-  build their per-fin lift slope by different standard methods that happen to agree on fin-set
-  LIFT to 5% while disagreeing on the per-fin slope that roll damping needs. Nothing here
-  decides which is right, and an earlier version of this file wrongly claimed otherwise by
-  calling a re-weighting of the repo's own model an "independent arbiter" -- it inherits the
-  repo's lift slope, so of course it agreed with the repo. Deciding this needs a third
-  implementation or the GV-2 deflection sweep, which measures Cl_p and Cl_delta together.
+  NOT SETTLED, AND THE THIRD IMPLEMENTATION SAYS THE REPO IS THE OUTLIER. Run
+  `python scripts/openrocket_roll_check.py`: OpenRocket 24.12's own `getCrollDamp()` gives
+  Cl_p = -266.9 at this condition, against RocketPy's -307.6 (1.15x) and
+  `design/control.roll_damping_cl_p()`'s -65.3 (0.245x). Two separately written codes agree
+  within 15% and this repository is 4x away from both. The `Af/A_ref` renormalisation above
+  lands at -126, which matches NEITHER, so that diagnosis should be treated as unproven --
+  the arithmetic is real but the conclusion drawn from it probably is not.
+
+  Read all of this with the lineage caveat in `scripts/openrocket_roll_check.py`: RocketPy's
+  `fin_num_correction()` cites OpenRocket's technical documentation, so the two are not fully
+  independent. What is settled is that the repo is the odd one out; what is NOT settled is
+  the true value. GV-2's open-loop deflection sweep measures Cl_p and Cl_delta together and
+  is what actually decides it.
 """
 
 from __future__ import annotations
