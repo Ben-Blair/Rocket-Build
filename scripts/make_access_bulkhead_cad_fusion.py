@@ -66,6 +66,17 @@ def emit() -> str:
     pt_r, pt_t, pt_holes, pt_want = _disc_and_holes(ab.pass_through_from_evaluation(ev))
     nose_r, nose_t, nose_holes, nose_want = _disc_and_holes(ab.nose_plate_from_evaluation(ev))
 
+    # THE NOSE PLATE IS PLACED NOW, and its station is derived rather than typed: its AFT
+    # face is the nav bay's forward end, which is the bulkhead allowance plus the sled
+    # assembly aft of Z 0 -- exactly what make_sled_fusion.py uses to put the tube there.
+    # It used to be built at the local origin "not placed -- the nose cavity is not
+    # modelled", which stacked it on top of PassThroughPlate at Z 0 (10425.76 mm3 of
+    # overlap between two unrelated discs) and left the real part nowhere near the M6
+    # ballast rod it anchors. See docs/01 correction 57.
+    from design import joints as _joints, sled as _sled
+    _g = _sled.sled_from_evaluation(ev)
+    nose_aft_face_mm = -(_joints.BULKHEAD_ALLOWANCE + _g.assembly_length) * 1000.0
+
     def holes_repr(holes):
         return ", ".join("(%r, %r, %r, %r)" % h for h in holes)
 
@@ -73,8 +84,8 @@ def emit() -> str:
 file. Regenerate rather than patch.
 
 Builds PassThroughPlate (module global frame, forward face at Z
-{MODULE_FORWARD_FACE_MM:.4f}) and NoseAftFace (local frame, not placed -- the nose cavity
-is not modelled). Idempotent: verifies rather than rebuilds if either component already has
+{MODULE_FORWARD_FACE_MM:.4f}) and NoseAftFace (module global frame, aft face at Z
+{nose_aft_face_mm:.4f}). Idempotent: verifies rather than rebuilds if either component already has
 bodies.
 """
 
@@ -88,6 +99,7 @@ PT_THICKNESS_MM = {pt_t!r}
 PT_HOLES = [{holes_repr(pt_holes)}]
 PT_WANT_MM3 = {pt_want!r}
 
+NOSE_AFT_FACE_MM = {nose_aft_face_mm!r}
 NOSE_RADIUS_MM = {nose_r!r}
 NOSE_THICKNESS_MM = {nose_t!r}
 NOSE_HOLES = [{holes_repr(nose_holes)}]
@@ -127,9 +139,11 @@ def run(_context: str):
     # -- Nose aft face: local frame, NOT placed (no nose cavity modelled) --
     nose_occ, nose_has_bodies = _get_or_create_component(root, "NoseAftFace")
     if not nose_has_bodies:
-        body = _build_disc(tbm, 0.0, 0.0, 0.0, NOSE_THICKNESS_MM, NOSE_RADIUS_MM, NOSE_HOLES)
+        _nz1 = NOSE_AFT_FACE_MM
+        _nz0 = NOSE_AFT_FACE_MM - NOSE_THICKNESS_MM
+        body = _build_disc(tbm, 0.0, 0.0, _nz0, _nz1, NOSE_RADIUS_MM, NOSE_HOLES)
         _inject(nose_occ.component, [("nose aft face", body)])
-        print("NoseAftFace: built, local frame Z 0.0000 -> %.4f mm" % NOSE_THICKNESS_MM)
+        print("NoseAftFace: built, Z %.4f -> %.4f mm" % (_nz0, _nz1))
     else:
         print("NoseAftFace: already has bodies, verifying only")
     bad += _verify_volume(nose_occ.component, {{"nose aft face": NOSE_WANT_MM3}},

@@ -117,6 +117,38 @@ LINK_CLEARANCE = 0.008  # m
 
 # Straight length of leg below the crown's tangent, m: through the backing plate, through the
 # bulkhead, a washer, a nyloc nut and two threads of stand-out.
+#
+# IT IS A STACK, AND UNTIL CORRECTION 57 IT WAS A GLOBAL THAT NOTHING CHECKED AGAINST THE
+# SPACE BEHIND EACH ANCHOR. Three of the four anchors have a whole compartment behind them.
+# The fourth stands on the booster's forward bulkhead, and what is behind THAT is the motor:
+# `motor_mount.forward_gap` is 11.08 mm and this stack needs 15.20 mm aft of the bulkhead, so
+# the legs ran 4.12 mm into the motor. Nothing compared the two -- the U-bolt is sized in this
+# file, the gap is computed in `motor_mount.py`, and no check imported one into the other.
+# Broken out so a station with less room can be given a stack that fits, and so
+# `check_recovery_hardware()` can compare the two numbers. See docs/01 correction 57.
+UBOLT_WASHER_THICKNESS = 0.0016   # m, a plain M8 washer
+UBOLT_NUT_HEIGHT = 0.0080         # m, M8 nyloc (DIN 985)
+UBOLT_NUT_HEIGHT_LOW = 0.0060     # m, M8 ALL-METAL prevailing-torque, low pattern
+UBOLT_THREAD_STANDOUT = 0.0025    # m, two threads at 1.25 mm pitch
+UBOLT_THREAD_STANDOUT_MIN = 0.0013  # m, one thread -- still inspectable
+
+
+def leg_standout(bulkhead_thickness: float, plate_thickness: float,
+                 washer: bool = True, nut_height: float = UBOLT_NUT_HEIGHT,
+                 thread_standout: float = UBOLT_THREAD_STANDOUT) -> float:
+    """Straight leg length below the crown's tangent, m -- derived, not typed.
+
+    Everything the leg has to pass through or carry, in order: the bulkhead it anchors to,
+    the backing plate under the nut, optionally a washer, the nut, and enough thread past
+    the nut to see that it is engaged.
+    """
+    return (bulkhead_thickness + plate_thickness
+            + (UBOLT_WASHER_THICKNESS if washer else 0.0)
+            + nut_height + thread_standout)
+
+
+# The default stack, unchanged in value from the constant this replaces (4.8 + 3.2 + 1.6 +
+# 8.0 + 2.5 = 20.1 mm, rounded to 20.0 before it was derived).
 UBOLT_LEG_STANDOUT = 0.020  # m
 
 # Nut and washer mass per leg, kg. Catalogue figures for stainless, not computed.
@@ -186,6 +218,9 @@ class UBolt:
     rod_diameter: float  # m
     leg_spacing: float  # m, centre to centre
     load: float  # N, the opening shock it anchors
+    # Straight leg below the crown tangent. Defaults to the standard stack; the booster
+    # forward anchor is given a shorter one because the motor is 11.08 mm behind it.
+    leg_standout: float = UBOLT_LEG_STANDOUT
 
     @property
     def crown_radius(self) -> float:
@@ -261,7 +296,7 @@ class UBolt:
     @property
     def rod_length(self) -> float:
         """m, centreline: the crown's semicircle plus two straight legs."""
-        return math.pi * self.crown_radius + 2.0 * UBOLT_LEG_STANDOUT
+        return math.pi * self.crown_radius + 2.0 * self.leg_standout
 
     @property
     def rod_volume(self) -> float:
@@ -540,6 +575,10 @@ class RecoveryHardwareResult:
     wells: list[ChargeWell]
     webbing_width: float  # m, what recovery.size_harness() picked
     n_anchors: int
+    # Clear space aft of the booster's forward bulkhead before the motor, m. Carried on the
+    # result rather than recomputed in the check, so the check cannot quietly skip itself --
+    # motor_mount.py computes it, this file has to respect it. Correction 57.
+    booster_forward_gap: float = 0.0
 
     @property
     def anchor(self) -> AnchorResult:
@@ -585,10 +624,30 @@ def recovery_hardware_from_evaluation(ev) -> RecoveryHardwareResult:
     # The fourth anchor stands on the booster's forward bulkhead, which design/motor_mount.py
     # sizes. Imported rather than rebuilt so the two files cannot disagree about the disc.
     from . import motor_mount as mm
-    booster_bulkhead = mm.motor_mount_from_evaluation(ev).forward_bulkhead
+    mount = mm.motor_mount_from_evaluation(ev)
+    booster_bulkhead = mount.forward_bulkhead
+
+    # THIS ANCHOR GETS A SHORTER LEG, BECAUSE THE MOTOR IS 11.08 mm BEHIND IT.
+    # The standard stack needs 15.20 mm aft of the bulkhead and there is 11.08
+    # (`mount.forward_gap`), so the legs ran into the motor. Two changes buy 4.7 mm and
+    # neither is a compromise:
+    #   * NO SEPARATE WASHER. The washer exists to spread the nut load into the G-10
+    #     backing plate, and the plate is nowhere near bearing-limited: 107x with the
+    #     washer, 24x with the nut bearing straight on the plate, against a 2.0x
+    #     requirement. It was buying 1.6 mm of stack for margin nobody needs.
+    #   * AN ALL-METAL NUT, not a nyloc. This nut sits in the sealed gap directly against
+    #     the motor's forward closure, and a nylon insert is the wrong part there on
+    #     temperature alone -- so the low-profile all-metal nut is the correct choice here
+    #     independently of the 2.0 mm it saves.
+    # One thread of stand-out instead of two, which is still inspectable. See correction 57.
+    u_booster = UBolt(rod, UBOLT_LEG_SPACING, load,
+                      leg_standout=leg_standout(
+                          booster_bulkhead.thickness, plate.thickness, washer=False,
+                          nut_height=UBOLT_NUT_HEIGHT_LOW,
+                          thread_standout=UBOLT_THREAD_STANDOUT_MIN))
     anchors.append(
-        AnchorResult("booster forward bulkhead (drogue harness aft)", booster_bulkhead, u,
-                     plate, governed, face="booster forward bulkhead / fwd",
+        AnchorResult("booster forward bulkhead (drogue harness aft)", booster_bulkhead,
+                     u_booster, plate, governed, face="booster forward bulkhead / fwd",
                      clocking_deg=0.0))
 
     # The wells go on the FIRED face of each separation bulkhead, over that charge's own
@@ -607,7 +666,8 @@ def recovery_hardware_from_evaluation(ev) -> RecoveryHardwareResult:
     harness = recovery.size_harness(ev.rocket.length, load)
     return RecoveryHardwareResult(anchors=anchors, wells=wells,
                                   webbing_width=harness.webbing.width,
-                                  n_anchors=len(anchors))
+                                  n_anchors=len(anchors),
+                                  booster_forward_gap=mount.forward_gap)
 
 
 def hole_layout(r: RecoveryHardwareResult, which: int = 0) -> list[Hole]:
@@ -692,6 +752,27 @@ def check_recovery_hardware(r: RecoveryHardwareResult) -> RecoveryHardwareCheck:
     notes: list[str] = []
     mm_ = 1000.0
     u, plate = r.anchor.ubolt, r.anchor.plate
+
+    # --- does each anchor's fastener stack actually fit behind its bulkhead? --------------
+    # THE CHECK THAT DID NOT EXIST. The U-bolt is sized here and the space behind the
+    # booster's forward bulkhead is computed in `motor_mount.py`, and nothing imported one
+    # into the other -- so a 15.20 mm stack sat in an 11.08 mm gap and only the CAD saw it,
+    # as 414.19 mm3 of u-bolt inside the motor. Correction 57.
+    for a in r.anchors:
+        if "booster forward bulkhead" not in a.name:
+            continue  # the other three have a whole compartment behind them
+        gap = r.booster_forward_gap
+        aft_of_bulkhead = a.ubolt.leg_standout - a.bulkhead.thickness
+        if aft_of_bulkhead > gap + 1e-9:
+            v.append(
+                f"{a.name}: the fastener stack needs {aft_of_bulkhead * mm_:.2f} mm aft of "
+                f"the bulkhead and the motor leaves {gap * mm_:.2f} mm -- the legs run "
+                f"{(aft_of_bulkhead - gap) * mm_:.2f} mm into the motor")
+        else:
+            notes.append(
+                f"{a.name}: stack {aft_of_bulkhead * mm_:.2f} mm aft of the bulkhead into a "
+                f"{gap * mm_:.2f} mm gap to the motor, {(gap - aft_of_bulkhead) * mm_:.2f} mm "
+                f"spare -- no washer, low-profile all-metal nut (see leg_standout)")
 
     # --- the U-bolt ----------------------------------------------------------------------
     if u.crown_margin < PLATE_MARGIN_REQUIRED:

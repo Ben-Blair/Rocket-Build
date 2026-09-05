@@ -177,17 +177,24 @@ def emit() -> str:
     tubes = [
         ("nav bay tube", od / 2.0, bay.full_bore * MM / 2.0,
          z_fwd, z_fwd + bay.tube_length * MM),
-        # From the NOSE JOINT's engagement, not from bay.narrow_span -- see joint_geometry().
-        ("nose shoulder", bay.full_bore * MM / 2.0, aft_joint.bore * MM / 2.0,
-         z_fwd, z_fwd + nose_joint.engagement * MM),
         # The aft coupler's ANCHORED half only. Its protruding half (into the canard
         # module) is a known 50.729 mm now -- see the module docstring -- but drawing it
         # is not in scope here.
         ("aft coupler", bay.full_bore * MM / 2.0, aft_joint.bore * MM / 2.0,
          coupler_z0, 0.0),
-        ("nose plate", bay.full_bore * MM / 2.0, 0.0,
-         z_fwd - NOSE_PLATE_THICKNESS_MM, z_fwd),
     ]
+    # THE NOSE SHOULDER AND THE NOSE PLATE USED TO BE DRAWN HERE AND ARE NOT ANY MORE.
+    # Both were CONTEXT -- simplified stand-ins drawn so the sled could be checked against
+    # the bore it has to pass. Both have since become real parts drawn from their own
+    # models, and leaving these copies in meant the document carried each twice:
+    #   * the shoulder is INTEGRAL to the nose shell as of correction 43, and this copy sat
+    #     100% inside it -- 41594.53 mm3, about 77 g of phantom G-10 to anything reading
+    #     mass off the document;
+    #   * the plate is `NoseAftFace`, sized by design/access_bulkhead.py, and this copy was
+    #     a plain disc with NO HOLES -- which is why the M6 ballast rod ran through 90.48
+    #     mm3 of solid material here while the real part was unplaced at the origin.
+    # The bore check below is unaffected: it compares against BORE_MM, a number, and never
+    # against the shoulder body. See docs/01 correction 57.
 
     # The three static ports, drilled radially through the tube AND the coupler behind it.
     port_z = z_of(placement.station)

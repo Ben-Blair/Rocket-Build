@@ -2,8 +2,8 @@
 file. Regenerate rather than patch.
 
 Builds PassThroughPlate (module global frame, forward face at Z
-0.0000) and NoseAftFace (local frame, not placed -- the nose cavity
-is not modelled). Idempotent: verifies rather than rebuilds if either component already has
+0.0000) and NoseAftFace (module global frame, aft face at Z
+-127.0400). Idempotent: verifies rather than rebuilds if either component already has
 bodies.
 """
 
@@ -184,10 +184,11 @@ PT_THICKNESS_MM = 2.4
 PT_HOLES = [('nav bay / canard module plate feed-through', 22.59775238156248, 0.0, 8.0)]
 PT_WANT_MM3 = 10425.764778426776
 
+NOSE_AFT_FACE_MM = -127.04000000000002
 NOSE_RADIUS_MM = 37.400000000000006
 NOSE_THICKNESS_MM = 3.2
-NOSE_HOLES = [('nose aft face feed-through', 22.59775238156248, 0.0, 8.0)]
-NOSE_WANT_MM3 = 13901.019704569037
+NOSE_HOLES = [('nose aft face feed-through', 22.59775238156248, 0.0, 8.0), ('ballast rod, tapped M6', 0.0, 0.0, 6.0)]
+NOSE_WANT_MM3 = 13810.54183614565
 
 OVER_MM = 1.0
 
@@ -223,9 +224,11 @@ def run(_context: str):
     # -- Nose aft face: local frame, NOT placed (no nose cavity modelled) --
     nose_occ, nose_has_bodies = _get_or_create_component(root, "NoseAftFace")
     if not nose_has_bodies:
-        body = _build_disc(tbm, 0.0, 0.0, 0.0, NOSE_THICKNESS_MM, NOSE_RADIUS_MM, NOSE_HOLES)
+        _nz1 = NOSE_AFT_FACE_MM
+        _nz0 = NOSE_AFT_FACE_MM - NOSE_THICKNESS_MM
+        body = _build_disc(tbm, 0.0, 0.0, _nz0, _nz1, NOSE_RADIUS_MM, NOSE_HOLES)
         _inject(nose_occ.component, [("nose aft face", body)])
-        print("NoseAftFace: built, local frame Z 0.0000 -> %.4f mm" % NOSE_THICKNESS_MM)
+        print("NoseAftFace: built, Z %.4f -> %.4f mm" % (_nz0, _nz1))
     else:
         print("NoseAftFace: already has bodies, verifying only")
     bad += _verify_volume(nose_occ.component, {"nose aft face": NOSE_WANT_MM3},

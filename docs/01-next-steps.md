@@ -21,10 +21,13 @@ Read this first if you are picking the project back up.
   about correction 42's `aft coupler`, so it failed a bonded part for not fitting through a
   bore; and a **duplicate orphan fin** (`DiagFin`, 100% coincident with `AftFin0`) was
   deleted. **No vehicle number moves** — feasible, apogee 1270.8 m, dry 5.886 kg.
-  **Two real defects are left and both need a decision, not CAD**: UBolt3's legs protrude
-  **4.12 mm** into the motor, and **nothing has a hole for the M6 ballast rod** where it
-  passes through the nose plate. Two more remaining interferences are duplicate-context or
-  deliberately-unplaced bodies, itemised in correction 56.
+  **Both real defects are now closed (correction 57) and the CAD is interference-free**:
+  the ballast rod has a tapped hole, and the booster anchor's fastener stack is derived per
+  anchor -- no washer, low-profile all-metal nut -- fitting the motor's 11.08 mm gap with
+  0.58 mm spare, with the check that compares them finally existing. The two superseded
+  context bodies are gone and `NoseAftFace` is placed. **Interference is 1 pair at
+  1.1936 mm3, which is 1.6 microns of radial overlap** where the nose plate seats into the
+  shoulder bore -- two parts that are meant to touch.
 - **THE CONTROL ARCHITECTURE WAS RE-OPENED AND SURVIVED — AND ONE SENSOR LINE ITEM NOW HAS
   A DEADLINE (Sep 2026, correction 55).** Asked whether the vehicle could fly sharp,
   precomputed direction changes instead of one slow biased curve, three alternative
@@ -478,7 +481,7 @@ these, because they moved once already when the altimeter went into the budget
 on margin, and because the Onshape module is built to it — but that is a choice, and §7 says
 so instead of hiding it.
 
-Fifty-six corrections are worth knowing about — 38's, 40's and 41's own numbered entries are
+Fifty-seven corrections are worth knowing about — 38's, 40's and 41's own numbered entries are
 still only the bullets above. The first four changed the design; two of the
 rest are checks that CONFIRMED it, which is its own kind of result. Each is the kind of thing
 that silently recurs:
@@ -2573,6 +2576,82 @@ that silently recurs:
    been reporting a clean **0.0000 mm3** while the part sat at the origin -- *a zero between
    two things that are nowhere near each other is not a pass*, which is the interference-check
    version of correction 40's "volume and mass agreement is not model agreement".
+
+57. **The two real defects correction 56 left open are closed, and the CAD is interference-free
+   -- 5 pairs to 1, and the one left is 1.6 microns.** Both were the same shape of problem:
+   a part passing through another part that had no hole for it, and a stack of hardware
+   nobody had compared to the space behind it.
+
+   **THE NOSE PLATE HAD NO HOLE FOR THE BALLAST ROD.** `design/nose_module.py` says in as
+   many words that it "does not size the rod in tension or the nose plate's tapped hole that
+   anchors it" -- and nothing else drilled that hole either, so the M6 rod ran through
+   3.2 mm of solid G-10. The CAD priced it exactly: **90.48 mm3 = pi x 3^2 x 3.2**, a
+   full-diameter rod through a full-thickness plate. `access_bulkhead.hole_layout()` adds it
+   now, at NOMINAL rod diameter because the joint is THREADED -- at nominal the rod and the
+   tapped hole share a surface, which is what a thread is, and it is the only diameter that
+   neither overstates clearance nor reports a false interference. **STATED, NOT SOLVED: the
+   hole is ON THE AXIS**, which for a pressure-loaded disc is the point of MAXIMUM bending --
+   the opposite of `quiet_radius()`, where every other hole in this vehicle is deliberately
+   put. It has to be on the axis, because ballast off the axis moves the CG laterally, which
+   is the one thing ballast must not do. `size_access_bulkhead()` never sees this hole, so
+   the margin reported for this plate is still the un-holed one.
+
+   **THE U-BOLT STACK WAS A GLOBAL THAT NOTHING COMPARED TO THE SPACE BEHIND IT.**
+   `UBOLT_LEG_STANDOUT = 20 mm` -- "through the backing plate, through the bulkhead, a
+   washer, a nyloc nut and two threads of stand-out" -- was applied to all four anchors.
+   Three have a whole compartment behind them. The fourth stands on the booster's forward
+   bulkhead, and what is behind THAT is the motor: `motor_mount.forward_gap` is **11.08 mm**
+   against a stack needing **15.20 mm**, so the legs ran **4.12 mm** into it. The U-bolt is
+   sized in `recovery_hardware.py`, the gap is computed in `motor_mount.py`, and **no check
+   imported one into the other** -- the same shape as correction 42's "two 1.0 cal joints do
+   not fit in a 1.60 cal tube".
+   Neither part could move: `bulkhead_station = coupler` puts the bulkhead as far forward as
+   the recovery-bay joint allows, and the motor is aft-flush against its retainer. So the
+   stack had to shrink, and two changes buy 4.7 mm without giving anything up:
+   - **NO SEPARATE WASHER.** It exists to spread the nut load into the G-10 backing plate,
+     and the plate is nowhere near bearing-limited: **107x with the washer, 24x with the nut
+     bearing straight on the plate**, against a 2.0x requirement. It was costing 1.6 mm of
+     stack for margin nobody needs.
+   - **AN ALL-METAL NUT, NOT A NYLOC.** This nut sits in the sealed gap directly against the
+     motor's forward closure, and **a nylon insert is the wrong part there on temperature
+     alone** -- so the low-profile all-metal nut is correct here independently of the 2.0 mm
+     it saves. One thread of stand-out instead of two, still inspectable.
+   `UBOLT_LEG_STANDOUT` is now a derived `leg_standout()` and `UBolt` carries it per anchor;
+   the booster's is **15.30 mm**, leaving **0.58 mm** spare. **And the missing check exists**:
+   `check_recovery_hardware()` compares the stack against `booster_forward_gap`, which is
+   carried ON THE RESULT rather than recomputed -- the first version reached for it through
+   `r.evaluation`, which does not exist, inside a `try/except` that swallowed the
+   `AttributeError` and reported a clean pass. **A check that silently skips itself is the
+   exact failure this correction is about**, written accidentally while fixing it. Verified
+   the other way too: restoring the 20 mm stack makes it fail with the right number.
+
+   **TWO SUPERSEDED CONTEXT BODIES REMOVED, AND ONE REAL PART FINALLY PLACED.**
+   `make_sled_fusion.py` drew a `nose shoulder` and a `nose plate` as simplified stand-ins so
+   the sled could be checked against the bore it has to pass. Both have since become real
+   parts drawn from their own models, and the document was carrying each twice: the shoulder
+   is INTEGRAL to the nose shell as of correction 43 and that copy sat **100% inside it**
+   (41594.53 mm3, ~77 g of phantom G-10), and the plate is `NoseAftFace` -- whose copy was a
+   plain disc with **no holes at all**, which is why the ballast rod hit it while the real
+   part sat unplaced at the origin. Both removed at the generator. `NoseAftFace` is placed
+   now, aft face at **Z -127.04**, derived from the same bulkhead-allowance-plus-sled-assembly
+   arithmetic `make_sled_fusion.py` uses for the tube rather than typed.
+
+   **WHAT IS LEFT IS 1.1936 mm3, AND IT IS 1.6 MICRONS.** One pair: the nose plate's OD
+   against the nose shell's shoulder bore, a full ring at R 37.400 spanning the plate's whole
+   thickness. `1.1936 / (2 pi x 37.4 x 3.2)` = **0.0016 mm of radial overlap** between two
+   parts that are SUPPOSED to touch, built from two different nominal chains to the same
+   37.400. Correction 40 called this class "parity and the right bar"; the volume is larger
+   than that session's slivers but the dimension that means anything is radial, and it is
+   under two microns.
+
+   **A CAVEAT WORTH CARRYING: the internal bulkhead's placement did not survive a rebuild
+   elsewhere in the document.** `RecoveryInternalBulkhead` is built at a local origin by
+   `make_seal_cad_fusion.py` and translated to its station by
+   `make_recovery_bay_cad_fusion.py`; its occurrence transform came back as identity after an
+   unrelated batch and had to be re-applied. It survives a save once re-applied. **Re-run the
+   recovery-bay placement, and re-check the interference, after any batch that rebuilds
+   components** -- an unplaced part reports clean zeros against everything it should be
+   touching, which is how correction 56's two worst findings hid in the first place.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —

@@ -114,6 +114,10 @@ MODULE_INTERFACE_THICKNESS_FLOOR = 0.0032  # m, nose aft face
 
 # correction 32's stated provision, not the 105 g of avionics actually flying -- see the
 # module docstring on why the ceiling and not the built mass is what sizes the mount.
+# The nose plate's own name, used by hole_layout() to decide which plate gets the
+# ballast rod hole. A constant rather than a repeated literal -- correction 4.
+NOSE_PLATE_NAME = "nose aft face"
+
 NOSE_PAYLOAD_DESIGN_MASS = 0.300  # kg
 NOSE_PAYLOAD_FOOTPRINT_RADIUS = 0.004  # m, a small mounting boss; no sled has been designed
 
@@ -273,7 +277,7 @@ def nose_plate_from_evaluation(ev) -> AccessBulkheadResult:
         floor=MODULE_INTERFACE_THICKNESS_FLOOR)
     plate = Bulkhead(bore, t)
     return AccessBulkheadResult(
-        name="nose aft face",
+        name=NOSE_PLATE_NAME,
         bulkhead=plate,
         feed_through=FeedThrough(hole_diameter=NOSE_CONNECTOR_HOLE_DIAMETER,
                                  radius_in_plate=plate.quiet_radius(),
@@ -294,12 +298,32 @@ def nose_plate_from_evaluation(ev) -> AccessBulkheadResult:
 
 
 def hole_layout(r: AccessBulkheadResult) -> list[Hole]:
-    """The one hole in this plate, positioned -- reuses `seal.Hole` so `scripts/` can build
+    """The holes in this plate, positioned -- reuses `seal.Hole` so `scripts/` can build
     both kinds of bulkhead off the same shape. Neither access plate anchors a harness, so
     there is no U-bolt pair to add alongside it the way `seal.hole_layout()` does.
     """
     f = r.feed_through
-    return [Hole(f"{r.name} feed-through", f.radius_in_plate, 0.0, f.hole_diameter)]
+    holes = [Hole(f"{r.name} feed-through", f.radius_in_plate, 0.0, f.hole_diameter)]
+
+    # THE NOSE PLATE ANCHORS THE BALLAST ROD, AND HAD NO HOLE FOR IT.
+    # `nose_module.py` says in as many words that it "does not size the rod in tension or
+    # the nose plate's tapped hole that anchors it" -- and nothing else drilled that hole
+    # either, so the M6 rod ran through 3.2 mm of solid G-10. The CAD priced it exactly:
+    # pi * 3^2 * 3.2 = 90.48 mm3, a full-diameter rod through a full-thickness plate.
+    # Modelled at NOMINAL rod diameter because the joint is THREADED: at nominal the rod
+    # and the tapped hole share a surface, which is what a thread is, and it is the only
+    # diameter that does not either overstate clearance or report a false interference.
+    #
+    # STATED, NOT SOLVED: this hole is ON THE AXIS, which for a pressure-loaded disc is the
+    # point of MAXIMUM bending -- the opposite of `quiet_radius()`, where every other hole
+    # in this project is deliberately put. It has to be on the axis: ballast off the axis
+    # moves the CG laterally, which is the one thing ballast must not do. The plate is not
+    # sized against it -- `size_access_bulkhead()` never sees this hole -- so the margin
+    # reported for this plate is the un-holed one. See docs/01 correction 57.
+    if r.name == NOSE_PLATE_NAME:
+        from .nose_module import ROD_DIAMETER
+        holes.append(Hole("ballast rod, tapped M6", 0.0, 0.0, ROD_DIAMETER))
+    return holes
 
 
 def check_hole_layout(r: AccessBulkheadResult) -> AccessBulkheadCheck:
