@@ -4,6 +4,22 @@
 
 Read this first if you are picking the project back up.
 
+- **THE 6-DOF SIMULATOR EXISTS, AND BUILDING IT FOUND A 2.26x ERROR IN ROLL DAMPING
+  (Sep 2026, correction 60).** `sim/` is a RocketPy-based 6-DOF model built from
+  `configure.evaluate()` at runtime; ballistic apogee agrees with `trajectory.py`'s RK4 to
+  **0.11%** and max q exactly. Its frame/sign probe (`sim/probe.py`) then found that
+  `roll_damping_cl_p()` was **2.26x low** — and settling that took a kinematic-limit argument
+  against a third implementation, because **all three codes are wrong in different ways**
+  (this repo 2.26x low; OpenRocket damps 2x too hard; RocketPy carries a spurious `Af/A_ref`
+  factor). Corrected, all three converge on **Cl_p ≈ 125–150 /rad**. The fix is in
+  `aero.single_fin_cn_alpha()` and `FinSet.mean_square_radius`. **The observable barely
+  moved** — steady roll 558 → **494 deg/s** at the cap — because `Cl_delta` was low by the
+  same shared factor and it cancels in the ratio. **One conclusion did move: the deflection
+  limit no longer saturates a ±2000 dps gyro** (1977 deg/s, 99% of full scale), which is
+  corrections 55 and 58's premise. The cap survives on no-margin grounds, not saturation.
+  Spin-up `tau` halves to **24.8 ms**. Apogee, static margin, crossrange and the 16.8%/73.9%
+  interference cancellation are all unchanged.
+
 - **STEP 3'S CAD IS BUILT — the whole vehicle is now real geometry, and building it found
   six defects (Sep 2026, correction 56).** The three queued generators were finally RUN.
   Booster tube + four aft fins at the derived **11.15 mm** tab, the **motor mount** (forward
@@ -2771,6 +2787,76 @@ that silently recurs:
    unreachable even magnetically clean, or if phase tracking fell below the floor); the full
    walkthrough is `scripts/estimation_trade.py`'s "THE GAP CORRECTION 58 FOUND" section.
    Nothing in the vehicle's numbers moved -- this closes an unknown, not a defect.
+
+60. **`roll_damping_cl_p()` WAS 2.26x LOW, AND FINDING IT TOOK THREE IMPLEMENTATIONS THAT
+   ARE ALL WRONG.** Standing up the 6-DOF simulator (`sim/`, on RocketPy) put a second roll
+   damping model beside this project's for the first time, and they disagreed by 4x. Neither
+   could adjudicate: `roll_damping_cl_p` is the only such model in this repo, and **any check
+   built from `aero.panel_cn_alpha` inherits it and agrees with it for circular reasons** --
+   which is exactly the trap the first pass fell into, calling a re-weighting of this repo's
+   own lift model an "independent arbiter". It was not independent, and its agreement meant
+   nothing.
+
+   **What settled it was the KINEMATIC LIMIT, the one convention-free test available.** A
+   canted fin set must roll until the local incidence from rolling cancels the cant:
+
+   `integral c(y)*(delta - p*y/V)*y dy = 0`  =>  `p = V*delta*I1/I2`
+
+   No lift slope, no reference area, no coefficient normalisation appears in it. Run against
+   OpenRocket 24.12 (canards deleted, aft fins canted 1 deg) its own equilibrium is
+   **11.03 rad/s against a required 21.78** -- OpenRocket damps 2.0x too hard. Its roll
+   FORCING matches strip theory to 0.5%, so the error is in the damping term alone.
+
+   | | as shipped | corrected | the error |
+   |---|---|---|---|
+   | `design/control.py` | −65 | **−147** | 2.26x low, two causes below |
+   | OpenRocket 24.12 | −267 | −133 | damps 2x too hard |
+   | RocketPy 1.13 | −308 | −126 | spurious `Af/A_ref` factor in `cld_omega` |
+
+   All three converge on **Cl_p ≈ 125–150 /rad** once corrected. This repo's two causes:
+   - **2.0x** — `panel_cn_alpha` divides Barrowman's fin-SET value by N, but that value is
+     **roll-averaged**: only about N/2 fins carry normal force in any one plane at angle of
+     attack. Every fin damps roll regardless of clocking, so roll needs the single-fin slope,
+     which is the set value over N/2. New `aero.single_fin_cn_alpha()`; measured against
+     OpenRocket's canted-fin roll forcing at **1.885x**, against the 2.0x Barrowman's own
+     route gives (the 6% is Barrowman vs Diederich, inside this module's stated accuracy).
+   - **1.14x** — roll damping weights chord by y², and `spanwise_cp_radius**2` is the square
+     of a mean where the mean of a square is wanted. New `FinSet.mean_square_radius`, closed
+     form, verified against numerical integration to 1e-12.
+
+   **AND THE OBSERVABLE BARELY MOVED, WHICH IS WHY IT SURVIVED THIS LONG.** `roll_authority`
+   read the same `panel_cn_alpha`, so Cl_delta was low by the same 2.0x; steady roll rate goes
+   as **Cl_delta/|Cl_p|** and that factor cancels out of the ratio entirely. Only the y²
+   weighting survives it. **A model can be materially wrong in both numerator and denominator
+   and still predict the observable** -- which is the argument for checking DERIVATIVES
+   against another code, not just outcomes.
+
+   What moved, and what did not:
+
+   | | before | after |
+   |---|---|---|
+   | steady roll, 2 deg cap | 558 deg/s | **494 deg/s** |
+   | steady roll, 8 deg limit | 2232 deg/s | **1977 deg/s** |
+   | roll spin-up `tau` | 56.1 ms | **24.8 ms** |
+   | unaided attitude at apogee | 7.94 deg | **7.05 deg** |
+   | aided roll (correction 59) | 0.08 / 0.12 deg | **0.07 / 0.11 deg** |
+   | interference cancellation | 16.8% / 73.9% | **unchanged** |
+   | apogee, static margin, crossrange | — | **unchanged** |
+
+   **ONE CONCLUSION DOES CHANGE, AND IT IS CORRECTIONS 55 AND 58's PREMISE.** Both rested on
+   the deflection limit SATURATING a ±2000 dps gyro. At 1977 deg/s it does not -- it is
+   **99% of full scale**. `check_estimation()` now says "gyro in range at both the 2 deg cap
+   and the 8 deg limit" where it used to say "112% -- SATURATED".
+   **Do not read that as the roll cap being unnecessary.** 99% of full scale is zero
+   headroom, on a rate derived from `Cl_delta`, which this project's own docs call the least
+   trustworthy number in the whole analysis and which GV-2 exists to measure. The cap
+   survives; its *stated justification* changes from "the limit saturates the part" to "the
+   limit reaches 99% of the part with no margin for the ±25% the interference model carries".
+   Correction 58's ranking is untouched -- aided roll is still ~0.1 deg and the wide-gyro
+   answer is still wrong (uncapped, the wide part is 55.7 deg unaided against 7.1 deg capped).
+
+   `sim/probe.py` and `scripts/openrocket_roll_check.py` are the checked-in versions of both
+   arguments. **Neither RocketPy's nor OpenRocket's defect has been reported upstream.**
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —

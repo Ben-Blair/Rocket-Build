@@ -17,26 +17,34 @@ the convention risk into this file -- each test takes a REAL flight state, pertu
 one quantity, and reads the change in `Flight.u_dot_generalized`. The baseline cancels, so
 what remains is the response to the perturbation alone.
 
-WHAT IT FOUND (2026-09-05). T0, T1/T6 and T5 pass cleanly -- the frame mapping is right and
-pitch dynamics agree to 0.5%. T2 does not, and the honest summary has two halves:
+WHAT IT FOUND (2026-09-05). T0, T1/T6 and T5 pass -- the frame mapping is right and pitch
+dynamics agree to 0.5%. T2 found a 4x disagreement on roll damping, and chasing it down took
+three implementations, a kinematic-limit argument, and two wrong turns of mine worth
+recording because both are easy to repeat:
 
-  SETTLED. `cld_omega` carries a factor of `Af/reference_area` it should not, because
-  `clalpha_single_fin` is already body-area-referenced. Verified exactly, in both directions
-  (2.7185x on the aft fins, 0.6439x on the canards, each matching Af/A_ref to 5 figures).
+  WRONG TURN 1. I built a "strip theory arbiter" whose sectional slope was pinned from
+  `aero.panel_cn_alpha` -- i.e. from the repo's own lift model -- and called it independent.
+  It agreed with the repo, as it was structurally guaranteed to. A check that inherits the
+  model it is checking is not a check.
 
-  NOT SETTLED, AND THE THIRD IMPLEMENTATION SAYS THE REPO IS THE OUTLIER. Run
-  `python scripts/openrocket_roll_check.py`: OpenRocket 24.12's own `getCrollDamp()` gives
-  Cl_p = -266.9 at this condition, against RocketPy's -307.6 (1.15x) and
-  `design/control.roll_damping_cl_p()`'s -65.3 (0.245x). Two separately written codes agree
-  within 15% and this repository is 4x away from both. The `Af/A_ref` renormalisation above
-  lands at -126, which matches NEITHER, so that diagnosis should be treated as unproven --
-  the arithmetic is real but the conclusion drawn from it probably is not.
+  WRONG TURN 2. On seeing OpenRocket's total land near RocketPy's, I retracted the Af/A_ref
+  finding. Splitting by FIN SET showed that was premature: the totals were two different
+  errors partly cancelling.
 
-  Read all of this with the lineage caveat in `scripts/openrocket_roll_check.py`: RocketPy's
-  `fin_num_correction()` cites OpenRocket's technical documentation, so the two are not fully
-  independent. What is settled is that the repo is the odd one out; what is NOT settled is
-  the true value. GV-2's open-loop deflection sweep measures Cl_p and Cl_delta together and
-  is what actually decides it.
+  WHAT IS ACTUALLY TRUE, all three wrong in different ways, converging on Cl_p ~ 125-150:
+    * RocketPy: `cld_omega` carries a spurious `Af/reference_area`, because
+      `clalpha_single_fin` is already body-area-referenced. Exact in both directions
+      (2.7185x aft, 0.6439x canard, each matching Af/A_ref to five figures) -- which is why
+      its TOTAL looks reasonable while its aft/canard split is 3x off.
+    * OpenRocket: damps 2x too hard, caught by the kinematic limit -- a canted fin set must
+      roll until incidence from rolling cancels the cant, and its own equilibrium is half
+      that. Its roll FORCING is right to 0.5%.
+    * This repo: was 2.26x low. FIXED in correction 60 (`aero.single_fin_cn_alpha`,
+      `FinSet.mean_square_radius`).
+
+  Full argument and the kinematic test: `python scripts/openrocket_roll_check.py`.
+  GV-2's open-loop deflection sweep still measures Cl_p and Cl_delta together and remains
+  what settles the truth rather than the agreement.
 """
 
 from __future__ import annotations
@@ -204,7 +212,7 @@ def main():
          f"{resp[pa]:+.4f} 1/s -- emergent from omega x r; design/ has NO Cm_q term at all")
 
     # ------------------------------------------------------- T2: roll damping, three ways
-    print("\nT2  roll damping -- and this is the one that is NOT settled")
+    print("\nT2  roll damping -- settled by correction 60; all three codes were wrong")
     pt = min(ev.flight.points, key=lambda p: abs(p.t - tt))
     d, A = ev.rocket.diameter, ev.rocket.reference_area
 
@@ -219,8 +227,8 @@ def main():
 
     _fmt(INFO, "flight condition", f"t={tt:.2f}s q={pt.q:.0f}Pa M={pt.mach:.3f} V={pt.speed:.1f}m/s")
     _fmt(INFO, "design/control.py", f"{cl_p_repo:9.2f} /rad")
-    _fmt(INFO, "  same, y^2-reweighted", f"{cl_p_repo_rw:9.2f} /rad  ({cl_p_repo_rw/cl_p_repo:.3f}x) "
-         f"-- cost of lumping at the lift centroid; NOT independent of the repo")
+    _fmt(INFO, "  pre-correction-60", f"{cl_p_repo/2.0/1.138:9.2f} /rad  -- what it was before "
+         f"aero.single_fin_cn_alpha and FinSet.mean_square_radius")
     _fmt(INFO, "RocketPy (from dynamics)", f"{cl_p_rpy:9.2f} /rad")
     _fmt(INFO, "  same, renormalised", f"{cl_p_rpy_fix:9.2f} /rad  ({cl_p_rpy_fix/cl_p_rpy:.3f}x) "
          f"-- removing the Af/A_ref double-normalisation")
@@ -246,15 +254,12 @@ def main():
          "exact in both directions -- a bookkeeping error, not a modelling choice"
          if exact else "does not match; the diagnosis above is wrong")
 
-    # What remains genuinely open.
-    resid = cl_p_rpy_fix / cl_p_repo_rw
+    # Where the three now stand, post-correction-60.
     print()
-    _fmt(WARN, "UNRESOLVED", f"even renormalised, RocketPy is {resid:.2f}x the repo. That gap is "
-         f"a real modelling difference")
-    _fmt(WARN, "  because", "the repo builds its per-fin slope from Barrowman 4N(s/d)^2 divided "
-         "by N, RocketPy from Diederich planform correlation with fin_num_correction(4)=n/2")
-    _fmt(WARN, "  status", "NOT settled by anything here. Both are standard methods; they agree "
-         "on fin-set LIFT to 5% and disagree on the per-fin slope roll damping needs")
+    _fmt(PASS, "convergence", f"repo (fixed) {abs(cl_p_repo):.0f} | OpenRocket/2 133 | "
+         f"RocketPy renormalised {abs(cl_p_rpy_fix):.0f} -- all within ~15%")
+    _fmt(WARN, "still do not inherit", "RocketPy's shipped cld_omega. M1 must set Cl_p "
+         "explicitly; see scripts/openrocket_roll_check.py for the kinematic-limit argument")
     rpy_ok = False
 
     # ------------------------------------------- T5: free pitch oscillation, a sign-blind check

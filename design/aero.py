@@ -36,8 +36,37 @@ def fin_cn_alpha(fins: FinSet, ref_diameter: float, mach: float = 0.0) -> float:
 
 def panel_cn_alpha(fins: FinSet, ref_diameter: float, mach: float = 0.0) -> float:
     """Per-panel normal force derivative, referenced to body area. Used for control
-    effectiveness and hinge moments."""
+    effectiveness and hinge moments.
+
+    NOTE THIS IS A ROLL-AVERAGED SHARE, NOT ONE FIN'S LIFT SLOPE. `fin_cn_alpha` is
+    Barrowman's fin-SET value, which already accounts for the set's orientation relative to
+    the angle of attack -- averaged over roll angle, only about half of an N-fin set carries
+    normal force in any one plane. Dividing by N therefore gives each fin's average SHARE of
+    the set, which is roughly half of what one fin actually produces. For anything where
+    every fin is fully effective regardless of clocking -- roll damping and roll authority --
+    use `single_fin_cn_alpha` instead. See design/control.roll_damping_cl_p.
+    """
     return fin_cn_alpha(fins, ref_diameter, mach) / fins.count
+
+
+def single_fin_cn_alpha(fins: FinSet, ref_diameter: float, mach: float = 0.0) -> float:
+    """One fin's own normal force derivative, referenced to body area.
+
+    Barrowman's fin-set formula is a roll-averaged result: of N fins, about N/2 are effective
+    in any given plane at angle of attack. So one fin's own slope is the set value divided by
+    N/2, not by N. That factor of two is exactly what `panel_cn_alpha` is missing for roll.
+
+    Checked against OpenRocket 24.12, which reports roll forcing for a canted fin set
+    directly: its Cl_delta for the aft fins is 1.885x what `panel_cn_alpha` implies, against
+    the 2.0x this returns. The 6% residual is Barrowman versus OpenRocket's Diederich
+    planform correlation and sits well inside this module's stated accuracy.
+    See `scripts/openrocket_roll_check.py`.
+
+    Valid for 3-4 fins, which is the range Barrowman's own formula is valid over. Above 4 the
+    effective count stops being N/2 and needs the correction table in Niskanen's OpenRocket
+    technical documentation; this vehicle has never used anything but 4.
+    """
+    return fin_cn_alpha(fins, ref_diameter, mach) / (fins.count / 2.0)
 
 
 def body_lift_cn_alpha(

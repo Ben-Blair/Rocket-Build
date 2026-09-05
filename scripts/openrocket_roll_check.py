@@ -172,10 +172,10 @@ def main() -> None:
     # a change in the aft/canard RATIO rather than in the total.
     aft_only = run(jar, mach, v, 1.0, ork=variant_ork("Canards"))["ORK_CROLL_DAMP"] / p_hat
     can_only = run(jar, mach, v, 1.0, ork=variant_ork("Aft fins"))["ORK_CROLL_DAMP"] / p_hat
-    cna_a = aero.panel_cn_alpha(ev.rocket.aft_fins, d, mach)
-    cna_c = aero.panel_cn_alpha(ev.rocket.canards, d, mach)
-    repo_a = 2 * ev.rocket.aft_fins.count * cna_a * (ev.rocket.aft_fins.spanwise_cp_radius / d) ** 2
-    repo_c = 2 * ev.rocket.canards.count * cna_c * (ev.rocket.canards.spanwise_cp_radius / d) ** 2
+    # post-correction-60 form, matching design/control.roll_damping_cl_p exactly
+    fa, fc = ev.rocket.aft_fins, ev.rocket.canards
+    repo_a = 2 * fa.count * aero.single_fin_cn_alpha(fa, d, mach) * fa.mean_square_radius / d**2
+    repo_c = 2 * fc.count * aero.single_fin_cn_alpha(fc, d, mach) * fc.mean_square_radius / d**2
     rpy_a, rpy_c = 296.59, 10.87  # from sim/probe.py at this condition
 
     print(f"\n  {'':12s} {'aft fins':>10s} {'canards':>10s} {'total':>10s} {'aft/canard':>11s}")
@@ -216,18 +216,17 @@ def main() -> None:
     print(f"    -> OpenRocket damps ~2x too hard. Its roll FORCING checks out against strip")
     print(f"       theory to 0.5%, so the error is specifically in the damping term.")
 
-    # --- and why the repo is low, which is a different pair of reasons ------------------
-    per_fin_true = 7.7198 * 1.2439  # RocketPy single-fin slope x lift interference
-    k_count = per_fin_true / cna_a
-    k_weight = (i2 / np.trapezoid(cc, yy)) / f.spanwise_cp_radius ** 2
-    print(f"\n  REPO, two compounding causes:")
-    print(f"    {k_count:.3f}x  Barrowman's 4N(s/d)^2 already assumes only ~half the fins are")
+    # --- what correction 60 fixed in this repo, kept as the audit trail ----------------
+    k_count = 2.0   # set value is roll-averaged: ~N/2 fins effective at alpha, all N in roll
+    k_weight = f.mean_square_radius / f.spanwise_cp_radius ** 2
+    print(f"\n  CORRECTION 60 (already applied to design/control.py). The two causes were:")
+    print(f"    {k_count:.3f}x  Barrowman's 4N(s/d)^2 is ROLL-AVERAGED -- only ~half the fins are")
     print(f"           effective AT ANGLE OF ATTACK; for ROLL all {f.count} of them are")
     print(f"    {k_weight:.3f}x  lumping at the lift centroid rather than the y^2-weighted radius")
-    print(f"    {k_count*k_weight:.3f}x  combined -> Cl_p {abs(cl_p_repo)*k_count*k_weight:.0f} /rad")
-    print(f"\n  ALL THREE now converge on Cl_p ~ 125-140 /rad:")
-    print(f"    repo corrected {abs(cl_p_repo)*k_count*k_weight:.0f} | OpenRocket/2 "
-          f"{abs(cl_p_ork)/2:.0f} | RocketPy renormalised 126")
+    print(f"    -> Cl_p went {abs(cl_p_repo)/(k_count*k_weight):.0f} to {abs(cl_p_repo):.0f} /rad")
+    print(f"\n  ALL THREE converge on Cl_p ~ 125-150 /rad once each is corrected:")
+    print(f"    repo (fixed) {abs(cl_p_repo):.0f} | OpenRocket/2 {abs(cl_p_ork)/2:.0f} "
+          f"| RocketPy renormalised 126")
 
     # --- what it does to the number the project actually quotes -------------------------
     # --- and now the part that matters: it barely moves the quoted roll rate ------------
@@ -237,18 +236,20 @@ def main() -> None:
     # Cl_delta, survives. A 2.15x error in Cl_p is therefore a 1.14x error in roll rate.
     roll = ev.roll_interdig
     capped = roll.steady_roll_rate_deg_s * 2.0 / DEFLECTION_LIMIT_DEG
-    print(f"\n  WHAT IT DOES TO THE QUOTED ROLL RATE -- much less than the Cl_p error suggests:")
-    print(f"    Cl_delta is low by the same {k_count:.3f}x (same per-fin slope), and for Cl_delta")
-    print(f"    the lift centroid IS the right lumping, so only {k_weight:.3f}x survives the ratio.")
+    print(f"\n  WHY THE OBSERVABLE BARELY MOVED, which is why this survived so long:")
+    print(f"    Cl_delta read the SAME panel_cn_alpha, so it was low by the same {k_count:.1f}x.")
+    print(f"    Steady roll rate goes as Cl_delta/|Cl_p|, so that factor cancels out of the")
+    print(f"    ratio entirely and only the {k_weight:.3f}x y^2 weighting survives it.")
     print(f"      at the {DEFLECTION_LIMIT_DEG:.0f} deg deflection limit: "
-          f"{roll.steady_roll_rate_deg_s:.0f} -> {roll.steady_roll_rate_deg_s/k_weight:.0f} deg/s")
-    print(f"      at the 2 deg roll command cap:      {capped:.0f} -> {capped/k_weight:.0f} deg/s")
-    print(f"\n  So the gyro-saturation argument SURVIVES: "
-          f"{roll.steady_roll_rate_deg_s/k_weight:.0f} deg/s is still "
-          f"{roll.steady_roll_rate_deg_s/k_weight/2000*100:.0f}% of a +/-2000 dps part.")
-    print(f"  Correction 58 stands. An earlier reading of this script said the roll rate fell")
-    print(f"  4x and cascaded into everything; that was wrong, because it scaled Cl_p without")
-    print(f"  scaling Cl_delta by the error the two share.")
+          f"{roll.steady_roll_rate_deg_s*k_weight:.0f} -> {roll.steady_roll_rate_deg_s:.0f} deg/s")
+    print(f"      at the 2 deg roll command cap:      {capped*k_weight:.0f} -> {capped:.0f} deg/s")
+    print(f"\n  A model can be materially wrong in both numerator and denominator and still")
+    print(f"  predict the observable. That is the argument for checking DERIVATIVES against")
+    print(f"  another code rather than only checking outcomes.")
+    print(f"\n  ONE CONCLUSION DID MOVE: {roll.steady_roll_rate_deg_s:.0f} deg/s is "
+          f"{roll.steady_roll_rate_deg_s/2000*100:.0f}% of a +/-2000 dps part, so the deflection")
+    print(f"  limit no longer SATURATES it -- corrections 55 and 58's premise. The roll cap")
+    print(f"  survives on zero-headroom grounds, not saturation. See correction 60.")
 
 
 if __name__ == "__main__":

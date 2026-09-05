@@ -316,14 +316,32 @@ def roll_damping_cl_p(rocket: Rocket, mach: float = 0.0) -> float:
 
     Computing this from geometry matters: a hand-waved constant is easily two orders of
     magnitude off, and roll damping is what sets the steady roll rate you have to control.
+
+    TWO CORRECTIONS APPLIED HERE, both found by cross-checking against OpenRocket and
+    RocketPy (`scripts/openrocket_roll_check.py`, `sim/probe.py`); together they were a
+    factor of 2.15:
+
+    1. `single_fin_cn_alpha`, not `panel_cn_alpha`. Barrowman's fin-set value is
+       roll-averaged -- about N/2 fins carry normal force in any one plane at angle of
+       attack -- but EVERY fin damps roll, whatever its clocking, because rolling gives them
+       all the same local incidence. Dividing the set value by N understated each fin by 2x.
+    2. `mean_square_radius`, not `spanwise_cp_radius**2`. Roll damping weights chord by y^2,
+       and the square of the area centroid is not the centroid of the square.
+
+    THE STEADY ROLL RATE BARELY MOVED, which is why this went unnoticed. `roll_authority`
+    shares correction 1 (it was reading the same `panel_cn_alpha`), and steady roll rate goes
+    as Cl_delta/|Cl_p|, so that factor cancels out of the ratio entirely. Only correction 2
+    survives it: 12%, not 2.15x. A model can be materially wrong in both numerator and
+    denominator and still predict the observable, which is the argument for checking
+    derivatives against another code rather than only checking outcomes.
     """
     d = rocket.diameter
     total = 0.0
     for fins in (rocket.aft_fins, rocket.canards):
         if fins is None:
             continue
-        panel = aero.panel_cn_alpha(fins, d, mach)
-        total += fins.count * panel * (fins.spanwise_cp_radius / d) ** 2
+        panel = aero.single_fin_cn_alpha(fins, d, mach)
+        total += fins.count * panel * fins.mean_square_radius / d**2
     return -2.0 * total
 
 
@@ -369,8 +387,12 @@ def roll_authority(
     spacing_cal = (rocket.aft_fins.cp_station - rocket.canards.cp_station) / d
     strength = interference.strength(spacing_cal)
 
-    canard_panel_cna = aero.panel_cn_alpha(rocket.canards, d, point.mach)
-    aft_panel_cna = aero.panel_cn_alpha(rocket.aft_fins, d, point.mach)
+    # Every canard contributes its full lift slope to roll regardless of clocking, so this
+    # is the single-fin slope, not the roll-averaged per-panel share. Same correction as in
+    # roll_damping_cl_p, and applying it to only one of the two would be worse than applying
+    # it to neither -- the steady roll rate is their ratio.
+    canard_panel_cna = aero.single_fin_cn_alpha(rocket.canards, d, point.mach)
+    aft_panel_cna = aero.single_fin_cn_alpha(rocket.aft_fins, d, point.mach)
 
     cl_canard = rocket.canards.count * canard_panel_cna * (
         rocket.canards.spanwise_cp_radius / d
