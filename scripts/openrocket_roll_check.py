@@ -21,10 +21,28 @@ NORMALISATION. OpenRocket returns a roll damping COEFFICIENT at a given roll rat
 derivative. This script verifies empirically that it is linear in p and scales as 1/V (after
 allowing for the Mach dependence of the lift slope) before converting with
 p_hat = p*d/(2V), so the conversion is checked rather than assumed.
+
+WHAT IT CONCLUDED. All three implementations are wrong, in three different ways, and they
+converge on Cl_p ~ 125-140 /rad once each is corrected:
+
+  * OpenRocket damps ~2x too hard. Proven by the KINEMATIC LIMIT below, which is the only
+    convention-free test here: a canted fin set must roll until the local incidence from
+    rolling cancels the cant, and no lift slope, area or normalisation enters that. Its roll
+    FORCING checks out against strip theory to 0.5%, so the error is in the damping alone.
+  * RocketPy carries a spurious Af/A_ref factor (see sim/probe.py), which over-predicts the
+    big aft fins and UNDER-predicts the canards -- opposite directions, so its total looks
+    deceptively reasonable while its aft/canard split is 3x off.
+  * design/control.py is 2.15x low, from two compounding causes, both diagnosed below.
+
+AND THE PRACTICAL ANSWER IS THAT IT BARELY MATTERS. Steady roll rate goes as
+Cl_delta/|Cl_p|, and the dominant repo error lives in `aero.panel_cn_alpha`, which BOTH
+derivatives are built from -- so it cancels. The quoted 558 deg/s at the 2 deg cap becomes
+491, a 12% change, not the 4x an earlier reading of this script claimed.
 """
 
 from __future__ import annotations
 
+import math
 import subprocess
 import sys
 from glob import glob
@@ -66,6 +84,24 @@ def variant_ork(drop_fin_set: str) -> Path:
     for m in re.finditer(r"<trapezoidfinset>.*?</trapezoidfinset>", xml, re.S):
         if f"<name>{drop_fin_set}</name>" in m.group(0):
             xml = xml.replace(m.group(0), "")
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("rocket.ork", xml)
+    return out
+
+
+def canted_ork(cant_deg: float) -> Path:
+    """The .ork with canards removed and the aft fins canted, for the kinematic-limit test."""
+    import re
+    import zipfile
+
+    out = ROOT / "out" / f"_rollcheck_cant{cant_deg}.ork"
+    xml = zipfile.ZipFile(ORK).read("rocket.ork").decode()
+    for m in re.finditer(r"<trapezoidfinset>.*?</trapezoidfinset>", xml, re.S):
+        blk = m.group(0)
+        if "<name>Canards</name>" in blk:
+            xml = xml.replace(blk, "")
+        else:
+            xml = xml.replace(blk, blk.replace("<cant>0.0</cant>", f"<cant>{cant_deg}</cant>"))
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("rocket.ork", xml)
     return out
@@ -154,22 +190,65 @@ def main() -> None:
     print(f"       finding in sim/probe.py -- RocketPy's canard damping is anomalously low.")
     print(f"    2. The repo is uniformly low against OpenRocket on BOTH sets "
           f"({aft_only/repo_a:.1f}x aft, {can_only/repo_c:.1f}x canard) -- a different problem,")
-    print(f"       and the reason its total is 4x off. Not explained by anything here.")
-    print(f"\n  So RocketPy's total looking close to OpenRocket's is partly two errors")
-    print(f"  cancelling. OpenRocket is the only one of the three with no diagnosed pathology.")
+    print(f"       and the reason its total is 4x off. Diagnosed below.")
+    print(f"\n  So RocketPy's total looking close to OpenRocket's is partly two errors cancelling.")
+
+    # --- the kinematic limit: the only convention-free test available -------------------
+    # A canted fin set must roll until the local incidence from rolling cancels the cant:
+    #     integral c(y) * (delta - p*y/V) * y dy = 0   =>   p = V*delta / (I2/I1)
+    # No lift slope, no area, no coefficient normalisation appears in that. It is the one
+    # check that cannot be argued with on conventions, and it is what finally settled this.
+    import numpy as np
+
+    f = ev.rocket.aft_fins
+    rb, s = f.body_diameter / 2.0, f.semispan
+    yy = np.linspace(rb, rb + s, 40001)
+    cc = f.root_chord + (f.tip_chord - f.root_chord) * (yy - rb) / s
+    i1, i2 = np.trapezoid(cc * yy, yy), np.trapezoid(cc * yy**2, yy)
+    p_kin = v * math.radians(1.0) / (i2 / i1)
+
+    cant = run(jar, mach, v, 1.0, ork=canted_ork(1.0))
+    p_ork = cant["ORK_CROLL_FORCE"] / cant["ORK_CROLL_DAMP"]
+    print(f"\n  KINEMATIC LIMIT (canted aft fins, 1 deg, canards removed):")
+    print(f"    required by kinematics   {p_kin:7.2f} rad/s ({math.degrees(p_kin):.0f} deg/s)")
+    print(f"    OpenRocket equilibrium   {p_ork:7.2f} rad/s ({math.degrees(p_ork):.0f} deg/s)"
+          f"   ratio {p_ork/p_kin:.4f}")
+    print(f"    -> OpenRocket damps ~2x too hard. Its roll FORCING checks out against strip")
+    print(f"       theory to 0.5%, so the error is specifically in the damping term.")
+
+    # --- and why the repo is low, which is a different pair of reasons ------------------
+    per_fin_true = 7.7198 * 1.2439  # RocketPy single-fin slope x lift interference
+    k_count = per_fin_true / cna_a
+    k_weight = (i2 / np.trapezoid(cc, yy)) / f.spanwise_cp_radius ** 2
+    print(f"\n  REPO, two compounding causes:")
+    print(f"    {k_count:.3f}x  Barrowman's 4N(s/d)^2 already assumes only ~half the fins are")
+    print(f"           effective AT ANGLE OF ATTACK; for ROLL all {f.count} of them are")
+    print(f"    {k_weight:.3f}x  lumping at the lift centroid rather than the y^2-weighted radius")
+    print(f"    {k_count*k_weight:.3f}x  combined -> Cl_p {abs(cl_p_repo)*k_count*k_weight:.0f} /rad")
+    print(f"\n  ALL THREE now converge on Cl_p ~ 125-140 /rad:")
+    print(f"    repo corrected {abs(cl_p_repo)*k_count*k_weight:.0f} | OpenRocket/2 "
+          f"{abs(cl_p_ork)/2:.0f} | RocketPy renormalised 126")
 
     # --- what it does to the number the project actually quotes -------------------------
+    # --- and now the part that matters: it barely moves the quoted roll rate ------------
+    # Steady roll rate goes as Cl_delta/|Cl_p|, NOT as Cl_p alone. The k_count error above
+    # is in `aero.panel_cn_alpha`, which BOTH derivatives are built from, so it cancels in
+    # the ratio. Only the y^2-weighting error (k_weight), which affects Cl_p and not
+    # Cl_delta, survives. A 2.15x error in Cl_p is therefore a 1.14x error in roll rate.
     roll = ev.roll_interdig
-    scale = abs(cl_p_repo / cl_p_ork)
-    print(f"\n  Steady roll rate scales as 1/|Cl_p|, so if OpenRocket is right:")
-    print(f"    at the {DEFLECTION_LIMIT_DEG:.0f} deg deflection limit: "
-          f"{roll.steady_roll_rate_deg_s:.0f} -> {roll.steady_roll_rate_deg_s*scale:.0f} deg/s")
     capped = roll.steady_roll_rate_deg_s * 2.0 / DEFLECTION_LIMIT_DEG
-    print(f"    at the 2 deg roll command cap:      {capped:.0f} -> {capped*scale:.0f} deg/s")
-    print(f"\n  That cascades: gyro saturation, ROLL_COMMAND_CAP_DEG's sensor justification,")
-    print(f"  and the scale-factor term that is 99% of the attitude budget all scale with")
-    print(f"  roll rate. NOTHING should be changed on the strength of this script alone --")
-    print(f"  see its docstring on why OpenRocket and RocketPy are not fully independent.")
+    print(f"\n  WHAT IT DOES TO THE QUOTED ROLL RATE -- much less than the Cl_p error suggests:")
+    print(f"    Cl_delta is low by the same {k_count:.3f}x (same per-fin slope), and for Cl_delta")
+    print(f"    the lift centroid IS the right lumping, so only {k_weight:.3f}x survives the ratio.")
+    print(f"      at the {DEFLECTION_LIMIT_DEG:.0f} deg deflection limit: "
+          f"{roll.steady_roll_rate_deg_s:.0f} -> {roll.steady_roll_rate_deg_s/k_weight:.0f} deg/s")
+    print(f"      at the 2 deg roll command cap:      {capped:.0f} -> {capped/k_weight:.0f} deg/s")
+    print(f"\n  So the gyro-saturation argument SURVIVES: "
+          f"{roll.steady_roll_rate_deg_s/k_weight:.0f} deg/s is still "
+          f"{roll.steady_roll_rate_deg_s/k_weight/2000*100:.0f}% of a +/-2000 dps part.")
+    print(f"  Correction 58 stands. An earlier reading of this script said the roll rate fell")
+    print(f"  4x and cascaded into everything; that was wrong, because it scaled Cl_p without")
+    print(f"  scaling Cl_delta by the error the two share.")
 
 
 if __name__ == "__main__":

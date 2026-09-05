@@ -9,4 +9,4 @@ out/*.csv
 out/javacls/
 *.class
 out/cad/*.png
-out/_rollcheck_no_*.ork
+out/_rollcheck_*.ork
