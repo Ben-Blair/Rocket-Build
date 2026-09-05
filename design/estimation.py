@@ -154,6 +154,10 @@ class SensorSpec:
     # accel terms
     accel_full_scale_g: float = 0.0
 
+    # mag terms
+    mag_noise_gauss: float = 0.0  # RMS, per axis
+    mag_rate_hz: float = 0.0  # max output data rate
+
     # baro terms
     baro_noise_pa: float = 0.0
 
@@ -189,8 +193,11 @@ ACCEL_16G = SensorSpec(
 
 MAG_MMC5983 = SensorSpec(
     "MMC5983MA magnetometer", "mag", measured=True,
-    note="MEMSIC: +/-8 gauss, 0.4 mgauss RMS noise, I2C or SPI, 3 x 3 mm. About $5 in ones. "
-         "Range matters more than noise here -- a servo bus transient must not saturate it")
+    mag_noise_gauss=0.4e-3, mag_rate_hz=1000.0,
+    note="MEMSIC: +/-8 gauss, 0.4 mgauss RMS noise, 1 kHz max ODR, I2C or SPI, 3 x 3 mm. "
+         "About $5 in ones. Range matters more than noise here -- a servo bus transient must "
+         "not saturate it -- and mag_aided_roll_error() shows the SENSOR's noise is never "
+         "what limits roll angle; the airframe's own magnetic disturbance is")
 
 BARO_MS5611 = SensorSpec(
     "MS5611 barometer", "baro", measured=True, baro_noise_pa=1.5,
@@ -427,6 +434,156 @@ def attitude_error_budget(ev, gyro: SensorSpec = GYRO_ICM42688,
     ]
     return ErrorBudget(terms, gyro, imu_rate_hz, roll_rate, t_burn, t_apogee,
                        ev.control_seconds)
+
+
+# ---------------------------------------------------------------------------------------
+# Magnetically aided roll angle -- the number `attitude_error_budget()` does not produce
+# ---------------------------------------------------------------------------------------
+#
+# WHY THIS EXISTS. `attitude_error_budget()` propagates the gyro OPEN LOOP: every term in it
+# grows with time, and it reaches 7.9 deg RSS by apogee against a 5.0 deg budget even with
+# the roll command capped. `check_estimation()` has said in as many words since D8 that "the
+# aiding is load-bearing, not a refinement" -- and then nothing here ever modelled the aided
+# result. So the project carried a budget it fails unaided, a magnetometer added specifically
+# to fix the axis that fails it, and no number connecting the two. Correction 58 tried to
+# decide a gyro purchase against the unaided figure; this is the model that decision needed.
+#
+# THE MECHANISM, AND WHY IT CHANGES THE RANKING. The dominant unaided term is SCALE FACTOR AT
+# ROLL RATE, which is `tolerance x rate` -- a RATE error, not a random walk. Integrated open
+# loop it grows without bound. Under aiding it does not: an absolute roll reference turns a
+# rate error into a bounded lag, and a first-order filter of time constant `tau` settles at
+# `rate_error x tau`. That is why the aided answer is not a scaled version of the unaided one.
+#
+# WHAT ACTUALLY LIMITS IT, WHICH IS NOT THE SENSOR. Roll angle is resolved from the field
+# component PERPENDICULAR to the roll axis. For a near-vertical rocket at continental-US
+# magnetic inclination that is the HORIZONTAL component -- `B cos(inclination)`, about 0.21
+# of 0.50 gauss at 65 deg, the SMALLER part of the field. Against that the MMC5983MA's
+# 0.4 mgauss RMS is worth about 0.1 deg and is never the limit. What limits roll angle is the
+# airframe's OWN disturbance -- four servos and a battery beside the magnetometer, which
+# `docs/07` lists as an open item the cert flights measure. So this model is parameterised on
+# that disturbance and inverted: `required_magnetic_cleanliness()` answers "how clean does the
+# airframe have to be", which is a REQUIREMENT a swing test can be run against rather than a
+# number nobody can supply yet. Same shape as venting.py: the model gives the floor.
+#
+# A DISTURBANCE FIXED IN THE BODY FRAME IS NOT NOISE. It rotates with the vehicle, so it is
+# coherent with the very signal being measured and a filter cannot average it away -- it is
+# ADDED to the total rather than RSS'd into it. That is the pessimistic and correct treatment,
+# and it is why hard/soft-iron calibration (which removes the body-fixed part) matters more
+# than picking a quieter part.
+
+EARTH_FIELD_GAUSS = 0.50
+MAGNETIC_INCLINATION_DEG = 65.0  # continental US, typical; the roll-resolving component is
+                                 # B cos(inclination) for a vertical vehicle
+MAG_SAMPLES_PER_REV_MIN = 10.0   # below this the phase is aliased rather than tracked
+
+
+@dataclass
+class MagAidedRoll:
+    roll_rate_deg_s: float
+    tau_s: float
+    field_perp_gauss: float
+    gyro_rate_error_deg_s: float
+    err_gyro_deg: float
+    err_mag_noise_deg: float
+    err_disturbance_deg: float
+    total_deg: float
+    samples_per_rev: float
+    mag_rate_hz: float
+    disturbance_gauss: float
+
+    @property
+    def phase_observable(self) -> bool:
+        return self.samples_per_rev >= MAG_SAMPLES_PER_REV_MIN
+
+
+def _field_perp(inclination_deg: float = MAGNETIC_INCLINATION_DEG) -> float:
+    """Gauss resolving roll for a near-vertical vehicle."""
+    return EARTH_FIELD_GAUSS * math.cos(math.radians(inclination_deg))
+
+
+def _optimal_tau(rate_err_deg_s: float, noise_deg: float, mag_rate_hz: float) -> float:
+    """The filter time constant minimising RSS(gyro lag, filtered mag noise).
+
+    Long tau trusts the gyro and carries `rate_err x tau` of lag; short tau trusts the
+    magnetometer and passes more of its noise. Minimising `(a tau)^2 + b^2/(2 tau f)`
+    gives `tau = (b^2 / (4 a^2 f))^(1/3)`.
+    """
+    if rate_err_deg_s <= 0.0 or mag_rate_hz <= 0.0:
+        return 1.0
+    return (noise_deg ** 2 / (4.0 * rate_err_deg_s ** 2 * mag_rate_hz)) ** (1.0 / 3.0)
+
+
+def mag_aided_roll_error(ev, gyro: SensorSpec = GYRO_ICM42688,
+                         mag: SensorSpec = MAG_MMC5983,
+                         roll_rate_deg_s: float | None = None,
+                         mag_rate_hz: float = 100.0,
+                         disturbance_gauss: float = 0.0,
+                         tau_s: float | None = None,
+                         inclination_deg: float = MAGNETIC_INCLINATION_DEG) -> MagAidedRoll:
+    """Steady-state roll-angle error with the magnetometer in the loop."""
+    if roll_rate_deg_s is None:
+        roll_rate_deg_s = capped_roll_rate(ev)
+
+    b_perp = _field_perp(inclination_deg)
+    # The gyro's dominant contribution at this rate is scale factor -- a RATE error.
+    rate_err = gyro.scale_factor * roll_rate_deg_s
+    noise_deg = math.degrees(math.atan2(mag.mag_noise_gauss, b_perp))
+
+    if tau_s is None:
+        tau_s = _optimal_tau(rate_err, noise_deg, mag_rate_hz)
+
+    err_gyro = rate_err * tau_s
+    atten = math.sqrt(1.0 / max(2.0 * tau_s * mag_rate_hz, 1e-9))
+    err_noise = noise_deg * min(atten, 1.0)
+    err_dist = math.degrees(math.atan2(disturbance_gauss, b_perp))
+
+    total = math.sqrt(err_gyro ** 2 + err_noise ** 2) + err_dist
+    revs_per_s = roll_rate_deg_s / 360.0
+    spr = mag_rate_hz / revs_per_s if revs_per_s > 0 else float("inf")
+
+    return MagAidedRoll(
+        roll_rate_deg_s=roll_rate_deg_s, tau_s=tau_s, field_perp_gauss=b_perp,
+        gyro_rate_error_deg_s=rate_err, err_gyro_deg=err_gyro,
+        err_mag_noise_deg=err_noise, err_disturbance_deg=err_dist, total_deg=total,
+        samples_per_rev=spr, mag_rate_hz=mag_rate_hz,
+        disturbance_gauss=disturbance_gauss)
+
+
+def wire_field_gauss(current_a: float, distance_m: float) -> float:
+    """Field from a single straight conductor, gauss -- `mu0 I / (2 pi r)`.
+
+    Here to give `required_magnetic_cleanliness()` a SCALE, because a milligauss budget means
+    nothing until it is next to the thing that violates it. One servo lead carrying 1 A at
+    50 mm is about 40 mgauss, which is already twice the allowance -- so the disturbance term
+    in this model is not a rounding error to be waved through, it is the binding constraint,
+    and it is set by HARNESS ROUTING rather than by any part choice. A twisted pair cancels
+    to first order and is the reason this is a solvable problem rather than a fatal one; an
+    untwisted single-ended run past the magnetometer is not.
+    """
+    mu0 = 4.0e-7 * math.pi
+    if distance_m <= 0.0:
+        return float("inf")
+    return (mu0 * current_a / (2.0 * math.pi * distance_m)) * 1.0e4  # tesla -> gauss
+
+
+def required_magnetic_cleanliness(ev, gyro: SensorSpec = GYRO_ICM42688,
+                                  mag: SensorSpec = MAG_MMC5983,
+                                  roll_rate_deg_s: float | None = None,
+                                  mag_rate_hz: float = 100.0,
+                                  budget_deg: float = ATTITUDE_ERROR_BUDGET_DEG,
+                                  inclination_deg: float = MAGNETIC_INCLINATION_DEG) -> float:
+    """Gauss of body-fixed disturbance the airframe may carry and still meet `budget_deg`.
+
+    The number a swing test is run against. Returns -1.0 if the budget is unreachable even in
+    a magnetically perfect airframe, which would make the roll rate itself the problem.
+    """
+    clean = mag_aided_roll_error(ev, gyro=gyro, mag=mag, roll_rate_deg_s=roll_rate_deg_s,
+                                 mag_rate_hz=mag_rate_hz, disturbance_gauss=0.0,
+                                 inclination_deg=inclination_deg)
+    headroom = budget_deg - clean.total_deg
+    if headroom <= 0.0:
+        return -1.0
+    return _field_perp(inclination_deg) * math.tan(math.radians(headroom))
 
 
 # ---------------------------------------------------------------------------------------
@@ -752,5 +909,45 @@ def check_estimation(ev, gyro: SensorSpec = GYRO_ICM42688,
                 f"'{arch.name}' has no attitude aiding at all, and unaided propagation "
                 f"reaches {budget.total_at_apogee:.1f} deg by apogee against a "
                 f"{ATTITUDE_ERROR_BUDGET_DEG:.1f} deg budget")
+
+    # --- and what the aiding actually buys, which nothing here used to compute -----------
+    aided_cap = mag_aided_roll_error(ev, gyro, roll_rate_deg_s=roll_capped)
+    aided_lim = mag_aided_roll_error(ev, gyro, roll_rate_deg_s=roll_limit)
+    allowance = required_magnetic_cleanliness(ev, gyro, roll_rate_deg_s=roll_limit)
+    notes.append(
+        f"AIDED roll angle is {aided_cap.total_deg:.2f} deg at the {ROLL_COMMAND_CAP_DEG:.0f} "
+        f"deg cap and {aided_lim.total_deg:.2f} deg at the {DEFLECTION_LIMIT_DEG:.0f} deg "
+        f"limit, against the same {ATTITUDE_ERROR_BUDGET_DEG:.1f} deg budget unaided "
+        f"propagation misses by 3 deg. The magnetometer does not refine the roll estimate, "
+        f"it IS the roll estimate -- so the unaided budget is the wrong instrument for any "
+        f"question about the roll CAP")
+    # The aided number above is only meaningful if the magnetometer can resolve roll PHASE
+    # at the rate it is being asked to -- undersample it and the model above answers a
+    # question that is not being asked. Checked, not just computed: see the vent-hole and
+    # radial-hole lessons -- a computed invariant nobody reads back is not a check.
+    if not aided_lim.phase_observable:
+        v.append(
+            f"the magnetometer cannot track roll PHASE at the {roll_limit:.0f} deg/s "
+            f"deflection limit -- {aided_lim.samples_per_rev:.1f} samples/rev at "
+            f"{aided_lim.mag_rate_hz:.0f} Hz is below the {MAG_SAMPLES_PER_REV_MIN:.0f}/rev "
+            f"this model assumes, so the aided-error number above does not apply there")
+    else:
+        notes.append(
+            f"phase-tracking margin: {aided_lim.samples_per_rev:.0f} mag samples/rev at the "
+            f"{DEFLECTION_LIMIT_DEG:.0f} deg limit against the {MAG_SAMPLES_PER_REV_MIN:.0f}/rev "
+            f"floor this model assumes -- {aided_lim.samples_per_rev / MAG_SAMPLES_PER_REV_MIN:.1f}x, "
+            f"at the default {aided_lim.mag_rate_hz:.0f} Hz read rate")
+    if allowance <= 0.0:
+        v.append("the attitude budget is unreachable even in a magnetically perfect airframe")
+    else:
+        one_amp_50mm = wire_field_gauss(1.0, 0.050)
+        notes.append(
+            f"WHAT NOW LIMITS ROLL ANGLE IS THE AIRFRAME, NOT THE SENSOR: the budget allows "
+            f"{allowance * 1000:.1f} mgauss of BODY-FIXED disturbance, and one servo lead at "
+            f"1 A and 50 mm is {one_amp_50mm * 1000:.0f} mgauss -- over it on its own. A "
+            f"twisted pair cancels to first order; an untwisted run past the magnetometer "
+            f"does not. This is a HARNESS ROUTING requirement and it is unmeasured -- "
+            f"docs/07's 'four servos and a battery next to a magnetometer, in an airframe "
+            f"nobody has swung'. Swing it before trusting any roll number")
 
     return EstimationCheck(not v, v, notes)

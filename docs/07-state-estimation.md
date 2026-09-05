@@ -252,8 +252,14 @@ would have been found in flight.
 - **`roll_duty = 0.25`** — the fraction of the coast spent near full roll rate — is a guess
   with the same standing as `control.achievable_crossrange`'s duty cycle, and the dominant
   error term is directly proportional to it.
-- **The magnetic environment.** Four servos and a battery next to a magnetometer, in an
-  airframe nobody has swung. The cert flights measure it.
+- **The magnetic environment, now with a threshold to swing it against.** Four servos and a
+  battery next to a magnetometer, in an airframe nobody has swung. `docs/01` correction 59
+  closed the gap this bullet used to just flag: `design/estimation.py`'s
+  `required_magnetic_cleanliness()` puts the number at **18.0 mgauss** of body-fixed
+  disturbance at the deflection limit, and `wire_field_gauss()` shows one untwisted servo
+  lead at 1 A and 50 mm is 40 mgauss on its own — over budget before anything else on the
+  harness is counted. The cert flights still measure it; now there is a pass/fail line to
+  measure it against.
 - **Everything downstream of `Cl_delta`.** The roll rate that drives both the gyro range and
   the dominant attitude error term comes from the interference model, which `docs/01` calls
   the weakest part of the whole analysis. **GV-2 turns it into a measurement, and both of

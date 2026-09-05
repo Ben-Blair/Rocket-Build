@@ -44,9 +44,12 @@ Read this first if you are picking the project back up.
   factor at roll rate). L1 is *hold roll angle*, so uncapping breaks the thing it was meant
   to enable. At layout: specify **selectable** FS to ±4000 dps and **run at ±2000** — the
   option is free, the capability is not. The real lever is scale-factor **calibration**
-  (0.5% spec limit vs ~0.05–0.1% measured), and the real gap is that
-  `attitude_error_budget()` has **no magnetometer term at all**, so the aided number — the
-  one that decides whether the cap can ever move — does not exist yet. Also corrected on the way past:
+  (0.5% spec limit vs ~0.05–0.1% measured). Correction 55's original gap here — that
+  `attitude_error_budget()` had **no magnetometer term at all**, so the aided number that
+  decides whether the cap can ever move did not exist — **is CLOSED by correction 59**:
+  aided, the same 7.94°/31.45° unaided pair becomes **0.08°/0.12°**, and what now actually
+  limits roll angle is the airframe's own magnetic cleanliness (an 18.0 mgauss budget
+  against one servo lead's 40), not the sensor or the gyro range. Also corrected on the way past:
   the vehicle does not respond sluggishly (pitch quarter-period is **60–68 ms** across every
   geometry tried) — "slow curve" is a lateral-g magnitude problem, not a bandwidth one, so
   the authority/altitude menu in correction 55 is the knob, and **it is left open, not
@@ -2724,6 +2727,50 @@ that silently recurs:
    Three claims introduced by correction 55 are corrected in place rather than left to be
    found: its own "THE ANSWER IS A WIDER-RANGE GYRO" section, the State of play bullet above
    it, and the open item this finding put at the top of `docs/06`.
+
+59. **CORRECTION 58'S GAP IS CLOSED -- `design/estimation.py` NOW HAS THE AIDED NUMBER, AND
+   CLOSING IT MOVED THE OPEN ITEM RATHER THAN RETIRING IT.** `mag_aided_roll_error()` models
+   the mechanism correction 58 described but did not compute: the dominant unaided term,
+   gyro scale factor at roll rate, is a RATE error, and an absolute reference (the
+   magnetometer) turns a rate error into a bounded lag instead of an open-loop integral, via
+   a complementary filter whose time constant `_optimal_tau()` picks to minimise RSS(gyro
+   lag, filtered mag noise).
+
+   | | roll rate | UNAIDED (apogee) | AIDED |
+   |---|---|---|---|
+   | at the 2 deg cap | 558 deg/s | 7.94 deg | **0.08 deg** |
+   | at the 8 deg deflection limit | 2232 deg/s | 31.45 deg | **0.12 deg** |
+
+   **The magnetometer does not refine the roll estimate, it IS the roll estimate** -- so
+   correction 55's uncapped-gyro comparison, and correction 58's own reversal of it, were
+   both run on the wrong instrument for what happens once the sensor everyone agrees is
+   load-bearing is actually in the loop. Neither aided total above is sensor noise: the
+   MMC5983MA's 0.4 mgauss RMS is worth about 0.1 deg against the roll-resolving field
+   component (`B cos(inclination)`, the HORIZONTAL part, 0.21 of 0.50 gauss at 65 deg -- the
+   smaller half of the field). Checked, not assumed: `mag_aided_roll_error()` also reports
+   `samples_per_rev`, and at the deflection limit it is 16.1 against a 10/rev floor this
+   model treats as the aliasing point -- tracked, but only 1.6x margin, now a live
+   `check_estimation()` note instead of a computed-and-ignored field.
+
+   **WHAT ACTUALLY LIMITS ROLL ANGLE IS NOT THE SENSOR -- IT IS THE AIRFRAME, AND THIS IS
+   THE PART A DATASHEET COMPARISON WOULD MISS.** A disturbance fixed in the body frame
+   rotates WITH the vehicle, so it is coherent with the very signal being measured and no
+   filter averages it away -- it ADDS to the total instead of RSS'ing into it.
+   `required_magnetic_cleanliness()` inverts the budget to the number that actually matters:
+   at the deflection limit the airframe may carry **18.0 mgauss** of body-fixed disturbance
+   and still meet the 5 deg budget. `wire_field_gauss()` gives that a scale: one servo lead
+   at 1 A, 50 mm from the magnetometer, is **40 mgauss** -- over the WHOLE allowance by
+   itself, before the battery or the other three servos are counted. A twisted pair cancels
+   to first order; an untwisted single-ended run past the sensor does not.
+
+   **So the roll cap no longer waits on a gyro decision or an estimator design -- it waits
+   on HARNESS ROUTING, a number nobody has measured.** `docs/07`'s "Still open" bullet --
+   "four servos and a battery next to a magnetometer, in an airframe nobody has swung" --
+   now has a threshold to swing it against instead of just a warning. `check_estimation()`
+   carries all of this as notes (and would carry it as a violation if the budget were
+   unreachable even magnetically clean, or if phase tracking fell below the floor); the full
+   walkthrough is `scripts/estimation_trade.py`'s "THE GAP CORRECTION 58 FOUND" section.
+   Nothing in the vehicle's numbers moved -- this closes an unknown, not a defect.
 
 Still TBD and only you can close them: C1 (cert held), C3 (budget), C4 (calendar), C6 (fab
 access), the cert milestone dates in §2.1, and D1/D9. **D7 and D8 are both closed** —

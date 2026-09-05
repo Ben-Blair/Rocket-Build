@@ -219,6 +219,83 @@ def main() -> None:
     say(f"  bias term from {budget.gyro.bias_uncal_deg_s * f.apogee_time:.1f} deg to "
         f"{budget.gyro.bias_deg_s * f.apogee_time:.2f} deg by apogee.")
 
+    rule("THE GAP CORRECTION 58 FOUND -- THE AIDED NUMBER, WHICH DECIDES IF THE CAP CAN MOVE")
+    say()
+    say("  Everything above is GYRO-ONLY, propagated open loop. But roll angle is observed by")
+    say("  the magnetometer or by nothing (finding 3) -- so the unaided total above is not the")
+    say("  number that decides whether `ROLL_COMMAND_CAP_DEG` can ever move, and until now")
+    say("  nothing here computed the number that is. `mag_aided_roll_error()` does: the")
+    say("  dominant unaided term, scale factor at roll rate, is a RATE error, and an absolute")
+    say("  reference turns a rate error into a bounded lag rather than an open-loop integral.")
+    say()
+    aided_cap = est.mag_aided_roll_error(ev, budget.gyro, roll_rate_deg_s=capped_rate)
+    aided_lim = est.mag_aided_roll_error(ev, budget.gyro, roll_rate_deg_s=limit_rate)
+    unaided_lim = est.attitude_error_budget(ev, budget.gyro, roll_rate_deg_s=limit_rate)
+    say(f"  {'':22s} {'roll rate':>11s} {'tau':>8s} {'gyro lag':>10s} {'mag noise':>10s} "
+        f"{'AIDED':>9s} {'UNAIDED':>9s}")
+    say("  " + "-" * 82)
+    say(f"  {'at the ' + f'{ROLL_COMMAND_CAP_DEG:.0f} deg cap':22s} "
+        f"{aided_cap.roll_rate_deg_s:9.0f}°/s {aided_cap.tau_s * 1000:6.1f} ms "
+        f"{aided_cap.err_gyro_deg:8.3f}° {aided_cap.err_mag_noise_deg:8.3f}° "
+        f"{aided_cap.total_deg:8.2f}° {budget.total_at_apogee:8.2f}°")
+    say(f"  {'at the ' + f'{DEFLECTION_LIMIT_DEG:.0f} deg limit':22s} "
+        f"{aided_lim.roll_rate_deg_s:9.0f}°/s {aided_lim.tau_s * 1000:6.1f} ms "
+        f"{aided_lim.err_gyro_deg:8.3f}° {aided_lim.err_mag_noise_deg:8.3f}° "
+        f"{aided_lim.total_deg:8.2f}° {unaided_lim.total_at_apogee:8.2f}°")
+    say()
+
+    def para(t: str) -> None:
+        for chunk in textwrap.wrap(t, 84):
+            say(f"  {chunk}")
+        say()
+
+    para(f"**{budget.total_at_apogee:.1f}° unaided becomes {aided_cap.total_deg:.2f}° "
+         f"aided at the cap -- and {unaided_lim.total_at_apogee:.1f}° unaided becomes "
+         f"{aided_lim.total_deg:.2f}° aided at the limit.** The magnetometer does not "
+         f"refine the roll estimate here, it IS the roll estimate, so correction 55's "
+         f"uncapped-gyro comparison was made on the wrong instrument in both directions -- "
+         f"neither total is the sensor's noise floor: {aided_lim.err_mag_noise_deg:.3f}° "
+         f"of it is MMC5983MA noise, which is not what either total is made of.")
+
+    spr_note = ("tracked" if aided_lim.phase_observable else
+                "ALIASED -- below the floor this model assumes")
+    para(f"This number is only valid if the magnetometer can resolve roll PHASE at the rate "
+         f"it is asked to: at the {DEFLECTION_LIMIT_DEG:.0f} deg limit that is "
+         f"{aided_lim.samples_per_rev:.1f} samples/rev at a {aided_lim.mag_rate_hz:.0f} Hz "
+         f"read rate against a {est.MAG_SAMPLES_PER_REV_MIN:.0f}/rev floor -- {spr_note}, "
+         f"{aided_lim.samples_per_rev / est.MAG_SAMPLES_PER_REV_MIN:.1f}x margin. Checked, "
+         f"not just computed -- an assumption this model depends on is a thing to read back, "
+         f"not a thing to assert and move on from.")
+
+    para(f"**What actually limits the aided number is not the sensor, and this is the part a "
+         f"datasheet comparison would miss entirely.** Roll is resolved from the field "
+         f"component PERPENDICULAR to a near-vertical roll axis -- the HORIZONTAL component, "
+         f"{aided_lim.field_perp_gauss:.3f} gauss of {est.EARTH_FIELD_GAUSS:.2f} at "
+         f"{est.MAGNETIC_INCLINATION_DEG:.0f}° inclination, the SMALLER part of the "
+         f"field. Against that, {aided_lim.err_mag_noise_deg:.3f}° of MMC5983MA noise is "
+         f"nothing. What is not nothing is a disturbance FIXED IN THE BODY FRAME -- it "
+         f"rotates with the vehicle, so it is coherent with the signal being measured and no "
+         f"filter averages it away. It ADDS to the total rather than RSS'ing into it, which "
+         f"is why hard/soft-iron calibration matters more here than picking a quieter part.")
+
+    allowance = est.required_magnetic_cleanliness(ev, budget.gyro, roll_rate_deg_s=limit_rate)
+    one_amp_50mm = est.wire_field_gauss(1.0, 0.050)
+    para(f"`required_magnetic_cleanliness()` inverts the budget: at the "
+         f"{DEFLECTION_LIMIT_DEG:.0f} deg limit, the airframe may carry "
+         f"**{allowance * 1000:.1f} mgauss** of body-fixed disturbance and still meet the "
+         f"{est.ATTITUDE_ERROR_BUDGET_DEG:.1f} deg budget. One servo lead at 1 A, 50 mm from "
+         f"the magnetometer, is {one_amp_50mm * 1000:.0f} mgauss on its own -- **over the "
+         f"whole allowance before anything else on the harness is counted.** A twisted pair "
+         f"cancels to first order; an untwisted single-ended run past the sensor does not.")
+
+    para("**So correction 58's gap is closed, and closing it moved the open item rather than "
+         "retiring it.** The roll cap no longer waits on a gyro decision or an estimator "
+         "design -- it waits on HARNESS ROUTING, a number nobody has measured. `docs/07`'s "
+         "'four servos and a battery next to a magnetometer, in an airframe nobody has "
+         "swung' now has a threshold to swing it against. Swing it before trusting any roll "
+         "number this project produces.")
+    lines.pop()  # rule() adds its own leading blank
+
     rule("THE AIDING SENSORS, AND WHAT THEY ARE ACTUALLY FOR")
     say()
     say("  BAROMETER -- not a boost-phase altitude source.")
