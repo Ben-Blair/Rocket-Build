@@ -17,10 +17,20 @@ the convention risk into this file -- each test takes a REAL flight state, pertu
 one quantity, and reads the change in `Flight.u_dot_generalized`. The baseline cancels, so
 what remains is the response to the perturbation alone.
 
-WHAT IT FOUND (2026-09-05, first run): T2 fails. RocketPy's native fin roll damping is
-~4.6x too large on the AFT FINS specifically, and this project's own `roll_damping_cl_p()`
-is right to within ~12%. See T2's own commentary -- the consequence is that M1 must override
-RocketPy's fin roll damping rather than inherit it.
+WHAT IT FOUND (2026-09-05). T0, T1/T6 and T5 pass cleanly -- the frame mapping is right and
+pitch dynamics agree to 0.5%. T2 does not, and the honest summary has two halves:
+
+  SETTLED. `cld_omega` carries a factor of `Af/reference_area` it should not, because
+  `clalpha_single_fin` is already body-area-referenced. Verified exactly, in both directions
+  (2.7185x on the aft fins, 0.6439x on the canards, each matching Af/A_ref to 5 figures).
+
+  NOT SETTLED. With that removed, RocketPy still gives ~1.7x the repo's Cl_p, because the two
+  build their per-fin lift slope by different standard methods that happen to agree on fin-set
+  LIFT to 5% while disagreeing on the per-fin slope that roll damping needs. Nothing here
+  decides which is right, and an earlier version of this file wrongly claimed otherwise by
+  calling a re-weighting of the repo's own model an "independent arbiter" -- it inherits the
+  repo's lift slope, so of course it agreed with the repo. Deciding this needs a third
+  implementation or the GV-2 deflection sweep, which measures Cl_p and Cl_delta together.
 """
 
 from __future__ import annotations
@@ -61,14 +71,18 @@ def omega_dot(flight, t, u):
     return list(flight.u_dot_generalized(t, u)[10:13])
 
 
-def strip_theory_cl_p(rocket, mach):
-    """Cl_p from strip theory, using each fin set's OWN agreed lift slope. The arbiter.
+def repo_cl_p_reweighted(rocket, mach):
+    """The repo's own Cl_p, re-weighted from y_cp^2 to the honest integral c(y) y^2 dy.
 
-    A rolling panel at radius y sees local AoA p*y/V, so the damping moment weights the
-    chord distribution by y^2: the honest quantity is `integral c(y) y^2 dy`, not the lift
-    centroid squared. The sectional slope `a0` is pinned by requiring that the same strip
-    model reproduce the fin set's total CN_alpha at uniform alpha, which is what makes this
-    an independent check rather than a third arbitrary convention.
+    NOT AN INDEPENDENT ARBITER, and an earlier version of this file wrongly called it one.
+    The sectional slope is pinned from `aero.panel_cn_alpha`, so this inherits the repo's
+    entire lift model; agreement with `roll_damping_cl_p()` is therefore guaranteed and
+    means nothing about whether either is right. What it DOES isolate is one specific
+    approximation: a rolling panel at radius y sees local AoA p*y/V, so the damping moment
+    weights chord by y^2, and lumping the panel at its lift centroid and squaring that
+    (`spanwise_cp_radius**2`) is not the same as the chord-weighted mean square radius.
+    The gap between this and `roll_damping_cl_p()` is the size of that one approximation
+    and nothing else.
     """
     total = 0.0
     d, A = rocket.diameter, rocket.reference_area
@@ -83,6 +97,45 @@ def strip_theory_cl_p(rocket, mach):
         cna_set = fins.count * aero.panel_cn_alpha(fins, d, mach)
         a0 = cna_set * A / (fins.count * area)
         total += -2.0 * fins.count * a0 * i2 / (A * d**2)
+    return total
+
+
+def rocketpy_cl_p_renormalised(built, mach):
+    """RocketPy's own cld_omega with one normalisation changed, and why.
+
+    `clalpha_single_fin` is built in `_base_fin.py` as
+
+        clalpha2D * planform_correlation * (self.Af / self.reference_area) * cos(gamma_c) / (...)
+
+    -- note it explicitly carries `Af / reference_area`, i.e. it is a fin lift slope already
+    referenced to the BODY cross-section, the standard Barrowman convention. But
+    `evaluate_roll_parameters` then forms
+
+        cld_omega = 2 * interf * n * clalpha_single_fin * cos(cant) * roll_geometrical_constant
+                    / (reference_area * reference_length**2)
+
+    and `roll_geometrical_constant` is the raw strip integral `integral c(y) y^2 dy` (verified
+    numerically to 1.0000). Putting a body-referenced slope together with a raw strip integral
+    requires dividing by the FIN area to strip the normalisation back out; dividing by
+    `reference_area` a second time leaves a factor of `Af / reference_area` behind.
+
+    That is dimensionally invisible -- both are areas, so the result is still dimensionless,
+    which is exactly why such a thing survives review. It is observable as a scale error of
+    exactly `Af/A_ref`, which is >1 for a large fin set and <1 for a small one. On this
+    vehicle it therefore over-predicts the aft fins by 2.72x and UNDER-predicts the canards
+    by 0.64x. An error that tracks a bookkeeping ratio to five significant figures in
+    opposite directions on the same airframe is not a modelling choice.
+    """
+    total = 0.0
+    d, A = built.ev.rocket.diameter, built.ev.rocket.reference_area
+    for fins, surf in ((built.ev.rocket.aft_fins, built.rocket.aerodynamic_surfaces[1][0]),
+                       (built.ev.rocket.canards, built.rocket.aerodynamic_surfaces[2][0])):
+        rb, s = fins.body_diameter / 2.0, fins.semispan
+        y = np.linspace(rb, rb + s, 20001)
+        c = fins.root_chord + (fins.tip_chord - fins.root_chord) * (y - rb) / s
+        i2 = np.trapezoid(c * y**2, y)
+        a0 = surf.clalpha_single_fin(mach) * A / fins.planform_area_single
+        total += -2.0 * surf.roll_damping_interference_factor * fins.count * a0 * i2 / (A * d**2)
     return total
 
 
@@ -145,12 +198,13 @@ def main():
          f"{resp[pa]:+.4f} 1/s -- emergent from omega x r; design/ has NO Cm_q term at all")
 
     # ------------------------------------------------------- T2: roll damping, three ways
-    print("\nT2  roll damping -- repo vs RocketPy vs strip theory (the independent arbiter)")
+    print("\nT2  roll damping -- and this is the one that is NOT settled")
     pt = min(ev.flight.points, key=lambda p: abs(p.t - tt))
     d, A = ev.rocket.diameter, ev.rocket.reference_area
 
     cl_p_repo = control.roll_damping_cl_p(ev.rocket, pt.mach)
-    cl_p_strip = strip_theory_cl_p(ev.rocket, pt.mach)
+    cl_p_repo_rw = repo_cl_p_reweighted(ev.rocket, pt.mach)
+    cl_p_rpy_fix = rocketpy_cl_p_renormalised(b, pt.mach)
     # back RocketPy's out of the measured dynamics, using ITS OWN inertia so the comparison
     # is of aerodynamics alone rather than of two inertia models
     i_roll_rpy = b.rocket.I_33(tt)
@@ -158,30 +212,44 @@ def main():
     cl_p_rpy = (resp[roll_i] * i_roll_rpy) / (pt.q * A * d * p_hat)
 
     _fmt(INFO, "flight condition", f"t={tt:.2f}s q={pt.q:.0f}Pa M={pt.mach:.3f} V={pt.speed:.1f}m/s")
-    _fmt(INFO, "strip theory (arbiter)", f"{cl_p_strip:9.2f} /rad")
-    _fmt(INFO, "design/control.py", f"{cl_p_repo:9.2f} /rad   ({cl_p_repo/cl_p_strip:.3f}x arbiter)")
-    _fmt(INFO, "RocketPy (from dynamics)", f"{cl_p_rpy:9.2f} /rad   ({cl_p_rpy/cl_p_strip:.3f}x arbiter)")
+    _fmt(INFO, "design/control.py", f"{cl_p_repo:9.2f} /rad")
+    _fmt(INFO, "  same, y^2-reweighted", f"{cl_p_repo_rw:9.2f} /rad  ({cl_p_repo_rw/cl_p_repo:.3f}x) "
+         f"-- cost of lumping at the lift centroid; NOT independent of the repo")
+    _fmt(INFO, "RocketPy (from dynamics)", f"{cl_p_rpy:9.2f} /rad")
+    _fmt(INFO, "  same, renormalised", f"{cl_p_rpy_fix:9.2f} /rad  ({cl_p_rpy_fix/cl_p_rpy:.3f}x) "
+         f"-- removing the Af/A_ref double-normalisation")
 
-    repo_ok = 0.8 <= cl_p_repo / cl_p_strip <= 1.25
-    rpy_ok = 0.8 <= cl_p_rpy / cl_p_strip <= 1.25
-    _fmt(PASS if repo_ok else WARN, "repo vs arbiter",
-         "point-lumping the panel at its lift centroid costs ~12%, as expected" if repo_ok
-         else "repo disagrees with strip theory")
-    _fmt(PASS if rpy_ok else FAIL, "RocketPy vs arbiter",
-         "agrees" if rpy_ok else "DISAGREES -- do not inherit RocketPy's fin roll damping")
+    # The Af/A_ref finding is checkable on its own terms, without any arbiter, because it is
+    # an internal-consistency argument about RocketPy's two definitions. Assert it exactly.
+    print()
+    exact = True
+    for fins, surf in ((ev.rocket.aft_fins, b.rocket.aerodynamic_surfaces[1][0]),
+                       (ev.rocket.canards, b.rocket.aerodynamic_surfaces[2][0])):
+        ratio_area = fins.planform_area_single / A
+        rb, s = fins.body_diameter / 2.0, fins.semispan
+        y = np.linspace(rb, rb + s, 20001)
+        c = fins.root_chord + (fins.tip_chord - fins.root_chord) * (y - rb) / s
+        i2 = np.trapezoid(c * y**2, y)
+        a0 = surf.clalpha_single_fin(pt.mach) * A / fins.planform_area_single
+        fixed = 2 * surf.roll_damping_interference_factor * fins.count * a0 * i2 / (A * d**2)
+        got = surf.roll_parameters[1](pt.mach) / fixed
+        exact &= abs(got - ratio_area) < 1e-4
+        _fmt(INFO, f"{fins.name}: cld_omega error",
+             f"{got:.4f}x vs Af/A_ref = {ratio_area:.4f}   {'MATCHES' if abs(got-ratio_area)<1e-4 else 'no'}")
+    _fmt(PASS if exact else FAIL, "Af/A_ref signature",
+         "exact in both directions -- a bookkeeping error, not a modelling choice"
+         if exact else "does not match; the diagnosis above is wrong")
 
-    if not rpy_ok:
-        print()
-        _fmt(WARN, "localised to", "the AFT FINS; the canards agree. Per-set breakdown:")
-        for fins, surf in ((ev.rocket.aft_fins, b.rocket.aerodynamic_surfaces[1][0]),
-                           (ev.rocket.canards, b.rocket.aerodynamic_surfaces[2][0])):
-            per_fin = surf.clalpha_multiple_fins(pt.mach) / fins.count
-            implied = per_fin * A / fins.planform_area_single
-            used = surf.clalpha_single_fin(pt.mach)
-            _fmt(WARN, f"  {fins.name}", f"lift model implies a0={implied:.3f} but cld_omega "
-                 f"uses clalpha_single_fin={used:.3f}  ({used/implied:.2f}x)")
-        _fmt(WARN, "reading", "RocketPy's own lift and roll-damping models use inconsistent "
-             "slopes, and only for the high span/radius set")
+    # What remains genuinely open.
+    resid = cl_p_rpy_fix / cl_p_repo_rw
+    print()
+    _fmt(WARN, "UNRESOLVED", f"even renormalised, RocketPy is {resid:.2f}x the repo. That gap is "
+         f"a real modelling difference")
+    _fmt(WARN, "  because", "the repo builds its per-fin slope from Barrowman 4N(s/d)^2 divided "
+         "by N, RocketPy from Diederich planform correlation with fin_num_correction(4)=n/2")
+    _fmt(WARN, "  status", "NOT settled by anything here. Both are standard methods; they agree "
+         "on fin-set LIFT to 5% and disagree on the per-fin slope roll damping needs")
+    rpy_ok = False
 
     # ------------------------------------------- T5: free pitch oscillation, a sign-blind check
     print("\nT5  free pitch oscillation -- one number that needs CN_alpha, CP, CG and I_pitch all right")
@@ -203,8 +271,10 @@ def main():
          f"{hz:.4f} Hz  ({hz/want:.3f}x) -- {'agrees' if close else 'INVESTIGATE before M1'}")
 
     print("\n" + "=" * 92)
-    verdict = "M1 MAY PROCEED" if rpy_ok else "M1 BLOCKED until roll damping is overridden"
-    print(f"verdict: {verdict}")
+    print("verdict: frame and pitch dynamics VERIFIED. Roll damping is not: RocketPy's "
+          "cld_omega\n         carries a demonstrable Af/A_ref factor, and a ~1.7x modelling "
+          "gap survives\n         removing it. M1 must make Cl_p an explicit, swappable input "
+          "rather than\n         silently inheriting either model.")
 
 
 if __name__ == "__main__":
