@@ -1,0 +1,7 @@
+# 6-DOF flight simulation. Deliberately SEPARATE from the repo's own requirements.txt:
+# design/ is pure stdlib and every analysis script must keep running without any of this.
+# The dependency runs one way only -- sim/ imports design/, never the reverse.
+#
+# Pinned rather than floored because sim/controller.py registers its controller through
+# rocketpy's private _add_controllers(); a minor release is allowed to move that.
+rocketpy[monte-carlo]==1.13.0
