@@ -100,6 +100,8 @@ scripts/
   recovery_study.py     descent, drift and the recovery footprint constraint
   robustness.py         Monte Carlo on static margin; sets the aft fin size
   seal_report.py        the aft gas seal argument and check
+  sil_demo.py           software-in-the-loop: closed-loop roll hold, bank-to-turn,
+                        R12 failsafe -- synthetic sensors, no hardware
   sweep.py              design space sweep against requirements
   verify_cad.py         cross-check the design numbers against the Onshape model
   virtual_flight.py     3-D virtual flight: ballistic, skid-to-turn, bank-to-turn
@@ -115,6 +117,8 @@ docs/
   11-agility-comparison.md      what this vehicle lacks versus a canard missile (VERTICAL)
   12-horizontal-agility.md      the same question flown flat -- 8.97 deg/s, and the
                                 hinge bearing is what stops it. PROPOSAL, not frozen
+  13-sil-demo.md                software-in-the-loop closed loop: how to run it, what
+                                it proves, what it does not
 ```
 
 ## How this fits with OpenRocket and RocketPy
