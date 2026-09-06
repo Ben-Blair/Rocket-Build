@@ -3,12 +3,12 @@ RECOVERY FOOTPRINT  --  a cost, no longer a hard boundary
 ====================================================================================================
 motor               apogee  Mach   xrng  descent   main      KE | walk @5mph   @10mph   @15mph   @20mph
 -------------------------------------------------------------------------------------------------------
-821-J430-WT-18A        748  0.36    110      68s    56"     51f |       297m     449m     602m     754m
-J449BS                1326  0.51    340      96s    57"     52f |       471m     686m     902m    1116m
-1266-J760-WT-19A      1377  0.56    455      99s    57"     52f |       458m     678m     899m    1119m
-K535                  1555  0.57    455     107s    57"     53f |       523m     762m    1002m    1240m
-K445                  1821  0.61    569     119s    58"     54f |       604m     869m    1135m    1399m
-K630BS                1870  0.67    730     122s    58"     53f |       602m     873m    1146m    1418m
+821-J430-WT-18A        625  0.32    140      61s    59"     56f |       260m     395m     531m     666m
+J401FJ                 972  0.41    310      77s    60"     57f |       370m     542m     715m     887m
+1266-J760-WT-19A      1203  0.50    642      88s    60"     58f |       408m     604m     800m     995m
+K535                  1365  0.52    646      95s    60"     59f |       470m     682m     895m    1106m
+K445                  1614  0.56    826     106s    61"     60f |       547m     782m    1018m    1254m
+K630BS                1669  0.61   1072     109s    61"     59f |       546m     788m    1031m    1273m
 -------------------------------------------------------------------------------------------------------
 apogee m, xrng = steering crossrange m, descent = time under canopy, main = main
 canopy diameter for a 5 m/s landing, KE = landing energy in ft-lbf, walk = distance from
@@ -23,15 +23,15 @@ doubles the walk, and a 15 mph day is not unusual.
 ====================================================================================================
 RECOVERY BAY PACKING  --  does the nylon actually fit?
 ====================================================================================================
-FITS   recovery bay     need 331.2 mm, have 357.3 mm ( +26.1 mm)  2 compartments, 76% full
+FITS   recovery bay     need 337.1 mm, have 357.3 mm ( +20.2 mm)  2 compartments, 78% full
   inner diameter           74.8 mm
   contents:
-    main                    859 cm3 -> 229.5 mm of tube
-    drogue                  336 cm3 ->  89.7 mm of tube
-  required length         331.2 mm (4.17 cal)
+    main                    872 cm3 -> 232.6 mm of tube
+    drogue                  348 cm3 ->  92.5 mm of tube
+  required length         337.1 mm (4.25 cal)
   available length        357.3 mm (4.50 cal)
-  margin                  +26.1 mm
-  fill fraction              76 % of geometric volume  (limit 85 %)
+  margin                  +20.2 mm
+  fill fraction              78 % of geometric volume  (limit 85 %)
   NOTE: canopies use vendor pack volumes; still estimated from bulk density: main harness, main protector, links/swivel, drogue harness, drogue protector, links/swivel
 
   sensitivity to canopy packing density:
@@ -41,7 +41,7 @@ FITS   recovery bay     need 331.2 mm, have 357.3 mm ( +26.1 mm)  2 compartments
           450 kg/m3       326 mm       4.10
           500 kg/m3       305 mm       3.84
 
-The bay is 4.50 cal and it FITS, with 26 mm to spare. That is worth stating
+The bay is 4.50 cal and it FITS, with 20 mm to spare. That is worth stating
 plainly because it was not always the answer: 4.5 was a number someone typed, nothing had
 ever checked it, and the first version of this check said it was 11 mm SHORT.
 
@@ -62,8 +62,8 @@ What is still an estimate, and what to do about it:
      the exact list. They are a smaller share of the volume than the canopies were, and
      they pack far more predictably, so the remaining uncertainty is narrower than what
      you started with. Retire them the same way if you want the number tight.
-  2. THE VENDOR FIGURES ASSUME A TIGHT PACK, in their own words. Treat 4.17 cal as the
-     optimistic end. 26 mm of margin on a tight-pack number is real but it is not
+  2. THE VENDOR FIGURES ASSUME A TIGHT PACK, in their own words. Treat 4.25 cal as the
+     optimistic end. 20 mm of margin on a tight-pack number is real but it is not
      generous, and a canopy you have to fight into the tube on the pad is a canopy you
      will pack badly.
   3. MEASURE ONCE YOU OWN IT. Pack the real main, slide it into a tube of known ID, read

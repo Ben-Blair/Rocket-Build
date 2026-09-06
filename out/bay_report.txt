@@ -2,7 +2,7 @@
 ============================================================================================
 THE PRINTED CANARD BAY
 ============================================================================================
-  one printed part, PETG-CF, 38.6 g, 41.5 mm long
+  one printed part, PETG-CF, 38.1 g, 41.5 mm long
   it holds  4 x KST X08 Plus V6.0 (9 g, 8 mm, 5.3 kgf.cm @ 8.4 V)
   it carries the inboard 3.700 mm of each bearing, which is the
             half of the seat the 2.3 mm airframe wall cannot reach
@@ -22,13 +22,13 @@ THE PRINTED CANARD BAY
     tray webs span                                    2.915
 
   axial extent (mm from the module tube's forward face)
-    bay forward face                             Z   53.129
-    servo lug envelope, forward tip              Z   59.129
-    servo lug screws, forward row                Z   60.629
-    HINGE AXIS                                   Z   68.269
-    servo lug screws, aft row                    Z   87.129
-    servo lug envelope, aft tip                  Z   88.629
-    bay aft face                                 Z   94.629
+    bay forward face                             Z   61.940
+    servo lug envelope, forward tip              Z   67.940
+    servo lug screws, forward row                Z   69.440
+    HINGE AXIS                                   Z   77.080
+    servo lug screws, aft row                    Z   95.940
+    servo lug envelope, aft tip                  Z   97.440
+    bay aft face                                 Z  103.440
 
 ============================================================================================
 THE SEAT  --  and why 3.2x -> 21.3x was never the right pair of numbers
@@ -40,22 +40,22 @@ THE SEAT  --  and why 3.2x -> 21.3x was never the right pair of numbers
   Print the collar in something ten times softer than the tube and the collar
   moves aside: the load walks back into the G10 and the effective seat shortens.
 
-  moment at the seat centre   0.6733 N m
-  normal force                21.090 N
-  bearing                     dia 8.0 x 6.0 long
+  moment at the seat centre   1.2998 N m
+  normal force                28.972 N
+  bearing                     dia 12.0 x 6.0 long
 
     collar material       E   p collar    p wall   collar     wall   L eff
                      GPa        MPa       MPa   margin   margin      mm
-    none             0.0       0.00     91.07       --     4.1x    2.37
-    PETG             1.7       8.06     30.96     6.2x    11.9x    4.08
-    ASA              2.0       8.40     28.92     6.6x    12.8x    4.22
-    PETG-CF          4.5       9.95     21.30     6.5x    17.4x    4.93  <-- selected
-    PA6-CF           6.0      10.53     19.43     8.5x    19.0x    5.17
-    G10 (fiction)    18.0      13.59     14.47       --    25.6x    6.00
+    none             0.0       0.00    118.84       --     3.1x    2.35
+    PETG             1.7      10.56     40.02     4.7x     9.2x    4.06
+    ASA              2.0      10.99     37.33     5.0x     9.9x    4.20
+    PETG-CF          4.5      13.01     27.35     5.0x    13.5x    4.92  <-- selected
+    PA6-CF           6.0      13.75     24.91     6.5x    14.9x    5.16
+    G10 (fiction)    18.0      17.65     18.46       --    20.0x    6.00
 
-  So the collar IS worth building -- 4.1x to 17.4x on the wall is the
+  So the collar IS worth building -- 3.1x to 13.5x on the wall is the
   single largest margin improvement anywhere in this hinge. But it is worth
-  17.4x and not 21.4x, and the printed collar itself runs at 6.5x,
+  13.5x and not 21.4x, and the printed collar itself runs at 5.0x,
   which is a number nobody had computed because nobody had asked what the collar
   was made of. Correct the claim wherever it appears; do not drop the collar.
 
@@ -65,16 +65,10 @@ THE COUPLING  --  a check that should have been run in August
   servo output face          R 33.185
   bearing inboard end        R 33.700
   -> space for a coupling      0.515 mm
-  outboard of that the hole is the bearing bore, dia 6.0
+  outboard of that the hole is the bearing bore, dia 10.0
 
   a bought 15T dia 4 servo horn hub is about dia 7.4 x 4.0 tall
-  -> DOES NOT FIT
-
-  docs/01 correction 16 and docs/05 both instruct the builder to buy a horn and
-  skip the broaching. That instruction is not buildable. Nothing is
-  MIS-ANALYSED by it -- design/hinge.py never adopted the horn and still models
-  and checks the broached socket (dia 4.4 x 2.9 engaged, 29.9 MPa) -- but a builder
-  following the documents would discover it with four servos in hand.
+  -> FITS
 
 ============================================================================================
 CLEARANCES  --  every place the bay comes near something else
@@ -97,26 +91,25 @@ CLEARANCES  --  every place the bay comes near something else
 ============================================================================================
 MARGINS
 ============================================================================================
-    bearing seat, printed collar                      6.5x
-    bearing seat, G10 wall                           17.4x
+    bearing seat, printed collar                      5.0x
+    bearing seat, G10 wall                           13.5x
     servo clamp screw shear                          72.0x
     heat-set insert pull-out                        133.2x
-    bay-to-tube bond shear                         1075.6x
+    bay-to-tube bond shear                          990.4x
 
-  mass            38.6 g   (shell 28.7, trays 8.3, collars 0.5)
-  bond area     9260.6 mm^2 of shell against the tube ID
+  mass            38.1 g   (shell 27.9, trays 8.3, collars 0.8)
+  bond area     8908.8 mm^2 of shell against the tube ID
 
   VERDICT on the BAY: buildable, every margin met.
-    note  M2 heat-set inserts, dia 3.2 x 4.0, into 5.00 mm of tray at Y +/-6.0 -- clear of the 8 mm case, which is the whole point of clamping rather than using the servo's own lug holes (0.62 mm of ligament, see the header)
-    note  collar printed dia 7.50 and reamed to dia 8.000 H7 through the wall in one pass -- 0.250 mm of stock on the radius, which is what an FDM hole needs to come out round. THE CAD CARRIES THE REAMED SIZE, because the assembly is the vehicle that flies
+    note  M2 heat-set inserts, dia 3.2 x 4.0, into 5.00 mm of tray at Y +/-6.0 -- clear of the 8 mm case, which is the whole point of clamping rather than using the servo's own lug holes (0.63 mm of ligament, see the header)
+    note  collar printed dia 11.50 and reamed to dia 12.000 H7 through the wall in one pass -- 0.250 mm of stock on the radius, which is what an FDM hole needs to come out round. THE CAD CARRIES THE REAMED SIZE, because the assembly is the vehicle that flies
     note  retainer bridge 2.60 mm across a 3.00 mm exposed flange band, widening to 4.70 mm at the screws where the case is not in the way
-    note  collar boss rim at R 35.856, 1.544 mm clear of the tube bore -- checked on RADIUS, not on the bounding box
+    note  collar boss rim at R 36.244, 1.156 mm clear of the tube bore -- checked on RADIUS, not on the bounding box
     note  flange relieved 8.60 mm wide over the full 29.5 mm lug envelope, so the clamp bosses sit beside the flange rather than under it
     note  0.515 mm between the servo output face and the collar's inboard end
-    note  NOT A BAY DEFECT, but found here: no bought servo horn fits. a bought horn needs 4.0 mm of height at dia 7.4, and there is 0.515 mm between the servo output face and the bearing. Outboard of that the hole is the bearing bore, dia 6.0, which a dia 7.4 hub cannot enter. So the coupling has to live INSIDE the dia 6.0 journal -- which is the broached socket design/hinge.py already models and checks
-    note  the collar buys an EFFECTIVE seat length of 4.932 mm out of the 6.0 mm it is long, because PETG-CF is 4.0x softer than the G10 it shares the seat with
+    note  the collar buys an EFFECTIVE seat length of 4.919 mm out of the 6.0 mm it is long, because PETG-CF is 4.0x softer than the G10 it shares the seat with
 
-  VERDICT on the COUPLING, which is a separate part and a separate problem: UNRESOLVED
+  VERDICT on the COUPLING, which is a separate part and a separate problem: ok
   No bay geometry fixes it. See the section above.
 
 ============================================================================================
@@ -126,18 +119,18 @@ HOW IT GETS PRINTED AND FITTED
      panel's normal force -- which is circumferential -- presses on the collar
      bore IN the layer plane rather than across it. Any other orientation makes
      interlayer strength the governing property, at roughly half the number.
-  2. Collar bores print at dia 7.5, undersize on purpose. Do not try to
+  2. Collar bores print at dia 11.5, undersize on purpose. Do not try to
      print them to size; FDM holes come out undersize and rough anyway.
   3. Bond the bay into the tube. Abrade both faces. The weak side of this joint is
      the PRINTED surface, not the G10.
-  4. Only then ream dia 8.000 H7 through the wall AND the collar in ONE pass.
+  4. Only then ream dia 12.000 H7 through the wall AND the collar in ONE pass.
      Concentricity becomes a property of the operation instead of a tolerance held
      across two parts made by different processes. A pinched bearing is a
      mechanism failure and no margin in this project protects against one.
   5. Melt 8 M2 heat-set inserts into the clamp bosses -- dia 3.2 x 4.0 deep, at Y +/-6.0 on each of the two rows per servo.
   6. Servos drop in from the axis and stop against the tray at R 27.935.
      A printed bar across each end of the flange clamps it, two M2 x 6 per bar.
-     Their own lug holes are NOT used -- there is only 0.62 mm of
+     Their own lug holes are NOT used -- there is only 0.63 mm of
      plastic between a lug screw and the servo window, which is a perimeter and a
      half. Clamping moves the fastener to where there is 5 mm of material, and it
      is also the only way to change a servo after the bay is bonded in for good.

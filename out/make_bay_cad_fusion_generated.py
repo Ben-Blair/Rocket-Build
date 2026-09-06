@@ -2,12 +2,12 @@
 
 Every number below comes from design/bay.py. Regenerate rather than patch.
 
-Bay      shell OD 74.500 mm, ID 69.700 mm, Z 53.13 -> 94.63
-Collars  4 x dia 12.0 boss, dia 8.00 bore (as reamed), at Z 68.27
+Bay      shell OD 74.500 mm, ID 69.700 mm, Z 61.94 -> 103.44
+Collars  4 x dia 16.0 boss, dia 12.00 bore (as reamed), at Z 77.08
 Trays    4 x servo window 24.10 x 8.60 mm, R 27.94 -> 31.94
-Screws   Z 60.63 / 87.13, insert dia 3.2 at Y +/-6.0
+Screws   Z 69.44 / 95.94, insert dia 3.2 at Y +/-6.0
 Retainer 8 x dog-bone bar, 1.5 mm thick, R 25.435 -> 26.935
-Volume   canard bay 28889.0 mm3 (+/-6%), one retainer bar 90.8076 mm3
+Volume   canard bay 28451.7 mm3 (+/-6%), one retainer bar 90.8076 mm3
 """
 
 
@@ -104,13 +104,31 @@ def _inject(comp, made):
 
     Mandatory for a parametric document: a temp body only "takes" via
     `BRepBodies.add(body, baseFeature)`, per make_sled_fusion.py's own header.
+
+    RENAMING HAPPENS AFTER `finishEdit()`, VIA A FRESH QUERY -- not on the object
+    `BRepBodies.add()` itself returns, and not inside the startEdit/finishEdit
+    transaction. Confirmed by direct test: for a body sourced from Fusion's parametric
+    Sketch/Extrude API (copied out via `TemporaryBRepManager.copy()`, the technique the
+    canard panels and aft fins both use for their swept-trapezoid profile), setting
+    `.name` on the object `.add()` returns reads back correctly on THAT SAME object but
+    does not persist to the body at all -- a fresh `comp.bRepBodies` query even in the
+    same script run still shows Fusion's own default name ("Body1"). Renaming a FRESH
+    query result AFTER `finishEdit()` does persist, for both extrude-sourced and
+    primitive-sourced (box/cylinder/boolean) bodies alike, so every generator does it
+    this way now rather than the two of them disagreeing on which pattern is safe. This
+    is a DIFFERENT failure mode from `_get_or_create_component`'s own idempotency note
+    above (same-transaction rename into an ALREADY-POPULATED component) -- that one is
+    about a LATER, separate script run; this one bites inside the very run that created
+    the body.
     """
+    before = comp.bRepBodies.count
     bf = comp.features.baseFeatures.add()
     bf.startEdit()
     for (name, body) in made:
-        b = comp.bRepBodies.add(body, bf)
-        b.name = name
+        comp.bRepBodies.add(body, bf)
     bf.finishEdit()
+    for i, (name, _body) in enumerate(made):
+        comp.bRepBodies.item(before + i).name = name
 
 
 def _verify_volume(comp, want, tol, loose=(), loose_tol=None):
@@ -166,40 +184,40 @@ OVER = 1.0   # mm, overshoot on every cut/join -- see fusion_common.py's header
 
 SHELL_OD = 74.5000
 SHELL_ID = 69.7000
-Z_FWD = 53.1290
-Z_AFT = 94.6290
-Z_HINGE = 68.2690
+Z_FWD = 61.9402
+Z_AFT = 103.4402
+Z_HINGE = 77.0802
 
-COLLAR_OD = 12.0000
-COLLAR_BORE = 8.0000
+COLLAR_OD = 16.0000
+COLLAR_BORE = 12.0000
 COLLAR_OVERLAP = 0.5000
 COLLAR_INNER_R = 33.7000
 
 TRAY_FLANGE_R = 27.9350
 TRAY_BACK_R = 31.9350
 TRAY_WIDTH = 18.4000
-TRAY_FWD_Z = 59.1290
-TRAY_AFT_Z = 88.6290
+TRAY_FWD_Z = 67.9402
+TRAY_AFT_Z = 97.4402
 
 WINDOW_LEN = 24.1000
 WINDOW_WID = 8.6000
-WINDOW_FWD_Z = 61.8290
+WINDOW_FWD_Z = 70.6402
 
 WEB_THK = 1.6000
 BOSS_FACE_R = 26.9350
 INSERT_DIA = 3.2000
 INSERT_DEPTH = 4.0000
 CLAMP_Y = 6.0000
-SCREW_Z1 = 60.6290
-SCREW_Z2 = 87.1290
+SCREW_Z1 = 69.4402
+SCREW_Z2 = 95.9402
 
 RET_THK = 1.5000
 RET_BRIDGE_HALF_Z = 1.3000
 RET_PAD_HALF_Z = 2.3500
 
-BAY_VOLUME_MM3 = 28889.0451
+BAY_VOLUME_MM3 = 28451.7354
 BAR_VOLUME_MM3 = 90.8076
-BAY_VOLUME_TOLERANCE = 1733.3427
+BAY_VOLUME_TOLERANCE = 1707.1041
 BAR_VOLUME_TOLERANCE = 0.0100
 
 

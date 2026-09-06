@@ -4,7 +4,7 @@ Every number below comes from design/hinge.py. Regenerate rather than patch.
 
 Servo origin radius   33.1850 mm (servo_output_face)
 Bearing origin radius 39.7000 mm (bearing_outboard = tube_outer_radius)
-Hinge Z               68.2690 mm (module frame)
+Hinge Z               77.0802 mm (module frame)
 """
 
 
@@ -101,13 +101,31 @@ def _inject(comp, made):
 
     Mandatory for a parametric document: a temp body only "takes" via
     `BRepBodies.add(body, baseFeature)`, per make_sled_fusion.py's own header.
+
+    RENAMING HAPPENS AFTER `finishEdit()`, VIA A FRESH QUERY -- not on the object
+    `BRepBodies.add()` itself returns, and not inside the startEdit/finishEdit
+    transaction. Confirmed by direct test: for a body sourced from Fusion's parametric
+    Sketch/Extrude API (copied out via `TemporaryBRepManager.copy()`, the technique the
+    canard panels and aft fins both use for their swept-trapezoid profile), setting
+    `.name` on the object `.add()` returns reads back correctly on THAT SAME object but
+    does not persist to the body at all -- a fresh `comp.bRepBodies` query even in the
+    same script run still shows Fusion's own default name ("Body1"). Renaming a FRESH
+    query result AFTER `finishEdit()` does persist, for both extrude-sourced and
+    primitive-sourced (box/cylinder/boolean) bodies alike, so every generator does it
+    this way now rather than the two of them disagreeing on which pattern is safe. This
+    is a DIFFERENT failure mode from `_get_or_create_component`'s own idempotency note
+    above (same-transaction rename into an ALREADY-POPULATED component) -- that one is
+    about a LATER, separate script run; this one bites inside the very run that created
+    the body.
     """
+    before = comp.bRepBodies.count
     bf = comp.features.baseFeatures.add()
     bf.startEdit()
     for (name, body) in made:
-        b = comp.bRepBodies.add(body, bf)
-        b.name = name
+        comp.bRepBodies.add(body, bf)
     bf.finishEdit()
+    for i, (name, _body) in enumerate(made):
+        comp.bRepBodies.item(before + i).name = name
 
 
 def _verify_volume(comp, want, tol, loose=(), loose_tol=None):
@@ -158,10 +176,11 @@ def _verify_cyl_faces(body, radius, axis_is_radial):
     return sorted(found)
 
 
-HINGE_Z = 68.2690
+HINGE_Z = 77.0802
 SERVO_ORIGIN_R = 33.1850
 BEARING_ORIGIN_R = 39.7000
 ANGLE_TOLERANCE_DEG = 1e-06
+IDENTIFY_TOLERANCE_DEG = 1.0
 
 
 def _find(root, name):
@@ -266,16 +285,35 @@ def _do_rename(comp, body_names, unnamed):
     for b in comp.bRepBodies:
         if b.name in body_names:
             vol_to_name[round(b.getPhysicalProperties(acc).volume * 1e3, 4)] = b.name
-    angle_to_q = {0.0: 0, 90.0: 1, 180.0: 2, 270.0: 3}
-
     renamed = []
     for b in unnamed:
         props = b.getPhysicalProperties(acc)
         v = round(props.volume * 1e3, 4)
-        angle = round(math.degrees(math.atan2(props.centerOfMass.y, props.centerOfMass.x))
-                     % 360.0, 1)
+        angle = math.degrees(math.atan2(props.centerOfMass.y,
+                                        props.centerOfMass.x)) % 360.0
         base = vol_to_name.get(v)
-        q = angle_to_q.get(angle)
+        # NEAREST QUADRANT ON A CIRCLE, not a dict lookup on a rounded angle.
+        #
+        # This was `angle_to_q = {0.0: 0, 90.0: 1, ...}` with the angle rounded to one
+        # decimal, and it failed the first time the canard module was rebuilt at 1.30 cal:
+        # a q0 bearing whose centre of mass landed a hair BELOW the +X axis came back as
+        # 359.99.. deg, which `% 360.0` leaves at 359.99, `round(..., 1)` turns into
+        # 360.0, and no such key exists. The body was placed perfectly; the identifier
+        # simply could not see it, and the script raised and rolled the whole rebuild back.
+        #
+        # 0 and 360 are the same direction. `_verify_placed` below already knew that --
+        # it measures a circular distance -- so the two halves of this file disagreed
+        # about how to compare angles and only the strict half was on the failure path.
+        # IDENTIFY_TOLERANCE_DEG is deliberately loose: these bodies sit on exact
+        # quadrants 90 deg apart, so classifying them needs nothing tighter, and
+        # ANGLE_TOLERANCE_DEG stays at 1e-6 for the VERIFY that actually checks placement.
+        q = None
+        best = IDENTIFY_TOLERANCE_DEG
+        for cand in range(4):
+            want = cand * 90.0
+            d = min(abs(angle - want), 360.0 - abs(angle - want))
+            if d <= best:
+                best, q = d, cand
         if base is None or q is None:
             raise ValueError("%s: cannot identify body %r (volume %.4f mm3, angle %.1f deg)"
                              % (comp.name, b.name, v, angle))
@@ -291,15 +329,37 @@ def _do_cleanup(comp, body_names):
     copies are correctly named in their own, separate BaseFeature. A single-purpose
     transaction that only deletes -- nothing is created or renamed in it.
     """
-    # Identify the OLD BaseFeature the same way _place_component tells old from new: any
-    # BaseFeature whose sourceBodies are all named exactly one of `body_names`.
+    # Identify the OLD BaseFeature by the bodies it PRODUCED -- `bf.bodies` -- not by
+    # `bf.sourceBodies`.
+    #
+    # THIS WAS `sourceBodies` AND IT SILENTLY DELETED NOTHING. sourceBodies are the
+    # TEMPORARY bodies handed to `BRepBodies.add()`, and they keep Fusion's own default
+    # names forever: ['Body1', 'Body2', 'Body3'], never 'servo body'. So the subset test
+    # could not match, the loop deleted no feature, and the function still printed
+    # "removed the old BaseFeature" and returned success. The prototypes survived into
+    # the mass properties, which is the one place a silent no-op does real damage --
+    # a Servo carrying 15 bodies instead of 12 overstates the module by three servos.
+    #
+    # It is the same wrong assumption as the rename bug this file's header documents:
+    # a name set after `.add()` lives on the RESULT body, and the source body never
+    # hears about it. `bf.bodies` is the result side, so that is what to match on.
+    removed = 0
     for bf_old in list(comp.features.baseFeatures):
-        names = set(b.name for b in bf_old.sourceBodies)
+        names = set(b.name for b in bf_old.bodies)
         if names and names.issubset(set(body_names)):
             bf_old.deleteMe()
+            removed += 1
 
-    print("CLEANUP: removed the old BaseFeature from %s -- %d bodies remain"
-          % (comp.name, comp.bRepBodies.count))
+    # A CLEANUP THAT CLEANED NOTHING IS A FAILURE, not a no-op. Reporting success here is
+    # what let the defect above go unnoticed.
+    if removed == 0:
+        raise ValueError(
+            "CLEANUP FAILED: %s has no BaseFeature whose bodies are all in %s -- nothing "
+            "was removed. Bodies present: %s"
+            % (comp.name, sorted(body_names), sorted(b.name for b in comp.bRepBodies)))
+
+    print("CLEANUP: removed %d old BaseFeature(s) from %s -- %d bodies remain"
+          % (removed, comp.name, comp.bRepBodies.count))
 
 
 def _verify_placed(comp, body_names, expected_count):

@@ -42,7 +42,26 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design import mass as mass_mod
 from design.packaging import SERVOS
-from design.configure import DesignParams, baseline, build_vehicle, evaluate
+from design.configure import (
+    BASELINE_MOTOR_FILE as MOTOR_FILE,
+    DesignParams,
+    baseline,
+    build_vehicle,
+    evaluate,
+)
+
+# RASP headers carry a short vendor tag; OpenRocket's database wants the full name it
+# files the motor under. Anything not listed passes through unchanged, which is the right
+# failure mode -- a wrong-looking name in the dialog beats a silently wrong motor.
+ORK_MANUFACTURER = {
+    "CTI": "Cesaroni Technology",
+    "Cesaroni": "Cesaroni Technology",
+    "Aerotech": "AeroTech",
+    "AeroTech": "AeroTech",
+    "AT": "AeroTech",
+    "Loki": "Loki Research",
+    "AMW": "Animal Motor Works",
+}
 from design.geometry import Rocket
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -354,8 +373,11 @@ def build_xml(params: DesignParams) -> tuple[str, dict[str, float]]:
             x.leaf("overhang", "0.0")
             x.open("motor", f'configid="{config}"')
             x.leaf("type", "reload")
-            x.leaf("manufacturer", "Cesaroni Technology")
-            x.leaf("designation", "1261J449-15A")
+            # DERIVED, NOT TYPED. These were hardcoded to the J449 and silently described
+            # the wrong motor the moment design/configure.py froze a different one.
+            x.leaf("manufacturer", ORK_MANUFACTURER.get(
+                motor.manufacturer, motor.manufacturer or "Unknown"))
+            x.leaf("designation", MOTOR_FILE.stem.split("_", 1)[-1])
             x.leaf("diameter", "0.054")
             x.leaf("length", f"{motor.length:.3f}")
             x.leaf("delay", "none")
@@ -483,8 +505,8 @@ def main() -> None:
 Open it with:  open -a OpenRocket out/RocketSenior.ork
 
 First thing to check: that the motor resolved. If the motor mount shows no motor, open the
-motor selection dialog and pick the Cesaroni 1261J449-15A -- OpenRocket matches on its own
-internal digest and the designation string here may not match your database version.
+motor selection dialog and pick it by hand -- OpenRocket matches on its own internal
+digest and the designation string here may not match your database version.
 
 Then compare CP. That number is the whole reason this file exists: it is the single
 largest uncertainty in the design and the only way to attack it is a second opinion.""")

@@ -34,7 +34,7 @@ path with one member is not a load path.
 
 | | |
 |---|---|
-| Peak thrust | **586.87 N**, Cesaroni Pro54 `1261J449-15A` at t = 0.046 s |
+| Peak thrust | **488.10 N**, AeroTech `J401FJ` at t = 0.022 s (was 586.87 N on the Cesaroni `1261J449-15A` — the Sep 2026 freeze changed the motor, and every margin in this file got *better*, so nothing here was resized) |
 | Thrust into the forward bulkhead | 6.60 MPa in the 10.15 mm annular land, **73×** |
 | Drogue stuck-joint pressure | 1673 kPa → 121.8 MPa, **3.94×** |
 | Drogue harness U-bolt | 1506 N → 96.9 MPa bare, **4.95×** (7.98× once `docs/10`'s backing plate lands) |

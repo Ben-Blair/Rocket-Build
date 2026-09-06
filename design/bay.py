@@ -80,7 +80,25 @@ SCREW_BOSS_THICKNESS = TRAY_THICKNESS
 SERVO_POCKET_CLEARANCE = 0.300e-3
 SHELL_END_MARGIN = 6.000e-3      # shell past the servo lug envelope, each end
 
-COLLAR_OD = 12.000e-3
+# 12.000 -> 14.000 -> 16.000 mm ACROSS CORRECTIONS 61 AND 62, and it moved both times
+# because the BEARING did. `collar_bore` is taken from `stack.wall_bore_dia` precisely so it
+# cannot drift from the bearing it holds, and correction 61 took the journal dia 6 -> dia 8
+# (design/hinge.py) to make the bearing pressure margin at a horizontal launch's sea-level
+# max q. The bore followed to dia 10, and 12.000 mm of OD left 1.00 mm of wall around it
+# against this file's 1.60 mm four-perimeter minimum -- `check_bay` failed it immediately,
+# which is the check doing its job.
+#
+# Each step gives 2.00 mm of wall, five 0.4 mm perimeters: 14.000 around the dia 10 bore
+# correction 61 produced, 16.000 around the dia 12 bore correction 62's dia 10 journal
+# produces. The four
+# collars still do not touch each other, the boss still does not reach the shell OD, and the
+# bay's own mass moves by grams.
+#
+# NOTE THE SEQUENCE, because it is the argument for deriving rather than restating: a
+# deflection cap and a launch angle changed, which changed a dynamic pressure, which changed
+# a bearing pressure, which changed a journal, which changed a bore, which changed this. Six
+# links, and the only one anybody typed was the first.
+COLLAR_OD = 16.000e-3
 
 # TWO DIAMETERS, AND THE CAD CARRIES THE SECOND ONE.
 #
@@ -95,7 +113,16 @@ COLLAR_OD = 12.000e-3
 # check and believed by anyone who did not.
 #
 # The printed size stays here because it has to be printed, but nothing geometric uses it.
-COLLAR_PRINTED_BORE = 7.500e-3   # what comes off the printer
+# DERIVED, NOT TYPED, SINCE CORRECTION 61. It was 7.500e-3 -- 0.250 mm of stock on the
+# radius under a dia 8 reamer, which is what an FDM hole needs to clean up. When the bearing
+# went dia 8 -> dia 10 the reamed bore followed automatically (it is taken from the hinge
+# stack) and this constant did NOT, so the part was left printing at dia 7.5 for a dia 10
+# finish: 1.250 mm of stock on the radius, which is a boring operation, not a ream. The
+# check only tested that the stock was positive, so it passed.
+#
+# The INTENT was always "a reamer's worth of stock", so that is what is written down now and
+# the diameter follows the bore. Same lesson as `collar_bore` itself two properties down.
+COLLAR_REAM_STOCK_ON_RADIUS = 0.250e-3
 
 # How far the collar boss reaches PAST the shell bore, to guarantee the union bites. It
 # must NOT reach the shell OD: the boss is flat-ended on a radial axis and the shell's
@@ -307,12 +334,17 @@ class BayGeometry:
         return self.stack.wall_bore_dia
 
     @property
+    def collar_printed_bore(self) -> float:
+        """What comes off the printer: the reamed bore less a reamer's worth of stock."""
+        return self.collar_bore - 2.0 * COLLAR_REAM_STOCK_ON_RADIUS
+
+    @property
     def collar_wall(self) -> float:
         return (COLLAR_OD - self.collar_bore) / 2.0
 
     @property
     def ream_stock_on_radius(self) -> float:
-        return (self.collar_bore - COLLAR_PRINTED_BORE) / 2.0
+        return COLLAR_REAM_STOCK_ON_RADIUS
 
     @property
     def collar_reach(self) -> float:
@@ -645,7 +677,7 @@ def clearances(bay: "BayGeometry") -> list[tuple[str, float, str]]:
         ("servo spline tip vs shell OD",
          bay.shell_outer_radius - s.spline_tip, "radial, inside the collar bore"),
         ("shaft sleeve vs collar bore, as printed",
-         (COLLAR_PRINTED_BORE - s.journal_dia) / 2.0, "radial, before reaming"),
+         (bay.collar_printed_bore - s.journal_dia) / 2.0, "radial, before reaming"),
         ("bearing OD vs collar bore, as reamed",
          (bay.collar_bore - s.bearing_od) / 2.0,
          "radial -- zero is correct, this is the press fit, and it is the size the CAD "
@@ -755,11 +787,11 @@ def check_bay(bay: BayGeometry, moment: float, normal: float,
                  f"shell bore at R {bay.shell_inner_radius * MM:.3f} -- the servo will not "
                  f"go in")
     if bay.ream_stock_on_radius <= 0:
-        v.append(f"the collar is printed at dia {COLLAR_PRINTED_BORE * MM:.2f}, which the "
+        v.append(f"the collar is printed at dia {bay.collar_printed_bore * MM:.2f}, which the "
                  f"dia {bay.collar_bore * MM:.2f} reamer would not clean up")
     else:
         notes.append(
-            f"collar printed dia {COLLAR_PRINTED_BORE * MM:.2f} and reamed to dia "
+            f"collar printed dia {bay.collar_printed_bore * MM:.2f} and reamed to dia "
             f"{bay.collar_bore * MM:.3f} H7 through the wall in one pass -- "
             f"{bay.ream_stock_on_radius * MM:.3f} mm of stock on the radius, which is what "
             f"an FDM hole needs to come out round. THE CAD CARRIES THE REAMED SIZE, because "

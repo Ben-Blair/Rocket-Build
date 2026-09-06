@@ -76,10 +76,12 @@ design/
   packaging.py    actuator bay packaging + hinge moment + servo torque margin
   recovery.py     dual-deploy sizing, descent time, wind drift, soft-goods packing
   seal.py         the aft gas seal and the internal bulkhead, sized as pistons
+  horizontal.py   horizontal-launch 3-DOF: fly the manoeuvre, then score the turn
   trajectory.py   3-DOF RK4 ascent to apogee
   tube_section.py airframe survival where holes are cut through it
   venting.py      static ports and bay vents: which volumes the altimeter may sense
 scripts/
+  agility_sweep.py      how agile can this airframe legally be, and what stops it
   avionics_report.py    nav bay + nose packing report and verdict
   avionics_trade.py     D7: the three flight computer architectures
   baseline.py           detailed baseline report + OpenRocket values
@@ -89,6 +91,7 @@ scripts/
   estimation_trade.py   D8: the four sensor sets, and what the estimate can know
   fetch_motors.py       download real .eng thrust curves from ThrustCurve.org
   hinge_report.py       hinge stack loads, fits and buildability
+  horizontal_agility_sweep.py  the same search flown FLAT, where the answer changes
   make_*.py             build geometry in Onshape from the design modules
   motor_trade.py        rank every available L2 motor against the baseline airframe
   openrocket_check.py   automated cross-check against OpenRocket's engine
@@ -99,6 +102,7 @@ scripts/
   seal_report.py        the aft gas seal argument and check
   sweep.py              design space sweep against requirements
   verify_cad.py         cross-check the design numbers against the Onshape model
+  virtual_flight.py     3-D virtual flight: ballistic, skid-to-turn, bank-to-turn
 docs/
   00-requirements.md    requirements, constraints, scoping, regulatory actions
   01-next-steps.md      ordered plan, the state of play, and 36 corrections
@@ -108,6 +112,9 @@ docs/
   05-canard-module-build.md     CAD build sheet for the canard module
   06-avionics-selection.md      D7: the flight computer, and why it is staged
   07-state-estimation.md        D8: what the flight computer can know, and when
+  11-agility-comparison.md      what this vehicle lacks versus a canard missile (VERTICAL)
+  12-horizontal-agility.md      the same question flown flat -- 8.97 deg/s, and the
+                                hinge bearing is what stops it. PROPOSAL, not frozen
 ```
 
 ## How this fits with OpenRocket and RocketPy

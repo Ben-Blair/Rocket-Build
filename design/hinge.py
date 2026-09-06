@@ -673,6 +673,22 @@ def check_hinge_stack(stack: HingeStack, loads: HingeLoads) -> HingeCheck:
             f"the bearing is {stack.seat_fit * mm:.3f} mm loose in its seat; a pressed "
             f"bearing wants interference, not clearance")
 
+    # Defect 4, found while sizing this hinge for a horizontal launch (correction 61).
+    # The bearing grows INBOARD from a fixed outboard end, and the sleeve it runs on starts
+    # `sleeve_gap` outboard of the servo's output face -- so a bearing long enough reaches
+    # past the start of its own shaft and into the servo. Nothing here objected: the sleeve
+    # clash check above tests where the SLEEVE starts, not where the BEARING ends, and the
+    # two are independent. A 6.5 mm bearing at the as-built 4.000 mm servo move puts the
+    # bearing's inboard face 0.285 mm inside the sleeve's inboard end, and the search that
+    # was choosing bearing lengths scored it as buildable.
+    if stack.has_bearing and stack.bearing_inboard < stack.sleeve_inboard:
+        v.append(
+            f"the bearing runs from R {stack.bearing_inboard * mm:.3f} to "
+            f"R {stack.bearing_outboard * mm:.3f} mm, but the sleeve it turns on only "
+            f"starts at R {stack.sleeve_inboard * mm:.3f} -- the bearing is "
+            f"{(stack.sleeve_inboard - stack.bearing_inboard) * mm:.3f} mm longer than "
+            f"there is shaft to support it, and its inboard end is inside the servo")
+
     # --- the coupling ---------------------------------------------------------------
     if stack.spline_engagement <= 0:
         v.append("the servo spline does not reach the shaft sleeve at all")
@@ -763,8 +779,47 @@ def as_built(tube_outer_radius: float, wall: float, geometry) -> HingeStack:
     )
 
 
+# THE JOURNAL IS dia 10, AND IT HAS NOW GROWN TWICE FOR THE SAME REASON (corrections 61
+# and 62). dia 5 -> dia 6 was about the spline socket's wall; dia 6 -> dia 8 was the
+# horizontal freeze; dia 8 -> dia 10 is the 1.45 cal canard. The servo move and the bearing
+# length have never changed and cannot: see WHY NOT LENGTH below.
+#
+# What forces it: peak bearing pressure is 6M/(d L^2) + N/(d L), and it is driven by the
+# panel NORMAL FORCE, not by the hinge moment. Two things pushed that force up. A horizontal
+# launch's maximum dynamic pressure is the burnout value at SEA LEVEL rather than at 230 m
+# (15.5 kPa against 12.4) and the deflection cap went 8.0 -> 9.2 deg; that took dia 6 to
+# 1.57x and dia 8 fixed it at 2.10x. Then the 1.45 cal canard added span and area on top,
+# 38.0 -> 42.3 N, and dia 8 fell back to 1.70x. dia 10 is 2.11x.
+#
+# WHY NOT LENGTH, which is the obvious lever at 1/L^2. The bearing grows INBOARD from a
+# fixed outboard end at the panel root, and the sleeve it turns on only begins `sleeve_gap`
+# outboard of the servo's output face. At the 4.000 mm servo move the sleeve starts at
+# R 33.485 and the bearing's outboard end is R 39.700, so **6.2 mm is all the length there
+# is**. Going further needs the servo further inboard, and `boss_collision_margin` falls
+# 1.0 mm per mm of move and reaches zero at 6.09 mm -- so the 7.0 mm bearing a 5.5 mm move
+# would allow leaves 0.59 mm between adjacent servo cable bosses and fails
+# `check_hinge_stack` outright.
+#
+# THAT IS NOT A HYPOTHETICAL. `scripts/horizontal_agility_sweep.py` used to size the bearing
+# itself, walking lengths and deriving a servo move from each, and it NEVER CALLED
+# `check_hinge_stack`. On the 1.45 cal canard it selected exactly that 7.0 mm / 5.5 mm
+# combination, reported 2.27x, and put the point on docs/12 section 10's "unlocked" list. The
+# hinge cannot be built that way. The sweep now uses `selected()` as frozen hardware and
+# validates it instead of re-deriving it. **If you are tempted to buy bearing length here,
+# read this paragraph twice.**
+#
+# WHAT dia 10 COSTS: the wall bore goes dia 10 -> dia 12, and four of those at one station
+# take 20% of the net section instead of 17%. The tube still passes -- and the bigger
+# bearing OD actually helps the SEAT, which is a different check from the pressure above.
+# What it also does, for free, is take the sleeve wall over the dia 4 spline socket to
+# 3.00 mm; dia 6 was itself chosen because dia 5 left only 0.3 mm there.
+#
+# THE CEILING. At dia 10 the hinge carries about 40 N of panel normal force at 2.0x on the
+# horizontal profile, which is where the 1.45 cal canard sits. 1.60 cal does not fit inside
+# it. Journal diameter is not free either: every step takes another 1.5% of the tube's net
+# section at the hinge station, and `tube_section.check_cut_station` is what will stop it.
 SERVO_INBOARD_MOVE = 4.000e-3
-JOURNAL_DIA = 6.000e-3
+JOURNAL_DIA = 10.000e-3
 BEARING_LENGTH = 6.000e-3
 BEARING_WALL = 1.000e-3
 
@@ -1219,6 +1274,34 @@ def swept_out_root_joint(stack: HingeStack, canards) -> RootJoint:
     return _joint(stack, canards, 1.800e-3, 14.000e-3, 30.000e-3)
 
 
+def leading_edge_probe_root_joint(stack: HingeStack, canards) -> RootJoint:
+    """A tang deliberately driven deep enough to exit the panel's leading edge.
+
+    `swept_out_root_joint` used to serve this purpose, and it stopped: it is a FROZEN
+    1.8 x 14 x 30 triple that cleared the leading edge by 2.01 mm on the 0.85 cal panel and
+    fails the check by doing so. The Sep 2026 freeze took the canards to 1.30 cal, and
+    because canard sweep matches the aft fin ANGLE the sweep length went 43.7 -> 66.8 mm --
+    which moves the root leading edge aft and hands that same tang 11.92 mm of clearance.
+    The probe passed, `scripts/hinge_report.py` raised, and it was right to: a guard that
+    no longer fails is not a guard.
+
+    So this one is DERIVED. It takes the selected tang and pushes the engagement until the
+    clearance is half the minimum, which fails on any panel this project can build. The
+    historical joint is kept next door because its provenance is the argument; this is the
+    one the guard should exercise.
+    """
+    sel = selected_root_joint(stack, canards)
+    # leading_edge_clearance falls as engagement grows (the swept LE runs aft faster than
+    # the tang does), so walk it out until the check is comfortably violated.
+    engagement = sel.engagement
+    for _ in range(200):
+        probe = _joint(stack, canards, sel.tang_thickness, sel.tang_width, engagement)
+        if probe.leading_edge_clearance < 0.5 * MIN_EDGE_CLEARANCE:
+            return probe
+        engagement += 0.001
+    return probe
+
+
 def selected_root_joint(stack: HingeStack, canards) -> RootJoint:
     """The joint this module selects: a 1.8 x 11.5 mm tang, 25.0 mm into the panel root.
 
@@ -1226,8 +1309,9 @@ def selected_root_joint(stack: HingeStack, canards) -> RootJoint:
 
       * THICKNESS 1.8 mm sets the skins at 0.6 mm each. Thicker tang, stronger tang,
         weaker skin -- and the skin's stress goes as 1/t^2, so the trade is sharp. This is
-        the one number that did NOT move when the leading-edge constraint arrived, which
-        is why the panel is still a 0.6/2.0/0.6 laminate.
+        the one number that did NOT move when the leading-edge constraint arrived. The
+        laminate around it DID: the Sep 2026 freeze took the panel 3.2 -> 3.6 mm, so the
+        skins went 0.6 -> 0.8 mm and the stack is 0.8/2.0/0.8. The tang is still 1.8.
 
         Those three numbers are SHEETS TO BUY and they must sum to the 3.2 mm panel. The
         middle one is the SLOT (2.0 mm, stocked), not the tang (1.8 mm): the tang sits in

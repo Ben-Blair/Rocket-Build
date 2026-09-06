@@ -1,5 +1,45 @@
 # Motor selection (L2)
 
+> ## SUPERSEDED Sep 2026 — the frozen motor is the **AeroTech J401FJ**
+>
+> Everything below scored motors on **crossrange**: how far sideways the vehicle gets.
+> That is the wrong objective for a vehicle whose point is to *turn*, and it does not
+> merely change the ranking — it reverses the direction of the answer.
+>
+> Turn rate is `omega = n·g0/V`. Speed enters the numerator of `n` (through `q ~ V²`) and
+> again in the denominator here, so doubling speed quadruples the g and only doubles the
+> turn rate. Turn **radius**, `V²/(n·g0)`, does not improve at all — the two `V²` terms
+> cancel exactly. Crossrange, by contrast, rewards both authority *and* time of flight, so
+> on that metric a bigger motor always wins. The two objectives disagree, and the
+> disagreement is the whole story.
+>
+> Meanwhile every requirement that actually binds is triggered by **speed**: criterion 3
+> below (±16 g axial), R5's Mach cap, R6's apogee cap, fin flutter, and servo hinge
+> moment. None is triggered by static margin except R1. So a search against turn rate
+> spends its budget on a *slower* motor that leaves all of those slack, and buys the turn
+> back through lean.
+>
+> | | J449 (was) | J401FJ (now) |
+> |---|---|---|
+> | total impulse | 1260 N·s | 1105 N·s |
+> | case length | 321 mm | 325 mm (fits the 332 mm mount tube) |
+> | peak heading rate | 4.40 °/s | **6.47 °/s** |
+> | turn radius | 2.04 km | **1.18 km** |
+> | lateral g at 8° | 1.41 g | 1.76 g |
+> | apogee / max Mach | 1271 m / 0.494 | 1011 m / 0.423 |
+> | peak axial | 7.8 g | 6.5 g |
+>
+> **Criterion 3 below is the one this document got right and the code got wrong.** It has
+> said "peak axial acceleration ≤ 16 g" since the J449 was chosen, but that was never
+> encoded in `configure.LIMITS`. When `scripts/agility_sweep.py` first ran without it, the
+> most agile motor passing every *enforced* requirement was the AeroTech K2050ST at
+> **31.4 g axial** — twice the accelerometer's full scale, on a vehicle whose entire
+> purpose is state estimation. A criterion that lives only in prose constrains nobody.
+>
+> See `docs/11-agility-comparison.md` §7 for the search and `docs/00-requirements.md` §7.2
+> for what applying it cost. **The J449 analysis below is kept as history** — it is a
+> correct answer to the question it asked.
+
 Method: `scripts/fetch_motors.py` downloaded all 102 currently-available 54 mm J and K
 solid motors from ThrustCurve.org as RASP `.eng` curves. `scripts/motor_trade.py` flies the
 frozen baseline airframe on every one of them and scores against the requirements.

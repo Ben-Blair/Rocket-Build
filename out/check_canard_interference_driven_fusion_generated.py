@@ -2,7 +2,7 @@
 edit this file. Regenerate rather than patch.
 
 Read-only: every comparison runs on temporary copies of occurrence proxies, never the real
-document bodies. Drives the 4 revolute hinge joints through 0, 4, 8, -4, -8, 0 deg and resets to
+document bodies. Drives the 4 revolute hinge joints through 0, 4.6, 9.2, -4.6, -9.2, 0 deg and resets to
 0 deg before finishing, in this same script run.
 """
 
@@ -100,13 +100,31 @@ def _inject(comp, made):
 
     Mandatory for a parametric document: a temp body only "takes" via
     `BRepBodies.add(body, baseFeature)`, per make_sled_fusion.py's own header.
+
+    RENAMING HAPPENS AFTER `finishEdit()`, VIA A FRESH QUERY -- not on the object
+    `BRepBodies.add()` itself returns, and not inside the startEdit/finishEdit
+    transaction. Confirmed by direct test: for a body sourced from Fusion's parametric
+    Sketch/Extrude API (copied out via `TemporaryBRepManager.copy()`, the technique the
+    canard panels and aft fins both use for their swept-trapezoid profile), setting
+    `.name` on the object `.add()` returns reads back correctly on THAT SAME object but
+    does not persist to the body at all -- a fresh `comp.bRepBodies` query even in the
+    same script run still shows Fusion's own default name ("Body1"). Renaming a FRESH
+    query result AFTER `finishEdit()` does persist, for both extrude-sourced and
+    primitive-sourced (box/cylinder/boolean) bodies alike, so every generator does it
+    this way now rather than the two of them disagreeing on which pattern is safe. This
+    is a DIFFERENT failure mode from `_get_or_create_component`'s own idempotency note
+    above (same-transaction rename into an ALREADY-POPULATED component) -- that one is
+    about a LATER, separate script run; this one bites inside the very run that created
+    the body.
     """
+    before = comp.bRepBodies.count
     bf = comp.features.baseFeatures.add()
     bf.startEdit()
     for (name, body) in made:
-        b = comp.bRepBodies.add(body, bf)
-        b.name = name
+        comp.bRepBodies.add(body, bf)
     bf.finishEdit()
+    for i, (name, _body) in enumerate(made):
+        comp.bRepBodies.item(before + i).name = name
 
 
 def _verify_volume(comp, want, tol, loose=(), loose_tol=None):
@@ -158,7 +176,7 @@ def _verify_cyl_faces(body, radius, axis_is_radial):
 
 
 TOLERANCE_MM3 = 0.05
-DRIVE_ANGLES_DEG = (0, 4, 8, -4, -8, 0)
+DRIVE_ANGLES_DEG = (0, 4.6, 9.2, -4.6, -9.2, 0)
 
 
 def _occ(root, name):

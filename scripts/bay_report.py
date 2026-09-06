@@ -204,7 +204,7 @@ def main() -> None:
     say("     panel's normal force -- which is circumferential -- presses on the collar")
     say("     bore IN the layer plane rather than across it. Any other orientation makes")
     say("     interlayer strength the governing property, at roughly half the number.")
-    say(f"  2. Collar bores print at dia {bay.COLLAR_PRINTED_BORE * MM:.1f}, undersize on purpose. "
+    say(f"  2. Collar bores print at dia {b.collar_printed_bore * MM:.1f}, undersize on purpose. "
         f"Do not try to")
     say("     print them to size; FDM holes come out undersize and rough anyway.")
     say("  3. Bond the bay into the tube. Abrade both faces. The weak side of this joint is")

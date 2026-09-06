@@ -1,0 +1,174 @@
+============================================================================================================================
+STAGE 0  VALIDATION -- the flat-flight integrator against the vertical codes
+============================================================================================================================
+  Flown at 85 deg elevation -- i.e. the 5-deg-off-vertical rail the frozen
+  baseline actually uses -- `design/horizontal.fly` must reproduce the numbers
+  `control.heading_change` and `scripts/virtual_flight.py` already agree on.
+
+                                peak deg/s  total deg  window s
+  control.heading_change              6.93       33.7       9.5
+  virtual_flight (docs/11)            6.49       34.6        --
+  horizontal.fly @ 85 deg             6.96       33.7       9.4
+
+  Peak rate agrees to 0.5%; apogee 969 m against 972 m from trajectory.py's RK4.
+  A third integration path, and it lands on the same vehicle. The flat-flight
+  numbers below are therefore differences in the FLIGHT, not in the code.
+
+============================================================================================================================
+STAGE 1  THE FROZEN VEHICLE, LAUNCHED FLAT -- same hardware, nothing changed
+============================================================================================================================
+                          VERTICAL (5 deg rail)   FLAT (25 deg rail)
+  burnout speed, m/s                      137.6                156.1
+  peak heading rate, deg/s                   6.93                 8.56
+  turn radius, m                           1072                 1016
+  control window, s                         9.5                 13.8
+  heading change, deg                        34                   83
+  apogee, m                                 972                  169
+  max Mach                                 0.41                 0.46
+
+  1.23x the heading rate and 1.06x the radius FOR FREE -- no new part, no new motor, no margin spent.
+  It is the flight profile, not the vehicle: gravity stops eating speed, and
+  the manoeuvre happens in sea-level air instead of at 600 m.
+
+============================================================================================================================
+STAGE 2  LAUNCH ELEVATION -- and the floor nobody had to think about before
+============================================================================================================================
+   elev    policy   V_bo  fpa_bo  apogee  deg/s    R m  ctl s    psi  range km verdict
+     15  max_rate  160.5    -2.6      12   0.00    inf    0.0    0.0      0.39 never reaches the 50 m manoeuvre floor -- nose-in
+     15   sustain  160.5    -2.6      12   0.00    inf    0.0    0.0      0.39 never reaches the 50 m manoeuvre floor -- nose-in
+     20  max_rate  158.4     2.5      34   0.00    inf    0.0    0.0      0.74 never reaches the 50 m manoeuvre floor -- nose-in
+     20   sustain  158.4     2.5      34   0.00    inf    0.0    0.0      0.74 never reaches the 50 m manoeuvre floor -- nose-in
+     22  max_rate  157.5     4.5      48   0.00    inf    0.0    0.0      0.87 never reaches the 50 m manoeuvre floor -- nose-in
+     22   sustain  157.5     4.5      48   0.00    inf    0.0    0.0      0.87 never reaches the 50 m manoeuvre floor -- nose-in
+     25  max_rate  156.2     7.6      74   8.57   1015    3.7   28.8      1.03 no dual-deploy room (apogee < 250 m)
+     25   sustain  156.2     7.6     167   8.57   1015   13.8   83.2      1.80 no dual-deploy room (apogee < 250 m)
+     30  max_rate  154.1    13.0     129   8.37   1022    6.9   47.9      1.24 no dual-deploy room (apogee < 250 m)
+     30   sustain  154.1    13.0     269   8.37   1022   15.4   87.1      1.78 
+     35  max_rate  151.9    18.7     201   8.18   1029    9.7   61.9      1.40 no dual-deploy room (apogee < 250 m)
+     35   sustain  151.9    18.7     365   8.18   1029   16.8   89.7      1.74 
+     45  max_rate  147.9    30.2     368   7.82   1041   14.5   79.9      1.53 
+     45   sustain  147.9    30.2     535   7.82   1041   19.3   93.2      1.61 
+     60  max_rate  142.6    49.0     651   7.37   1057   20.4   91.8      1.36 
+     60   sustain  142.6    49.0     771   7.37   1057   23.0   93.7      1.21 
+
+  THE FLOOR IS GRAVITY DROOP DURING BOOST, and it is worth about 20 degrees.
+  While the motor burns, the velocity vector rotates down at g cos(gamma)/V,
+  and V starts at 21 m/s off the rail. Integrating over the 2.8 s burn:
+      delta_gamma ~ (g/a) ln(V_bo/V_rail) = (9.81/64) ln(160/21) = 19.9 deg
+  So a 20 deg rail is DESCENDING by burnout and hits the ground before the
+  control law is allowed to start. A truly horizontal launch is not available
+  on a T/W of 6; 25 deg is the practical floor and it flies flat (fpa ~6 deg
+  at burnout) because the boost has already spent the elevation.
+
+============================================================================================================================
+STAGE 3  THE SEARCH -- motor x canard span x aft span x ballast, flown flat
+============================================================================================================================
+  screening 102 x 54 mm motors on the frozen fin set ...
+  10 pass EVERY requirement but R1 on the frozen fins; carrying the top 5 into the fin search:
+    J525, J401FJ, J440-BB, J380SS, J360SM
+
+  240 vehicles ...
+    ... 100/240
+    ... 200/240
+
+  240 scored, 79 legal against EVERY requirement including R1.
+
+motor              can  aft  blst    t  del    SM    P<1    M   alt     g  deg/s  R km   psi  flt  trq  brg  skn  dep  verdict
+J401FJ            1.45 1.85   25g  3.2  9.1  1.96   0.5% 0.46   255  2.67   9.93  0.87    76 1.78  2.0 2.48 2.92  1.2  ok
+J401FJ            1.45 1.85   60g  3.2  9.2  2.00   0.4% 0.46   290  2.55   9.58  0.89    74 1.80  2.1 2.53 2.99  1.2  ok
+J525              1.45 2.00   25g  3.2  9.1  1.94   0.7% 0.45   282  2.52   9.56  0.89    73 1.65  2.1 2.60 3.08  1.1  ok
+J401FJ            1.45 2.00   25g  3.2  9.3  2.16   0.1% 0.45   289  2.50   9.46  0.90    72 1.63  2.1 2.56 3.03  1.2  ok
+J401FJ            1.45 1.85  100g  3.2  9.2  2.04   0.3% 0.45   287  2.46   9.30  0.91    71 1.81  2.1 2.57 3.04  1.2  ok
+J401FJ            1.45 2.00   60g  3.2  9.3  2.20   0.1% 0.45   282  2.42   9.22  0.92    70 1.64  2.1 2.60 3.07  1.2  ok
+J401FJ            1.45 2.00  100g  3.2  9.4  2.25   0.1% 0.45   273  2.34   8.97  0.94    67 1.65  2.1 2.63 3.11  1.2  ok
+J401FJ            1.30 1.70   25g  3.2  9.2  1.94   0.6% 0.47   252  2.43   8.88  0.99    65 1.95  2.3 3.06 3.61  1.4  ok
+J380SS            1.45 2.00   25g  3.2  9.2  1.89   0.8% 0.41   252  2.09   8.62  0.91    62 1.79  2.6 3.13 3.70  1.1  ok
+J401FJ            1.30 1.70   60g  3.2  9.2  1.98   0.4% 0.46   286  2.32   8.57  1.01    64 1.97  2.3 3.13 3.70  1.4  ok
+J525              1.30 1.85   25g  3.2  9.2  1.94   0.6% 0.46   270  2.28   8.53  1.01    63 1.79  2.4 3.22 3.81  1.2  ok
+J401FJ            1.30 1.85   25g  3.2  9.4  2.17   0.1% 0.46   279  2.27   8.44  1.03    62 1.78  2.3 3.17 3.74  1.4  ok
+
+============================================================================================================================
+STAGE 4  PARETO -- heading rate against P(SM < 1.0), everything else legal
+============================================================================================================================
+  R1 is the only requirement scored rather than gated here. Every row below
+  passes R5, the IMU clip, flutter, servo torque and fit, R11 packing and the
+  250 m recovery floor. What separates them is static-margin RISK.
+
+motor              can  aft  blst    t  del    SM    P<1    M   alt     g  deg/s  R km   psi  flt  trq  brg  skn  dep  verdict
+J401FJ            1.30 2.00   25g  3.2  9.6  2.37   0.0% 0.46   265  2.16   8.14  1.05    58 1.62  2.4 3.24 3.83  1.4  ok
+J401FJ            1.45 2.00   60g  3.2  9.3  2.20   0.1% 0.45   282  2.42   9.22  0.92    70 1.64  2.1 2.60 3.07  1.2  ok
+J401FJ            1.45 2.00   25g  3.2  9.3  2.16   0.1% 0.45   289  2.50   9.46  0.90    72 1.63  2.1 2.56 3.03  1.2  ok
+J401FJ            1.45 1.85   60g  3.2  9.2  2.00   0.4% 0.46   290  2.55   9.58  0.89    74 1.80  2.1 2.53 2.99  1.2  ok
+J401FJ            1.45 1.85   25g  3.2  9.1  1.96   0.5% 0.46   255  2.67   9.93  0.87    76 1.78  2.0 2.48 2.92  1.2  ok
+J525              1.45 1.85   25g  3.2  8.9  1.73   2.8% 0.46   252  2.69  10.05  0.86    77 1.80  2.1 2.52 2.98  1.1  ok
+J440-BB           1.45 1.70   60g  3.2  8.6  1.54   7.3% 0.45   280  2.65  10.05  0.84    78 2.03  2.1 2.60 3.07  1.1  ok
+J525              1.45 1.70   60g  3.2  8.6  1.52   7.9% 0.46   258  2.76  10.28  0.84    79 2.00  2.0 2.50 2.95  1.1  ok
+J440-BB           1.45 1.70   25g  3.2  8.5  1.50   8.6% 0.45   286  2.74  10.33  0.83    81 2.02  2.1 2.57 3.03  1.1  ok
+J525              1.45 1.70   25g  3.2  8.5  1.48   9.7% 0.46   264  2.85  10.57  0.82    82 1.99  2.0 2.47 2.91  1.1  ok
+J525              1.45 1.55  100g  3.2  8.3  1.28  23.2% 0.46   263  2.85  10.58  0.82    82 2.25  2.0 2.48 2.93  1.1  ok
+J380SS            1.60 1.70   60g  3.2  8.4  1.27  24.1% 0.42   252  2.62  10.62  0.75    82 2.18  2.2 2.43 2.87  1.0  ok
+J440-BB           1.45 1.55   60g  3.2  8.2  1.25  24.9% 0.45   293  2.85  10.69  0.80    85 2.27  2.1 2.54 3.00  1.0  ok
+J380SS            1.60 1.70   25g  3.2  8.4  1.23  27.9% 0.42   258  2.71  10.92  0.73    85 2.16  2.1 2.40 2.84  1.0  ok
+J440-BB           1.45 1.55   25g  3.2  8.1  1.21  28.8% 0.46   299  2.94  11.00  0.78    88 2.26  2.0 2.51 2.97  1.0  ok
+J360SM            1.60 1.55   25g  3.2  7.9  1.07  42.0% 0.41   286  2.66  11.04  0.70    87 2.49  2.2 2.51 2.96  1.0  ok
+J380SS            1.60 1.55   60g  3.2  8.0  0.98  51.9% 0.42   265  2.82  11.29  0.71    89 2.43  2.1 2.38 2.81  1.0  ok
+J380SS            1.60 1.55   25g  3.2  7.9  0.94  57.5% 0.43   266  2.92  11.63  0.69    92 2.42  2.1 2.35 2.77  1.0  ok
+
+  Read the risk column, not the rate column. The knee is where P(SM<1.0)
+  starts climbing faster than deg/s does.
+
+============================================================================================================================
+STAGE 5  THE RELAXATION LADDER -- flat-launch edition
+============================================================================================================================
+  Same construction as agility_sweep.py stage 5, over the flat-flight score.
+  The ORDER is the output: it has changed completely from the vertical case.
+
+  requirement dropped                          best deg/s      g   radius  P(SM<1)  best vehicle
+  nothing                                            9.93   2.67    0.87k     0.5%  J401FJ 1.45/1.85 25g 9.1d
+  R6 apogee <= 1600 m (vertical mode only)           9.93   2.67    0.87k     0.5%  J401FJ 1.45/1.85 25g 9.1d
+  250 m flat-apogee floor                            9.93   2.67    0.87k     0.5%  J401FJ 1.45/1.85 25g 9.1d
+  flutter >= 1.5x                                    9.93   2.67    0.87k     0.5%  J401FJ 1.45/1.85 25g 9.1d
+  servo torque >= 2.0x                              10.63   2.80    0.80k     0.4%  J401FJ 1.60/2.00 60g 9.1d
+  hinge bearing / root joint >= 2.0x                 9.93   2.67    0.87k     0.5%  J401FJ 1.45/1.85 25g 9.1d
+  drogue shock <= the docs/10 design load            9.93   2.67    0.87k     0.5%  J401FJ 1.45/1.85 25g 9.1d
+  +/-16 g accelerometer                              9.93   2.67    0.87k     0.5%  J401FJ 1.45/1.85 25g 9.1d
+  R11 recovery packing                               9.93   2.67    0.87k     0.5%  J401FJ 1.45/1.85 25g 9.1d
+  R5 Mach <= 0.8                                     9.93   2.67    0.87k     0.5%  J401FJ 1.45/1.85 25g 9.1d
+  R1 static margin band                             11.63   2.92    0.69k    57.5%  J380SS 1.60/1.55 25g 7.9d
+  everything except stall                           13.03   3.53    0.67k    51.9%  J525 1.60/1.55 25g 7.6d
+
+============================================================================================================================
+STAGE 6  THE RECOMMENDED POINT, AND ITS VERTICAL MODE
+============================================================================================================================
+  motor              J401FJ  (1105 N s, 325 mm case)
+  canard / aft span  1.45 / 1.85 cal
+  nose ballast       25 g
+  aft fin thickness  3.2 mm
+  deflection         9.1 deg (stall-limited; the frozen cap is 9.2)
+
+  HORIZONTAL MODE  (28 deg rail, bank-to-turn, altitude-holding bank)
+    peak heading rate    9.93 deg/s   (99% of the AIM-9B's 10 deg/s)
+    azimuth rate         9.32 deg/s at 9 deg flight path  (shallow: sound)
+    turn radius          872 m
+    lateral g            2.67 g
+    control window       16.6 s
+    heading change       108 deg raw, 76 deg at 70% duty
+    90 deg turn in       15.6 s at the mean rate
+    apogee / max Mach    255 m / 0.46
+    ground range         1.80 km
+
+  VERTICAL MODE  (same hardware on a 5 deg rail)
+    apogee               980 m (R6 cap 1600 m: OK)
+    max Mach             0.41
+    static margin        2.03 - 2.41 cal
+    nominal SM / P(SM<1) 1.96 cal / 0.55%
+    peak heading rate    8.15 deg/s
+    recovery packing     fits, 2.2 mm spare
+    axial g              7.1 against a 16 g accelerometer
+
+  LOCKED-CANARD VERTICAL (R12 failsafe, canards centred and held)
+    the canards do not disappear when locked -- they are still 27% of CNa --
+    so the failsafe vehicle is the SAME airframe at zero deflection:
+    static margin 2.03 cal at rail exit, 1.96 nominal, P(SM<1.0) 0.55%.
+    That is the number R12 rides on, and it is why the Pareto's risk column
+    is a SAFETY column and not a performance one.

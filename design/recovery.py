@@ -209,7 +209,11 @@ CONDUIT_DENSITY = 1400.0  # kg/m^3, thin-wall PETG or glass tube -- a few grams 
 # against it, which both existing bulkheads carry because each takes a harness both ways.
 # `recovery_hardware.check_recovery_hardware()` re-derives this and fails if the two drift,
 # the same guard `configure.evaluate()` puts on `mass.py`'s harness line.
-UBOLT_ENVELOPE_VOLUME = 5.95e-6  # m^3
+#
+# 5.95 -> 8.39 cm3 with the M10 rod of the 1.30 cal freeze. Same derivation, bigger crown
+# and a wider backing plate. This one costs PACKING, not mass, and the recovery bay had
+# 4.4 mm of spare length before it.
+UBOLT_ENVELOPE_VOLUME = 8.39e-6  # m^3
 
 # THE CHARGE WELL IS RIGID TOO, and `default_soft_goods()` used to say in as many words that
 # it was not: "charge wells, e-matches and terminal blocks mount on the bulkhead face and do

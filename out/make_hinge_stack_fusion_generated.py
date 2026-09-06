@@ -3,11 +3,11 @@
 Every number below comes from design/hinge.py. Regenerate rather than patch.
 
 Tube     OD 79.400 / ID 74.800 x 142.920 long, Z 0.000 .. 142.920
-Panel    R 40.200 .. 107.190, root chord Z 38.070 .. 105.260, tip chord Z 85.611 .. 112.607
-         thickness 3.200, tang slot 2.000 x 12.100 x 25.600 deep
-Shaft    dia 6.000 rod R 33.485 .. 40.200, tang boss to R 65.700
+Panel    R 40.200 .. 154.830, root chord Z 27.605 .. 115.877, tip chord Z 131.668 .. 140.530
+         thickness 4.000, tang slot 2.000 x 12.100 x 25.600 deep
+Shaft    dia 10.000 rod R 33.485 .. 40.200, tang boss to R 65.700
          spline socket dia 4.100 x 3.200 deep from R 33.485
-Volumes  tube 79158.0931  panel 9475.7122  shaft 698.1377  mm3 (each x4 for panel/shaft)
+Volumes  tube 78576.8575  panel 21649.3746  shaft 1032.7638  mm3 (each x4 for panel/shaft)
 """
 
 
@@ -104,13 +104,31 @@ def _inject(comp, made):
 
     Mandatory for a parametric document: a temp body only "takes" via
     `BRepBodies.add(body, baseFeature)`, per make_sled_fusion.py's own header.
+
+    RENAMING HAPPENS AFTER `finishEdit()`, VIA A FRESH QUERY -- not on the object
+    `BRepBodies.add()` itself returns, and not inside the startEdit/finishEdit
+    transaction. Confirmed by direct test: for a body sourced from Fusion's parametric
+    Sketch/Extrude API (copied out via `TemporaryBRepManager.copy()`, the technique the
+    canard panels and aft fins both use for their swept-trapezoid profile), setting
+    `.name` on the object `.add()` returns reads back correctly on THAT SAME object but
+    does not persist to the body at all -- a fresh `comp.bRepBodies` query even in the
+    same script run still shows Fusion's own default name ("Body1"). Renaming a FRESH
+    query result AFTER `finishEdit()` does persist, for both extrude-sourced and
+    primitive-sourced (box/cylinder/boolean) bodies alike, so every generator does it
+    this way now rather than the two of them disagreeing on which pattern is safe. This
+    is a DIFFERENT failure mode from `_get_or_create_component`'s own idempotency note
+    above (same-transaction rename into an ALREADY-POPULATED component) -- that one is
+    about a LATER, separate script run; this one bites inside the very run that created
+    the body.
     """
+    before = comp.bRepBodies.count
     bf = comp.features.baseFeatures.add()
     bf.startEdit()
     for (name, body) in made:
-        b = comp.bRepBodies.add(body, bf)
-        b.name = name
+        comp.bRepBodies.add(body, bf)
     bf.finishEdit()
+    for i, (name, _body) in enumerate(made):
+        comp.bRepBodies.item(before + i).name = name
 
 
 def _verify_volume(comp, want, tol, loose=(), loose_tol=None):
@@ -166,12 +184,12 @@ OVER = 1.0   # mm, overshoot on every open-face cut/join -- see fusion_common.py
 TUBE_OR = 39.7000
 TUBE_IR = 37.4000
 TUBE_LEN = 142.9200
-TUBE_VOLUME = 79158.0931
-TUBE_BORE_TOLERANCE = 0.8000
-WALL_BORE_DIA = 8.0000
+TUBE_VOLUME = 78576.8575
+TUBE_BORE_TOLERANCE = 0.2000
+WALL_BORE_DIA = 12.0000
 
-HINGE_Z = 68.2690
-JOURNAL_R = 3.0000
+HINGE_Z = 77.0802
+JOURNAL_R = 5.0000
 SLEEVE_INBOARD = 33.4850
 PANEL_ROOT = 40.2000
 SLEEVE_LENGTH = 6.7150
@@ -187,15 +205,15 @@ SLOT_WIDTH = 12.1000
 SOCKET_DIA = 4.1000
 SOCKET_DEPTH = 3.2000
 
-TIP_R = 107.1900
-ROOT_LE = 38.0698
-ROOT_TE = 105.2598
-TIP_LE = 85.6111
-TIP_TE = 112.6071
-PANEL_THICKNESS = 3.2000
+TIP_R = 154.8300
+ROOT_LE = 27.6047
+ROOT_TE = 115.8767
+TIP_LE = 131.6679
+TIP_TE = 140.5297
+PANEL_THICKNESS = 4.0000
 
-SHAFT_VOLUME = 698.1377
-PANEL_VOLUME = 9475.7122
+SHAFT_VOLUME = 1032.7638
+PANEL_VOLUME = 21649.3746
 VOLUME_TOLERANCE = 0.0200
 
 

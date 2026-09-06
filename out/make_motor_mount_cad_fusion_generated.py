@@ -3,11 +3,11 @@ Regenerate rather than patch.
 
 BoosterForwardBulkhead  dia 74.800 x 4.800, Z 579.620 .. 584.420
                         3 holes, from design/motor_mount.hole_layout()
-MotorMountTube          OD 57.100 / ID 54.500, Z 584.420 .. 916.500
-CenteringRing0          OD 74.800 / ID 57.100 x 3.200, Z 760.440
-CenteringRing1          OD 74.800 / ID 57.100 x 3.200, Z 898.300, 4 tab slots
-MotorEnvelope           dia 54.000 x 321.000, Z 595.500 .. 916.500
-Fin tab band            Z 771.640 .. 910.500, tab tip R 28.550 (DERIVED -- design/motor_mount.py)
+MotorMountTube          OD 57.100 / ID 54.500, Z 584.420 .. 920.500
+CenteringRing0          OD 74.800 / ID 57.100 x 3.200, Z 764.440
+CenteringRing1          OD 74.800 / ID 57.100 x 3.200, Z 902.300, 4 tab slots
+MotorEnvelope           dia 54.000 x 325.000, Z 595.500 .. 920.500
+Fin tab band            Z 775.640 .. 914.500, tab tip R 28.550 (DERIVED -- design/motor_mount.py)
 """
 
 
@@ -188,27 +188,27 @@ AFT_FIN_CLOCK_DEG = 45.0
 DISC_R_MM = 37.400000000000006
 DISC_T_MM = 4.8
 DISC_Z0_MM = 579.62
-DISC_VOLUME_MM3 = 20487.733127567855
-HOLES = [('drogue charge feed-through', 22.59775238156248, 0.0, 4.0), ('U-bolt leg A', 0.0, 12.5, 8.5), ('U-bolt leg B', 0.0, -12.5, 8.5)]
+DISC_VOLUME_MM3 = 20201.219877560467
+HOLES = [('drogue charge feed-through', 22.59775238156248, 0.0, 4.0), ('U-bolt leg A', 0.0, 12.5, 10.5), ('U-bolt leg B', 0.0, -12.5, 10.5)]
 
 TUBE_OR_MM = 28.55
 TUBE_IR_MM = 27.25
 TUBE_Z0_MM = 584.42
-TUBE_Z1_MM = 916.5
-TUBE_VOLUME_MM3 = 75678.0868128334
+TUBE_Z1_MM = 920.5
+TUBE_VOLUME_MM3 = 76589.65133719901
 
 RINGS = [
-    {'name': 'CenteringRing0', 'body': 'forward centering ring', 'ro': 37.400000000000006, 'ri': 28.55, 't': 3.2, 'z0': 760.4399999999998, 'slots': 0, 'slot_width': 3.2, 'slot_r_lo': 28.55, 'volume': 5867.565165480275, 'slot_volume': 0.0},
-    {'name': 'CenteringRing1', 'body': 'aft centering ring (slotted)', 'ro': 37.400000000000006, 'ri': 28.55, 't': 3.2, 'z0': 898.3, 'slots': 4, 'slot_width': 3.2, 'slot_r_lo': 28.55, 'volume': 5505.069165480275, 'slot_volume': 90.62400000000007}
+    {'name': 'CenteringRing0', 'body': 'forward centering ring', 'ro': 37.400000000000006, 'ri': 28.55, 't': 3.2, 'z0': 764.4399999999998, 'slots': 0, 'slot_width': 3.2, 'slot_r_lo': 28.55, 'volume': 5867.565165480275, 'slot_volume': 0.0},
+    {'name': 'CenteringRing1', 'body': 'aft centering ring (slotted)', 'ro': 37.400000000000006, 'ri': 28.55, 't': 3.2, 'z0': 902.3, 'slots': 4, 'slot_width': 3.2, 'slot_r_lo': 28.55, 'volume': 5505.069165480275, 'slot_volume': 90.62400000000007}
 ]
 
 MOTOR_R_MM = 27.0
 MOTOR_Z0_MM = 595.5
-MOTOR_Z1_MM = 916.5
-MOTOR_VOLUME_MM3 = 735160.9552738939
+MOTOR_Z1_MM = 920.5
+MOTOR_VOLUME_MM3 = 744321.8394517617
 
-TAB_Z0_MM = 771.6399999999999
-TAB_Z1_MM = 910.4999999999998
+TAB_Z0_MM = 775.6399999999998
+TAB_Z1_MM = 914.4999999999998
 
 
 def _rotate_z(tbm, body, angle_deg):

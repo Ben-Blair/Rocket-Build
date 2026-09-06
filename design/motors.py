@@ -27,6 +27,13 @@ class Motor:
     times: list[float] = field(default_factory=list)
     thrusts: list[float] = field(default_factory=list)
     approximate: bool = False
+    # Last field of the RASP header. Carried because scripts/make_ork.py has to hand
+    # OpenRocket a manufacturer AND a designation to resolve the motor from its own
+    # database, and it used to hardcode "Cesaroni Technology" / "1261J449-15A". That was
+    # invisible while the baseline WAS the J449; the moment the frozen motor changed, the
+    # generated .ork described an AeroTech vehicle carrying a Cesaroni motor. A constant
+    # that happens to be right is not the same as a derived one.
+    manufacturer: str = ""
 
     @property
     def dry_mass(self) -> float:
@@ -141,6 +148,7 @@ def load_eng(path: str | Path) -> Motor:
         total_mass=float(header[5]),
         times=times,
         thrusts=thrusts,
+        manufacturer=header[6] if len(header) > 6 else "",
     )
 
 

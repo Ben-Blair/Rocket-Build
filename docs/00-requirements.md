@@ -79,7 +79,7 @@ research launch).
 | # | Constraint | Value | Source |
 |---|---|---|---|
 | C1 | Certification level held | TBD (assume none today) | You |
-| C2 | Max motor impulse you may legally fly | L1 → H/I, L2 → J/K/L | NAR/TRA |
+| C2 | Max motor impulse | **L2** (J / K / L; NAR/TRA Level 2 ceiling). The vehicle will not fly an M-class or larger motor | NAR/TRA |
 | C3 | Budget ceiling | TBD | You |
 | C4 | Calendar: design freeze / build / flight window | TBD | Academic calendar |
 | C5 | Field waiver altitude at your site | **No ceiling** (per prefect). Get this in writing — an unlimited ceiling is unusual and normally implies restricted airspace or a special waiver, and the actual document matters for flight cards | Club |
@@ -117,18 +117,21 @@ Values marked *(computed)* are outputs of `scripts/sweep.py` and
 
 | # | Requirement | Target | Rationale |
 |---|---|---|---|
-| R1 | Static margin, canards at zero, at rail exit | 1.5 – 2.5 cal **nominal**, and P(SM < 1.0) < 1% under mass/CP uncertainty. **Met with the 100 g of nose ballast now carried in the design** — see §7.1 | Below ~1.0 unsafe; above ~3 the vehicle weathercocks hard and fights the controller. The probabilistic half of this requirement is what sized the aft fins — see §7 |
-| R2 | Static margin must stay > 1.0 cal with canards at full deflection | *(computed)* | Canards are ahead of the CG and are *destabilizing*; this is the trap in canard design |
+| R1 | Static margin, canards at zero, at rail exit | 1.5 – 2.5 cal **nominal**, and P(SM < 1.0) < 1% under mass/CP uncertainty. **Met at 1.94 cal nominal and P = 0.65% with the 60 g of nose ballast the design now carries** — see §7.1 and §7.2 | Below ~1.0 unsafe; above ~3 the vehicle weathercocks hard and fights the controller. The probabilistic half of this requirement is what sized the aft fins — see §7 |
+| R2 | Static margin must stay > 1.0 cal with canards at full deflection | *(computed)* | Canards are ahead of the CG and are *destabilizing*; this is the trap in canard design. **"Full deflection" is 9.2°, not 8.0°, since the horizontal freeze — see R13** |
 | R3 | Rail exit velocity | ≥ 15 m/s (prefer ≥ 20) | Fin authority at rail exit; standard HPR practice |
 | R4 | Thrust-to-weight at ignition | ≥ 5:1 | Standard HPR practice |
 | R5 | Max Mach | ≤ 0.8 | Keeps you subsonic. Transonic aero invalidates Barrowman, makes the controller design far harder, and adds no value to a controls project |
-| R6 | Apogee | ≤ 1600 m (5250 ft) AGL | **Neither a waiver limit nor a field-size limit** — both are unbounded at this site (C5, C5a). The cap is retained on the three grounds that survive: keeping max Mach under 0.8 with real margin (R5), keeping the manoeuvre visible and filmable from the pad, and holding search time and cost per flight low enough to fly five or six times *with the data intact*. An unbounded field removes the risk of landing off the property; it does not make a rocket easier to find. See `scripts/recovery_study.py` |
+| R6 | Apogee — **two-sided since the horizontal freeze** | **Vertical mode ≤ 1600 m (5250 ft) AGL; horizontal mode ≥ 250 m AGL.** The lower bound is new and it is what sets the minimum launch elevation (30°): the main fires at 200 m, so below ~250 m of apogee there is no dual-deploy sequence at all, only a drogue-to-ground descent this vehicle is not sized for. The upper cap does not bind a flat flight at any motor in the 54 mm catalogue (docs/12 §5.6) | **Neither a waiver limit nor a field-size limit** — both are unbounded at this site (C5, C5a). The cap is retained on the three grounds that survive: keeping max Mach under 0.8 with real margin (R5), keeping the manoeuvre visible and filmable from the pad, and holding search time and cost per flight low enough to fly five or six times *with the data intact*. An unbounded field removes the risk of landing off the property; it does not make a rocket easier to find. See `scripts/recovery_study.py` |
 | R7 | Internal diameter for actuator bay | Not binding — 4 servos need 79 mm of arc against 188 mm available, 45 mm central void (see §4) | **Superseded.** Diameter is set by the 54 mm motor mount and recovery packing volume, not by the actuators |
 | R8 | Commanded lateral acceleration authority early in coast | ≥ 0.5 g | Enough for a measurable, visible correction. Baseline achieves **1.82 g** at 8°, for **400 m** of crossrange |
 | R9 | Roll authority | Net Cl_delta must retain correct sign at all conditions, with ≥ 50% of canard-only authority surviving interference | See §5 |
 | R10 | Control loop rate | ≥ 100 Hz | Baseline pitch mode is 4.3 Hz, so 100 Hz gives ~23x margin. `baseline.py` derives a ≥87 Hz floor from it |
-| R11 | Recovery | Dual deploy: 18 in drogue at apogee, **56 in** main at 200 m (650 ft). 5.0 m/s landing, 50 ft·lbf, 100 s descent. Harness **3/4" tubular nylon, 2 × 3.40 m**, 3.7× on the opening shock after knots, through **quick links** — the webbing does not pass through the U-bolt (docs/10) | Sized by `design/recovery.py`, drogue fixed at 18 in and main solved for the landing rate. Landing energy is inside the ~75 ft·lbf guidance; confirm the current figure with your prefect |
-| R12 | Canards centered + locked on any fault, loss of nav, or after burnout+N s | Mandatory | Safety, and required to get range approval |
+| R11 | Recovery | Dual deploy: **18 in drogue vertical / 16.1 in horizontal** at apogee, **56 in** main at 200 m (650 ft). **The drogue is sized by its own OPENING SHOCK on a horizontal launch, not by descent rate:** a flat flight reaches apogee at ~94 m/s, not ~1 m/s, because the horizontal velocity never goes away, and an 18 in canopy there makes 2260 N against the 1660 N the M10 anchors, harness and quick links were sized for (docs/10). 16.1 in holds the existing design load and reaches 200 m at 22.6 m/s. 5.0 m/s landing, 50 ft·lbf, 100 s descent. Harness **3/4" tubular nylon, 2 × 3.40 m**, 3.7× on the opening shock after knots, through **quick links** — the webbing does not pass through the U-bolt (docs/10) | Sized by `design/recovery.py`; the main is solved for the landing rate. The drogue was a fixed 18 in until the horizontal freeze made its deployment shock the sizing case. Nothing else in the recovery chain changes — same anchors, same harness, same quick links, same bay. Landing energy is inside the ~75 ft·lbf guidance; confirm the current figure with your prefect |
+| R12 | Canards centered + locked on any fault, loss of nav, or after burnout+N s | Mandatory. **NEW: fault-to-centred latency ≤ 0.5 s, and centred unconditionally below 50 m AGL regardless of guidance state** | Safety. The latency is new because a *flat* flight never runs out of dynamic pressure — it reaches the ground with the canards fully effective, so a hardover is dangerous for the whole flight rather than the first third. At 8.13 °/s a one-second lag is 8° of heading, and below 50 m there are 0.75 s and ~101 m/s left. docs/12 §7 |
+| R13 | **Canard deflection (NEW)** | **Pitch/yaw ≤ 9.2°; roll command ≤ 2.0°** | Different limits for different reasons and they must not be merged. Pitch/yaw is a STALL limit — 12° local alpha with 1.0° of headroom — and past it the turn rate does not degrade, it collapses below where it started. Roll is the SENSING limit that keeps the rate gyro in range. Raising the pitch/yaw cap leaves `estimation.check_estimation` bit-identical; verified, not argued. docs/12 §5.4 |
+| R14 | **Hinge bearing and its seat (NEW)** | **≥ 2.0× at the max dynamic pressure of the profile being flown**, bearing pressure *and* seat crush | **This is the requirement that now caps the design.** A flat flight's max *q* is the burnout value at sea level (15.5 kPa) rather than at 230 m (12.4). Met at **⌀10 journal / 6.0 mm bearing (2.11×)** — the journal has grown twice for this, and length is not available at any diameter, see docs/12 §9 and §11. The SEAT meets 2.0× **only with the printed bay's housing collar bonded in**: 1.74× bare, 11.72× with. **The collar is structure now.** **1.45 cal is the last canard this airframe can actuate**, and it is three checks deep: hinge 2.11×, servo torque 2.07×, root tang 2.02× — not stall and not static margin, which sit at 1.01° of headroom and 0.45% |
+| R15 | **Launch elevation (NEW)** | **Horizontal mode 28° above horizontal; vertical mode 5° from vertical** | A true horizontal launch is not available on a T/W of 6.17: gravity droop during boost rotates the velocity vector down ~20°, so a 20° rail is descending by burnout and reaches the ground before the control law starts. 28° is the lowest rail satisfying R6's horizontal floor at the 1.45/1.85 freeze, and it flies flat anyway — 6° of flight path angle at burnout |
 
 ---
 
@@ -268,38 +271,46 @@ reports the deflection/geometry region where the net roll moment changes sign.
 | D2 | Airframe diameter | 54 / 66 / 75 / 98 mm | **75 mm.** Originally justified by actuator packaging; that argument was wrong (§4.1). Now set by the 54 mm motor mount annulus, recovery packing volume, and the fact that every downstream analysis rests on it. 66 mm became possible once the packaging error was found, and is not worth reopening | RESOLVED, on revised grounds |
 | D3 | Canard count | 3 / 4 | **4**, interdigitated at 45° with 4 aft fins (§5) | RESOLVED |
 | D4 | Canard actuation | direct-drive / bellcrank | **direct drive**, **KST X08 Plus V6.0** (23.5×8×16.8 mm, 9 g, 5.3 kgf·cm @ 8.4 V); a linkage puts backlash inside the control loop. Fallback **MKS HV6100** (22.5×10×23.5 mm, 10 g) — shorter, so more bushing room, but HV-only and tighter on torque | RESOLVED, pending lug-clearance check against the dimensioned drawing |
-| D5 | Aft fin count and size | 3 / 4, semispan 0.95–1.85 cal | **4 panels, semispan 1.55 cal.** Set jointly with the canards (D11) by the margin robustness study (§7), not by nominal stability. Larger fins raise static margin but cost authority and push toward roll reversal (§5) | RESOLVED |
-| D11 | Canard size | semispan 0.70–1.00 cal | **0.85 cal semispan**, 0.70 cal root, 0.70 taper. Sized jointly with the aft fins (D5) under the probabilistic margin constraint — see §7. Sizing the two sets independently was the original mistake | RESOLVED |
+| D5 | Aft fin count and size | 3 / 4, semispan 0.95–1.85 cal | **4 panels, semispan 1.70 cal** (was 1.55 until the Sep 2026 agility freeze, §7.2). Set jointly with the canards (D11), not by nominal stability. Larger fins raise static margin but cost authority and push toward roll reversal (§5) | RESOLVED |
+| D11 | Canard size | semispan 0.70–1.45 cal | **1.30 cal semispan**, 0.85 cal root, 0.40 taper, **3.6 mm laminate**. Sized jointly with the aft fins (D5) under the probabilistic margin constraint — see §7 and §7.2. Sizing the two sets independently was the original mistake. The range widened from 0.70–1.00 because the original bound was an assumption, not a constraint: `scripts/agility_sweep.py` searched past it and the requirements that actually bind (R1, the root joint, the recovery anchor) all bite well before 1.45 | RESOLVED |
 | D10 | Nose ballast provision | none / fixed / adjustable | **Adjustable** threaded rod + washers in the nose shoulder. Lets you set margin after weighing the real vehicle (§7) | RESOLVED |
-| D6 | Motor | 102 available 54 mm J/K motors | **Cesaroni Pro54 J449 Blue Streak** (`1261J449-15A`). ~2.7× the crossrange of the J430 while staying at Mach 0.524 and 8.3 g. Ranks **11th** on crossrange alone; chosen on peak g, Mach margin and cost per flight. See `02-motor-selection.md` | RESOLVED |
+| D6 | Motor | 103 available 54 mm J/K motors | **AeroTech J401FJ** (1105 N·s, 325 mm case). Re-decided Sep 2026 against **turn rate** rather than crossrange, which reverses the answer: a smaller motor wins, because every requirement that binds (the ±16 g accelerometer, R5, R6, flutter, hinge moment) is triggered by speed and none by static margin except R1. 6.47 °/s and a 1.18 km turn radius against the J449's 4.40 °/s and 2.04 km. Also fits the 332 mm mount tube docs/09 already built. See `02-motor-selection.md` and `11-agility-comparison.md` §7 | RESOLVED |
 | D7 | Flight computer | COTS + custom controller board / full custom | **Custom STM32F405 board for the guided vehicle, breakout stack for the cert flights.** Staged deliberately: the cert launches are monthly and the avionics fly as a passive logger in them, so nothing waits eight weeks for a PCB. Deployment stays on an independent commercial altimeter in both stages. See `06-avionics-selection.md` | RESOLVED |
 | D8 | State estimation | IMU-only / IMU+baro / IMU+baro+GNSS | **IMU + baro + GNSS + MAGNETOMETER on the board, with the estimator staged by guidance level.** The sensor set cannot stage the way D7's hardware did — everything has to be on the schematic at once — so what stages is the software. The magnetometer is the finding: roll angle is unobservable without one, and L1 (hold roll angle) is the minimum success criterion. Closes without D1. See `07-state-estimation.md` | RESOLVED |
 | D9 | Airframe material | cardboard / Blue Tube / fiberglass | fiberglass, at minimum for the canard module | TBD |
 
 ### 6.1 Baseline airframe as computed
 
-On the selected Cesaroni J449 Blue Streak:
+On the selected **AeroTech J401FJ** (frozen Sep 2026 — see §7.2 and `docs/11` §7; the
+Cesaroni J449 it replaced is kept in `02-motor-selection.md` as history).
+
+**This vehicle flies two profiles on one set of parts.** The horizontal freeze
+(`docs/12-horizontal-agility.md`, correction 61) changed the deflection cap, the canard
+laminate and the hinge journal, and it did NOT change the motor, the fin planforms or the
+ballast. Switching between the two is a rail angle and a drogue:
 
 | Item | Value |
 |---|---|
-| Airframe | 79.4 mm OD (3 in) fiberglass, 2.3 mm wall, 1361 mm long, L/D 17.1 |
+| Airframe | 79.4 mm OD (3 in) fiberglass, 2.3 mm wall, 1365 mm long, L/D 17.2 |
 | Nose | 4:1 tangent ogive, 318 mm |
-| Bays, nose to tail | nav 127 mm, canard module 143 mm, recovery 357 mm, booster 416 mm |
+| Bays, nose to tail | nav 127 mm, canard module 143 mm, recovery 357 mm, booster 420 mm |
 | Avionics location | flight computer, altimeter, GNSS, IMU, battery, BEC in the **nav bay**; telemetry radio and GPS tracker in the **nose** at station 282–318 mm (docs/01 correction 30) |
 | Joints | nose/nav **access**, nav/canard **access**, canard/recovery **separation** (main), recovery/booster **separation** (drogue). 1 cal engagement each; a coupler costs bore, not length — `design/joints.py`, docs/01 correction 31 |
 | Nose module | Instrumentation, self-contained, one connector. Swappable for a payload up to ~300 g in 469 cm³ (correction 32) |
-| Canards | 4 panels, 67.5 root / 27.0 tip / **67.5 mm semispan**, **35.4° LE sweep** matching the aft fins, 45° interdigitated |
-| Aft fins | 4 panels, 151 root / 68 tip / **123.1 mm semispan**, 87 mm sweep |
-| Mass | **5.68 kg dry, 6.30 kg wet** (includes 100 g nose ballast; +156 g since Sep 2026 correction 43, when the nose cone was finally drawn and its real volume replaced a wetted-area estimate) |
-| Static margin | **2.27 cal at rail exit, 2.76 cal in coast** |
-| Flight | apogee **1271 m (4169 ft)**, max Mach **0.494**, max q 16.9 kPa, 7.8 g peak, T/W 6.9 — after docs/01 correction 54 put 191 g of harness anchors into a budget that had no line for them |
-| Control | **1.41 g** lateral at 8° deflection, **297 m** crossrange over an 11.3 s window |
-| Roll | Cl_delta +5.66 /rad canards vs −0.95 /rad aft fins interdigitated (16.8% cancellation) |
-| Actuator | KST X08 Plus V6.0, 3.6× torque margin, 79 mm of arc needed against 188 mm (§4.2) |
-| Hinge | 0.0577 N·m per panel, hinge at 0.20c of MAC — forward of the 0.25c panel CP, so restoring at any sweep |
-| Fin flutter | aft fins 1.97× margin, canards 4.46× — the 0.40 taper's longer root chord costs the canards 5.42 → 4.46 (see §8) |
+| Canards | 4 panels, **88.6 root / 8.9 tip** / **115.1 mm semispan (1.45 cal)**, **42.2° LE sweep** — a pointed delta, deliberately NOT matching the aft fins' 30.7° (correction 63) — 45° interdigitated, **4.0 mm laminate (1.0 / 2.0 / 1.0)**. See `docs/12` §13 |
+| Aft fins | 4 panels, 151 root / 68 tip / **146.9 mm semispan (1.85 cal)**, 87 mm sweep, 3.2 mm. Grown WITH the canards — they are set jointly or not at all |
+| Mass | **6.19 kg dry, 6.70 kg wet** (includes 60 g nose ballast and the 302 g of M10 harness anchors — **still M10 at 3.57× after the 1.45 cal freeze; the self-loading chain converged with no part change**, docs/12 §11) |
+| Static margin | **2.06 cal at rail exit, 2.43 cal in coast**; R1 nominal (Monte Carlo median) **2.00 cal**, P(SM < 1.0) **0.34%** |
+| Flight, vertical rail | apogee **974 m (3197 ft)**, max Mach **0.413**, max q 11.8 kPa, **6.3 g peak axial**, T/W 6.1 |
+| Control, vertical rail | **2.14 g** lateral at the 9.2° cap (10.99° local alpha, 1.01° of stall headroom), **8.08 °/s** peak heading rate, **363 m** crossrange over a 9.5 s window |
+| Control, **horizontal rail (28°)** | **2.60 g**, **9.76 °/s** peak heading rate at 90° of bank, **893 m** turn radius. `docs/12-horizontal-agility.md` |
+| Roll | Cl_delta NET **+24.54 /rad** interdigitated; **608 °/s at the 2° roll cap**, against a ±2000 °/s gyro. `check_estimation` passes and aided roll error is 0.077° (R13) |
+| Actuator | KST X08 Plus V6.0, **2.6× vertical / 2.07× on the horizontal profile** at the 9.2° cap. **This is now one of the two tightest margins in the vehicle and there is no bigger servo that fits** (§4.2, docs/12 §11) |
+| Hinge | hinge at 0.20c of MAC — forward of the 0.25c panel CP, so restoring at any sweep. **⌀10 journal in a ⌀10/⌀12 × 6.0 plain bearing, 2.6× vertical / 2.11× on the horizontal profile (R14)**; wall bore ⌀12 H7, four of them taking 20% of the net section at the hinge station. The bay's housing collar is **structure**, not optional — bare wall 1.74×, with collar 11.72× |
+| Fin flutter | aft fins **2.01×** margin, canards **3.51×** — the canard figure fell with the pointed planform, because flutter takes t/c on the ROOT chord and the root chord grew (§8, docs/12 §13) |
+| Recovery packing | fits with **2.2 mm** spare — the tightest margin in the vehicle, see §7.2 |
 | Recovery | 100 s descent, ~0.93 km walk at 15 mph wind, 56 in main. Bay 4.5 cal, verified against vendor pack volumes with +13 mm (§4.3) |
-| Nose ballast | **100 g at 191 mm from the nose tip**, ~25 g minimum for R1, provision 300 g (§7.1) |
+| Nose ballast | **60 g at 191 mm from the nose tip**, ~40 g minimum for R1, provision 300 g (§7.1) |
 | Margin robustness | P(SM < 1.0) = 0.1% as designed, 0.3% bare; P(SM < 1.4) = 1.7% / 3.9% (`scripts/robustness.py`) |
 | OpenRocket correlation | CNa agrees to 0.3%, CP to 0.17 cal (see `03-openrocket-correlation.md`) |
 
@@ -446,3 +457,82 @@ the servo line without touching the airframe.
 
 Every number above is an output of `scripts/baseline.py` and will move as the mass budget
 is replaced with weighed components.
+
+**The ballast table above is on the OLD 0.85/1.55 airframe.** At 1.30/1.70 the fins
+dominate the CP so completely that the whole 0 → 100 g sweep moves median SM only
+1.83 → 1.96 cal. 40 g is now the R1 minimum (P = 0.97%, on the edge) and **60 g is the
+design point** at 0.65%. Ballast stopped being the cheap margin knob; see §7.2.
+
+### 7.2 The Sep 2026 agility freezes, and what they cost
+
+> **There were TWO, and this section describes the first.** The vertical freeze below
+> (J401FJ, 1.30/1.70, 60 g) is unchanged and still the airframe. The **horizontal freeze**
+> that followed it (correction 61, `docs/12-horizontal-agility.md`) changed only the
+> deflection cap, the canard laminate and the hinge journal, and it repeated this section's
+> lesson a third and fourth time: the search was again an upper bound until the structural
+> chain had been run on the winning point, and the two constraints it was missing —
+> the hinge bearing and the drogue's deployment shock — both failed on the *frozen*
+> geometry the moment it was flown flat. `docs/12` §9 is that record.
+
+#### The vertical freeze
+
+`scripts/agility_sweep.py` re-ran the joint fin/motor search against **heading rate**
+instead of crossrange, under every requirement at once. The winning point — J401FJ,
+canards 1.30 cal, aft 1.70 cal, 60 g ballast — was adopted as the frozen baseline.
+`docs/11-agility-comparison.md` §7 carries the search itself and the relaxation ladder.
+
+What the sweep did **not** model, and what it cost when the point was actually applied:
+
+| | before freeze | sweep predicted | as built |
+|---|---|---|---|
+| peak heading rate | 4.40 °/s | 6.91 °/s | **6.47 °/s** |
+| turn radius | 2.04 km | 1.13 km | **1.18 km** |
+| lateral g at 8° | 1.41 g | 1.93 g | **1.76 g** |
+
+The 6% shortfall is two structural consequences the search had no check for:
+
+1. **The canard root joint.** A 1.30 cal panel puts 28.8 N through the tang instead of
+   21.1, and its CP moves outboard, so bending at the wall *doubles* (0.610 → 1.273 N·m).
+   The 0.6 mm skin over the tang slot fell to **1.47×** against the 2.0× used everywhere
+   else in this project. Fixed by a **3.6 mm laminate** (0.8 / 2.0 / 0.8 — still three
+   stocked G10 sheets), which restores 2.65× and costs 1.93 → 1.88 g.
+2. **The recovery anchor is self-loading.** Bigger fins → more mass → more descent weight
+   → more opening shock → the U-bolt goes **M8 to M10** and the four anchors go
+   **191 → 302 g**. `recovery_hardware.py` had written down that this would happen: *"the
+   next thing to gain mass anywhere in this vehicle may push it to M10."* The next thing
+   was the canards. It converges in one pass because rod size is discrete (M10 holds at
+   3.89×), and it costs another 1.88 → 1.76 g.
+
+Constants that moved with it, all of them checked copies that would otherwise have
+drifted: `seal.UBOLT_HOLE_DIAMETER` 8.5 → 10.5 mm, `seal.INTERNAL_CONDUIT_RADIUS`
+27.5 → 29.4 mm, `recovery.UBOLT_ENVELOPE_VOLUME` 5.95 → 8.39 cm³, `mass.py`
+`harness_anchors` 191 → 302 g.
+
+**What is now tight, in order:**
+
+| item | margin | limit | note |
+|---|---|---|---|
+| recovery bay packing | **+2.2 mm** | must fit | was +13 mm; the M10 anchors ate it |
+| canard root joint skin | **2.65×** | 2.0× | at 3.2 mm it was 1.47× and failed |
+| bearing seat crush | **8.6× with the printed collar, 1.9× without** | 2.0× | the no-collar fallback is *gone* — see below |
+| R1 P(SM < 1.0) | **0.65%** | 1% | |
+| aft fin flutter | 2.19× | 1.5× | |
+| servo torque | 3.3× | 2.0× | |
+| peak axial | 6.5 g | ±16 g IMU | |
+
+**The bearing seat deserves its own line.** `scripts/baseline.py` prices it with *no
+collar* — the 2.3 mm G10 wall holding the bearing alone — and on the old airframe that
+came out at 3.83×, so the printed bay's collar was a bonus. It is now **1.90×**, under the
+requirement. The vehicle still passes because the collar exists and delivers an effective
+4.918 mm seat (`design/bay.py`), giving 8.6×. But the freeze converted the collar from a
+nice-to-have into **load-bearing structure**: if the PETG-CF collar underperforms, there is
+no longer a compliant fallback. That is a genuine reduction in robustness, not a number.
+
+**Not yet closed: the canard module CAD inertia.** `control.CANARD_MODULE_CAD` is an
+Onshape measurement of the *0.85 cal* module. Four 1.30 cal panels carry +641 kg·mm² of
+roll inertia against a recorded module total of 673 — the tensor understates module roll
+inertia by roughly **95%** and its mass by 54 g. Roll is the axis this vehicle flies and
+roll inertia sets the bandwidth every gain is scheduled against.
+`control.check_measured_geometry()` now detects this and `configure.evaluate()` raises it
+as a warning, but **the fix is to rebuild the module in Fusion and re-read the tensor over
+the API** — arithmetic cannot repair a measurement.

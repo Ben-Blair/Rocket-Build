@@ -189,12 +189,26 @@ def main() -> None:
     say("\n  THE OBVIOUS JOINT  --  the dia 6 sleeve simply entering the panel")
     chk_naive = joint_report(naive, naive_loads)
 
+    # THE HISTORICAL CASE, shown because its provenance is the argument -- and it no
+    # longer fails. The Sep 2026 freeze took the canards to 1.30 cal, and canard sweep
+    # follows the aft fin ANGLE, so sweep length went 43.7 -> 66.8 mm and handed this tang
+    # 11.92 mm of leading-edge clearance instead of 2.01. Kept and reported; NOT the guard.
     swept = hinge.swept_out_root_joint(sel, c)
     swept_loads = hinge.root_joint_loads(swept, loads_sel.normal_force, load_r,
                                          servo.stall_torque)
-    say("\n  STRONG ENOUGH, AND STILL NOT BUILDABLE  --  the 1.8 x 14 x 30 tang this")
-    say("  file selected before anything checked the swept leading edge")
+    say("\n  THE 1.8 x 14 x 30 TANG this file selected before anything checked the swept")
+    say("  leading edge. On the 0.85 cal panel it cleared by 2.01 mm and failed; on the")
+    say("  1.30 cal panel the extra sweep gives it 11.92 mm and it passes. Kept for the")
+    say("  history, no longer the thing that proves the check works.")
     chk_swept = joint_report(swept, swept_loads)
+
+    # THE GUARD, derived rather than frozen, so it fails on whatever panel is current.
+    probe = hinge.leading_edge_probe_root_joint(sel, c)
+    probe_loads = hinge.root_joint_loads(probe, loads_sel.normal_force, load_r,
+                                         servo.stall_torque)
+    say(f"\n  STRONG ENOUGH, AND STILL NOT BUILDABLE  --  the selected tang driven to")
+    say(f"  {probe.engagement * MM:.1f} mm of engagement, where it exits the swept leading edge")
+    chk_probe = joint_report(probe, probe_loads)
 
     joint = hinge.selected_root_joint(sel, c)
     jloads = hinge.root_joint_loads(joint, loads_sel.normal_force, load_r,
@@ -383,9 +397,9 @@ def main() -> None:
                          "checking anything -- fix the check before trusting it")
     if not chk_sel.ok:
         raise SystemExit("the selected layout does not pass its own check")
-    if chk_swept.ok:
-        raise SystemExit("the 1.8 x 14 x 30 tang PASSED, so the leading-edge check is not "
-                         "checking anything -- it is 2.26 mm from exiting the panel")
+    if chk_probe.ok:
+        raise SystemExit("the derived leading-edge probe PASSED, so the leading-edge check "
+                         "is not checking anything -- see hinge.leading_edge_probe_root_joint")
     if chk_naive.ok:
         raise SystemExit("the dia 6 sleeve butted into a 3 mm panel PASSED the root joint "
                          "check, which means that check is not checking anything")

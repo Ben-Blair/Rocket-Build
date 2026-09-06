@@ -102,6 +102,41 @@ def _shoelace_area(pts: list[tuple[float, float]]) -> float:
     return abs(a) / 2.0
 
 
+
+def _radial_bore_volume(a: float, tube_ir: float, tube_or: float) -> float:
+    """Volume a RADIAL cylindrical hole of radius `a` removes from a cylindrical shell.
+
+    NOT pi*a^2*t. The hole's axis is radial and the surfaces it breaks through are curved
+    about a different axis, so the material actually removed is
+
+        V = integral(-a..a) 2*sqrt(a^2 - y^2) * [sqrt(Ro^2 - y^2) - sqrt(Ri^2 - y^2)] dy
+
+    -- for each chordwise offset y inside the hole, the wall is
+    sqrt(Ro^2-y^2) - sqrt(Ri^2-y^2) thick along the hole's own axis, not (Ro - Ri). The
+    two agree only as a -> 0.
+
+    Substituting y = a*sin(theta) removes the endpoint singularities and leaves a smooth
+    integrand, so composite Simpson over theta converges to well under a thousandth of a
+    mm^3 at this size. Kept dependency-free on purpose: this module is imported by an
+    emitter, and the emitted script runs inside Fusion's embedded Python where the repo's
+    numpy/scipy are not importable.
+    """
+    n = 2000  # even; Simpson
+    lo, hi = -math.pi / 2.0, math.pi / 2.0
+    h = (hi - lo) / n
+
+    def f(theta: float) -> float:
+        y = a * math.sin(theta)
+        wall = math.sqrt(max(tube_or * tube_or - y * y, 0.0)) - math.sqrt(
+            max(tube_ir * tube_ir - y * y, 0.0))
+        return 2.0 * (a * math.cos(theta)) * wall * a * math.cos(theta)
+
+    total = f(lo) + f(hi)
+    for i in range(1, n):
+        total += f(lo + i * h) * (4.0 if i % 2 else 2.0)
+    return total * h / 3.0
+
+
 def emit() -> str:
     s, hinge_z_m, joint, coupling, tube_length_m = geometry()
 
@@ -145,9 +180,16 @@ def emit() -> str:
     # length for its ports -- so the tube's own tolerance is loosened below, measured, and
     # the real check on the bores is the face check in verify(), not their volume.
     wall_thickness = tube_or - tube_ir
-    bore_volume_each = math.pi * (wall_bore_dia / 2.0) ** 2 * wall_thickness
+    bore_volume_each = _radial_bore_volume(wall_bore_dia / 2.0, tube_ir, tube_or)
     tube_volume = math.pi * (tube_or ** 2 - tube_ir ** 2) * tube_len - 4.0 * bore_volume_each
-    TUBE_BORE_TOLERANCE_MM3 = 0.2   # mm3 per hole, measured -- see comment above
+    # 0.05 mm3 per hole. It was 0.2, "measured", against a pi*r^2*t bore model -- and the
+    # 0.2 was not a Fusion precision limit at all, it was that model's own error, which is
+    # 0.156 mm3 at the dia 8 bore it was measured on. It scales hard: dia 12 makes it
+    # 0.796 mm3 per hole, four of which blew straight through a 0.8 mm3 budget the first
+    # time the journal grew (correction 62). `_radial_bore_volume` integrates the hole
+    # exactly instead, which lands within 0.04 mm3 per hole of Fusion -- so the tolerance
+    # tightens by 4x rather than loosening, and it no longer moves when the bore does.
+    TUBE_BORE_TOLERANCE_MM3 = 0.05
 
     rod_volume = math.pi * journal_r ** 2 * sleeve_length
     tang_box_volume = tang_thickness * tang_width * (engagement + tang_overshoot)

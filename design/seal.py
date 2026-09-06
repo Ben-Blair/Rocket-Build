@@ -924,7 +924,12 @@ def stack_length(r: SealResult, fillet: float = 0.003) -> float:
 # holes rather than a slogan: `point_load_stress()` goes as log(plate radius / footprint
 # radius), so what is under the nuts decides the stress, not what is in the holes. It exists
 # now -- see `SealResult.shock_footprint_radius` and `design/recovery_hardware.py`.
-UBOLT_HOLE_DIAMETER = 0.0085  # m
+# M8 -> M10 AT THE 1.30 cal FREEZE. Not a hardware change anyone chose: the bigger fins
+# added mass, the mass raised the descent weight, the descent weight raised the opening
+# shock, and the crown-in-bending margin went under 2.0x at M8. recovery_hardware.py had
+# written down that this would happen -- "the next thing to gain mass anywhere in this
+# vehicle may push it to M10" -- and the next thing was the canards.
+UBOLT_HOLE_DIAMETER = 0.0105  # m
 UBOLT_LEG_SPACING = 0.025  # m, centre to centre
 
 # Minimum metal between any two holes, and between a hole and the disc's edge. 3 mm is a
@@ -946,7 +951,11 @@ MIN_LIGAMENT = 0.003  # m
 #
 # `design/recovery_hardware.py` derives 27.0 from the plate it sizes and fails if this
 # constant has drifted from it -- so this is a checked copy, not a second source.
-INTERNAL_CONDUIT_RADIUS = 0.0275  # m
+#
+# 27.5 -> 29.4 mm WITH THE M10 U-BOLT: the backing plate grew 22.5 -> 24.5 mm wide, so the
+# diagonal it has to clear grew with it. recovery_hardware.py asks for 28.6..29.4; taking
+# the top of that band keeps the 3 mm ligament against the disc edge as well as the plates.
+INTERNAL_CONDUIT_RADIUS = 0.0294  # m
 
 
 @dataclass(frozen=True)

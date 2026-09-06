@@ -4,6 +4,128 @@
 
 Read this first if you are picking the project back up.
 
+- **THE CANARDS ARE POINTED DELTAS NOW -- 88.6 root / 8.9 tip, 42.2 deg LE (correction 63,
+  docs/12 section 13).** A COSMETIC change, asked for as one and priced as one: 9.92 ->
+  9.76 deg/s, **-1.63%** against a 3% budget. **A canard outline is NOT free on this
+  airframe and two constraints say so.** (1) `hinge.canard_hinge_station` is 0.20c of the
+  MAC, so it moves with root/taper/sweep -- change the outline naively and the shaft, four
+  collars, four servos and four wall bores move with it. `canard_sweep_cal` is therefore
+  SOLVED, not styled: 1.316336 cal holds the hinge to within a NANOMETRE, which is what made
+  this a four-panel rebuild instead of a whole-module one. (2) Root chord is then solved so
+  SERVO TORQUE IS NOT MADE WORSE -- it stays at exactly 2.067x. Everything else improved:
+  bearing 2.11 -> 2.53x, tang 2.02 -> 2.46x, skin 2.49 -> 2.99x, P(SM<1) 0.40 -> 0.34%.
+  **THE ONE THING THAT GOT WORSE IS CANARD FLUTTER, 4.50 -> 3.51x** -- flutter takes t/c on
+  the ROOT chord and the root chord grew. Still 2.3x the requirement and the aft fins remain
+  the critical set at 2.01x, but **a further sharpening spends flutter, not structure.**
+  Fusion: Panel0-3 only, interference clean at rest and driven, tensor re-read
+  (i_roll -11%), saved.
+
+- **THE VEHICLE TURNS AT 9.76 deg/s ON A HORIZONTAL LAUNCH ON A 893 m RADIUS, AND IT IS
+  FROZEN AT 1.45 / 1.85 cal (Sep 2026, corrections 61-63).** P(SM < 1.0) = 0.45%, well
+  inside R1. **THE JOURNAL HAS GROWN TWICE TO GET THERE -- dia 6 -> dia 8 -> dia 10 -- and
+  the second growth exposed a bug in my own search: `horizontal_agility_sweep` was SIZING
+  the hinge without ever calling `check_hinge_stack`, and it picked a 7.0 mm bearing at a
+  5.5 mm servo move that leaves 0.59 mm of boss clearance against a 1.0 mm minimum. That is
+  the fifth instance of this project's recurring failure and the first one in code written
+  to catch it. The sweep now treats `hinge.selected()` as frozen hardware and validates it.
+  docs/12 section 11.** Asked for horizontal-launch agility as the primary goal,
+  with R1 explicitly not to be defended as a hidden objective, the answer is
+  **`docs/12-horizontal-agility.md`** and `scripts/horizontal_agility_sweep.py`
+  (output `out/horizontal_agility.txt`). Four things worth knowing before anything else:
+  - **Flying flat is worth 1.23x for free.** Gravity stops eating speed (burnout
+    141.3 -> 159.8 m/s), the manoeuvre happens in sea-level air, and the frozen vehicle
+    goes **6.47 -> 7.95 deg/s** with no part changed. `design/horizontal.py` is a new
+    3-DOF that flies the profile; at 85 deg elevation it reproduces `heading_change`
+    (6.50 vs 6.47) and `virtual_flight` (6.49), so it is a third integration path and not
+    a new model.
+  - **docs/11's headline is now scoped.** "Agility comes from static margin, not the
+    motor" is TRUE FOR A VERTICAL LAUNCH and is an artefact of R6: the 1600 m apogee cap
+    binds before R5's Mach 0.8 can. Flat, apogee is 250-650 m whatever the motor and the
+    whole speed band opens. docs/11 carries a pointer at the top now.
+  - **R1 IS NOT WHAT IS IN THE WAY ANY MORE, and it was not relaxed.** The recommended
+    point sits at P(SM<1.0) = **0.61%** inside R1's 1% budget, at the SAME 1.30/1.70 fins
+    and the SAME 60 g of ballast as the vertical freeze. What binds is the **hinge
+    bearing** -- peak pressure goes as 1/L^2, a flat flight's max q is 15.5 kPa against
+    12.4, and the as-built 6.0 mm bearing falls to **1.57x**. It clears 2.0x at 7.0 mm
+    (servo 4.0 -> 5.5 mm inboard) and then RUNS OUT: the four servo cable bosses meet on
+    the axis at 6.09 mm of move. That ceiling caps the canard near 1.50 cal, which is why
+    the 9.92 deg/s point (1.45/1.85, and BETTER on risk at 0.4%) is blocked.
+  - **A flat flight's apogee is not a low-speed event.** 93.8 m/s, not 1.1, because the
+    horizontal component never goes away -- so an 18 in drogue there makes 2245 N against
+    the 1588 N docs/10 sized the M10 anchors and the harness for. The drogue inverts: it
+    is sized by opening shock, not descent rate. **15.4 in** holds the existing design load.
+    Nothing else in the recovery chain changes.
+  The freeze is: 28 deg rail, deflection cap 8 -> 9.2 deg (a stall limit with 1 deg of
+  headroom -- the 8 deg was a ROLL-axis sensing limit, and lifting it for pitch/yaw does
+  not touch the gyro), canard laminate 3.6 -> 4.0 mm, hinge bearing 6.0 -> 7.0 mm, drogue
+  18 -> 15.4 in, and the HINGE JOURNAL dia 6 -> dia 8 (see below). Vertical mode is the same
+  hardware on a 5 deg rail with the SAME 9.2 deg cap -- stall does not know which way the
+  rail points -- and it got faster too: **6.47 -> 7.31 deg/s**, apogee 1003 m, SM 2.02-2.41.
+  **No ballast swap, no fin swap; the two modes differ by a rail angle and a drogue.**
+  Requirements delta APPLIED to docs/00: R2/R6/R11/R12 amended, R13 (deflection), R14
+  (hinge bearing + seat), R15 (launch elevation) added.
+  - **APPLYING IT COST THREE THINGS THE STUDY DID NOT PREDICT, all downstream of the
+    bearing, and docs/12 section 9 is the record.** The proposed 7.0 mm bearing at a 5.5 mm
+    servo move FAILED `check_hinge_stack` (0.59 mm of boss clearance against 1.0 mm) -- the
+    proposal had flagged it as the tightest margin and it was actually over the line. And
+    length was never available: **the bearing cannot exceed 6.2 mm at the as-built servo
+    position**, because it grows inboard at the servo's face, and NOTHING CHECKED IT. That
+    check exists now. So the JOURNAL grew instead, dia 6 -> dia 8, which is strictly better
+    -- no servo move, no central void spent, and the wall over the spline socket goes
+    1.00 -> 2.00 mm. Then the chain ran: bearing OD dia 8 -> dia 10, tube net section 13% ->
+    17%, bay COLLAR_OD 12 -> 14 mm (1.00 mm of wall failed the 1.60 mm FDM minimum), and a
+    hardcoded printed bore that had quietly become a boring operation is now derived.
+  - **THE PRINTED BAY'S HOUSING COLLAR IS STRUCTURE NOW.** Bearing-seat crush at the flat
+    flight's load is **1.80x on the bare 2.3 mm wall and 12.10x with the collar bonded in**.
+    Vertically the bare wall was 2.23x and `design/bay.py` has always priced the collar as
+    optional ("a part that exists in CAD is not yet a part that carries load"). It is not
+    optional any more. R14.
+  - **THE 1.45/1.85 POINT WAS THEN ADOPTED (correction 62), AND THE NUMBER THAT SOLD IT WAS
+    WRONG.** The paragraph below is kept as written; read it, then read the correction.
+    Re-running the search AFTER the freeze, the dia 8 journal removes the wall that had
+    blocked the 1.45 cal canard (1.92x -> 2.27x on the bearing). Fully legal now, R1 and
+    all: **1.45/1.85 at 60 g makes 9.92 deg/s at P(SM<1) = 0.45%** -- better than the
+    frozen point on BOTH axes -- **1.45/2.00 at 25 g makes 9.93 deg/s at 0.12%**, and a
+    **J525 at 1.45/2.00 crosses 10.08 deg/s** on a 327 mm case that still fits the built
+    mount. Cost is parts: new canards, new aft fins, and for the last one a new motor. The
+    recovery-anchor self-loading chain is the one thing the search still does not run --
+    checked by hand, it is 1.04x on an M10 sized at 3.89x, so it converges without changing
+    a part. docs/12 section 10.
+    **CORRECTION: that 2.27x was measured on a hinge that cannot be built (above). On the
+    hinge as frozen, 1.45/1.85 runs at 1.69x and FAILS.** Adopting it properly cost one
+    more link: journal dia 8 -> dia 10, bearing OD dia 12, wall bore dia 12 H7 (20% of the
+    net section at the hinge station, still passing), bay COLLAR_OD 14 -> 16 mm. **The
+    self-loading recovery-anchor chain, which is the one docs/11 records as missed at the
+    1.30/1.70 freeze, was run FIRST this time and converged in zero passes** -- dry 6.080 ->
+    6.185 kg, opening shock 1604 -> 1660 N, M10 goes 3.69x -> 3.57x on the crown, no size
+    change, no mass change, packing still +2.2 mm.
+    **TWO MARGINS ARE NOW EFFECTIVELY ON THE LINE: the canard root tang at 2.02x and servo
+    torque at 2.07x.** Neither has anywhere to go -- the tang carries panel force and does
+    not improve with a thicker laminate, and the KST X08 Plus is the strongest servo that
+    fits four-abreast in a 79.4 mm tube. **1.45 cal is the last canard this airframe can
+    actuate.** The J525 / 10.08 deg/s motor row was NOT taken.
+  - **FUSION IS REBUILT TO THE FINAL FREEZE AND SAVED (correction 62, docs/12 section 12).**
+    Rebuilt ONCE, at 1.45/1.85, not at 1.30/1.70 first. Deleted and regenerated Tube,
+    Panel0-3, Shaft0-3, CanardBay, Bearing and AftFin0-3 -- 15 occurrences, 24 bodies.
+    Servo, nose, nav bay, recovery and motor mount untouched (the servo inboard move never
+    changed). **Interference: 14 pairs, every one at exactly 0.000000000 mm3** -- servo in
+    its tray, spline in its socket, nose plate in its bore, all coincident faces and no
+    volume. Driven check: **144 pairs across 0 / +/-4.6 / +/-9.2 deg, none over 0.05 mm3.**
+    `CANARD_MODULE_CAD` re-read and `check_measured_geometry()` is QUIET.
+    - **THE DENSITY TRAP FIRED AGAIN, EXACTLY AS control.py PREDICTED IT WOULD.** The
+      module came back at 1.574165 kg, 4.08x the true 0.386057, because every rebuilt body
+      was Fusion's default Steel. The five custom materials were still in the document so
+      this was reassignment, not re-creation. Cross-checked against the repo's own volumes
+      x densities: 0.386054 vs Fusion's 0.386057, three parts in a million.
+    - **i_roll moved 1313.230 -> 1735.964e-6 kg m^2, +32%**, which is the number that
+      matters -- roll inertia sets the bandwidth every gain is scheduled against.
+    - Two code defects the rebuild surfaced, both now fixed: the tube's wall-bore volume
+      was modelled as pi*r^2*t with a "measured" 0.2 mm3/hole tolerance that was really
+      that model's own error at dia 8 and became 0.796 mm3 at dia 12 (there is an exact
+      integral now, and the tolerance TIGHTENED 4x); and both joint scripts drove 8.0 deg
+      while their docstring claimed it matched DEFLECTION_LIMIT_DEG, so the driven
+      interference check was sweeping 87% of the commanded throw. Both derive now.
+
 - **THE 6-DOF SIMULATOR EXISTS, AND BUILDING IT FOUND A 2.26x ERROR IN ROLL DAMPING
   (Sep 2026, correction 60).** `sim/` is a RocketPy-based 6-DOF model built from
   `configure.evaluate()` at runtime; ballistic apogee agrees with `trajectory.py`'s RK4 to

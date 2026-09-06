@@ -72,7 +72,10 @@ DEFAULT_RECOVERY_BUDGET: dict[str, float] = {
     # is M8 rather than the M5 seal.py assumed -- see recovery_hardware.py's headline. Sixth
     # allowance-shaped hole found by drawing the part, and the first one that was not even
     # an allowance: it was nothing at all.
-    "harness_anchors": 0.191,
+    # 191 -> 302 g at the 1.30 cal freeze: M8 -> M10 across four anchors, plus the wider
+    # backing plates. Self-loading -- this mass is itself descent mass -- but the rod size
+    # is discrete and M10 survives the round trip at 3.89x, so one pass settles it.
+    "harness_anchors": 0.302,
 }
 
 DEFAULT_STRUCTURE_BUDGET: dict[str, float] = {

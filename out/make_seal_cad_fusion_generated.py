@@ -180,13 +180,13 @@ AFT_FACE_MM = 142.92
 
 SEAL_RADIUS_MM = 37.400000000000006
 SEAL_THICKNESS_MM = 4.8
-SEAL_HOLES = [('feed-through 0', 22.59775238156248, 0.0, 4.0), ('feed-through 1', -22.59775238156248, 2.7674265122004967e-15, 4.0), ('U-bolt leg A', 0.0, 12.5, 8.5), ('U-bolt leg B', 0.0, -12.5, 8.5)]
-SEAL_WANT_MM3 = 20427.41454861893
+SEAL_HOLES = [('feed-through 0', 22.59775238156248, 0.0, 4.0), ('feed-through 1', -22.59775238156248, 2.7674265122004967e-15, 4.0), ('U-bolt leg A', 0.0, 12.5, 10.5), ('U-bolt leg B', 0.0, -12.5, 10.5)]
+SEAL_WANT_MM3 = 20140.901298611545
 
 INTERNAL_RADIUS_MM = 37.400000000000006
 INTERNAL_THICKNESS_MM = 4.8
-INTERNAL_HOLES = [('conduit', 19.445436482630058, 19.445436482630054, 6.0), ('U-bolt leg A', 0.0, 12.5, 8.5), ('U-bolt leg B', 0.0, -12.5, 8.5), ('U-bolt leg C (90 deg)', 12.5, 0.0, 8.5), ('U-bolt leg D (90 deg)', -12.5, 0.0, 8.5)]
-INTERNAL_WANT_MM3 = 19867.582737749224
+INTERNAL_HOLES = [('conduit', 20.7889393668845, 20.788939366884495, 6.0), ('U-bolt leg A', 0.0, 12.5, 10.5), ('U-bolt leg B', 0.0, -12.5, 10.5), ('U-bolt leg C (90 deg)', 12.5, 0.0, 10.5), ('U-bolt leg D (90 deg)', -12.5, 0.0, 10.5)]
+INTERNAL_WANT_MM3 = 19294.556237734454
 
 OVER_MM = 1.0
 

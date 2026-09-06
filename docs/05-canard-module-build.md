@@ -14,19 +14,7 @@ The document now holds **four** elements that matter:
 
 | element | what it is |
 |---|---|
-| `Part Studio 1` | the module: tube, four canard panels, four shafts. 13 parts |
-| `KST X08 Plus` | the **real servo**, bu1ilt from the datasheet. 3 parts |
-| `Canard articulation` (Feature Studio) | `canardDeflection` and `canardHingeConnectors`, source of truth in `cad/canard_articulation.fs` |
-| `Assembly 1` | 21 instances: module + four real servos, positioned, grouped |
-
-**THE SERVO IS NO LONGER A BLOCK.** The 23.5 × 8 × 16.8 envelope that stood in for it is
-still in Part Studio 1, renamed `OBSOLETE servo envelope …`, and is superseded by real
-geometry. Getting the real part in exposed two errors the block could not have shown,
-because a bounding box has no output shaft:
-
-- **The output shaft is 6.14 mm from one case end, not centred at 11.75 mm** — 5.61 mm off.
-  This file previously flagged the centred assumption as "unconfirmed". It was wrong. The
-  drawing dimensions the shaft three times from three datums (6.14 from the case end, 7.64
+okayimensions the shaft three times from three datums (6.14 from the case end, 7.64
   from the lug-hole line, 9.14 from the envelope end) and those datums are 1.5 mm apart
   exactly as the 23.50 / 26.50 / 29.50 stack requires, so the reading checks itself.
 - **The shaft runs along the 16.8 mm axis**, so a RADIAL output shaft spends 16.8 mm of
@@ -47,7 +35,7 @@ features and 13 parts — the original 11, plus `Canard hinge mate connectors` a
 
 **Done**, in feature-tree order: tube (`Extrude 1`, G10/FR4 1850 kg/m³) → `Hinge Plane`, an
 offset from Top, now **68.27 mm** → one canard panel, root LE at **37.71 mm**, root 67.49 /
-tip 27.0 / sweep 47.90 (`Sketch 2` / `Extrude 2`) → shaft sleeve, **⌀6 mm, R 33.485 →
+tip 8.9 / sweep 104.5, root 88.6, LE 42.2 deg (pointed delta, correction 63) → shaft sleeve, **⌀6 mm, R 33.485 →
 40.200** on the hinge axis (`Sketch 3` / `Extrude 3`) → the old ⌀ = shaft wall cut, which
 still reuses the shaft's own sketch and is now superseded
 (`Extrude 4`) → servo envelope block, 23.5×8.0×16.8 mm, mass-tuned to 9 g via a custom
@@ -226,8 +214,8 @@ The decision, and it is one decision rather than three:
 | | |
 |---|---|
 | Servo | moves **4.000 mm inboard**, output face R 37.185 → **R 33.185** |
-| Canard shaft | ⌀5 solid rod → **⌀6 sleeve, R 33.485 → 40.200**, with a ⌀4.4 × 3.2 deep 15T spline socket at its inboard end. **The socket is superseded** — buy a splined servo horn instead, see "How this actually gets built" |
-| Wall bore | ⌀5.000 → **⌀7.975**, on its own dimension, seating a ⌀6/⌀8 × 6.0 plain bearing. **⌀7.975 is superseded by ⌀8 H7**, same reason: it is not a reamer that exists |
+| Canard shaft | ⌀5 solid rod → ⌀6 → ⌀8 → **⌀10 sleeve (correction 62), R 33.485 → 40.200**, with a ⌀4.4 × 3.2 deep 15T spline socket at its inboard end. **The socket is superseded** — buy a splined servo horn instead, see "How this actually gets built" |
+| Wall bore | ⌀5.000 → ⌀7.975 → ⌀10 H7 → **⌀12 H7 (correction 62)**, on its own dimension, seating a **⌀10/⌀12 × 6.0** plain bearing. ⌀7.975 was superseded by ⌀8 H7 because it is not a reamer that exists; ⌀8 H7 was superseded by ⌀10 H7 to make the bearing pressure margin on a horizontal launch (docs/12 §9), and ⌀10 by ⌀12 when the canard went 1.30 → 1.45 cal (docs/12 §11) |
 | Bearing | new. 6.000 long, 2.300 of it in the wall, **3.700 needing a housing collar off the printed bay** |
 
 Why the servo and not the panel. Something had to move: a plain bearing that can carry a
@@ -254,7 +242,7 @@ Margins on the selected stack, at q = 19.42 kPa and 9.19° of panel local alpha:
 | Bearing peak pressure | 23.2 MPa, **3.4×** against an 80 MPa polymer plain bearing (iglidur G class) |
 | Sleeve bending | 34.6 MPa, 8.0× in 6061-T6, 18.9× in steel |
 | Spline engagement | 2.900 mm, **91%** of the 3.2 mm spline; sized by the servo's 0.52 N·m **stall** torque, not by the aero moment |
-| Socket wall | 0.800 mm — this, not strength, is why the shaft went to ⌀6 |
+| Socket wall | 0.800 mm at ⌀6 — this, not strength, is why the shaft went to ⌀6. **⌀8 made it 2.000 mm and ⌀10 makes it 3.000 mm**, so both journal growths improved the dimension this row exists to protect |
 | Running clearance | +0.030 mm, against **+0.000 before** |
 
 `design/hinge.py` holds the model, `scripts/hinge_report.py` prints it to
@@ -392,8 +380,16 @@ thicknesses you can order. Asking "which sheets do I buy" is a different questio
 
 ### The panel is a laminate of two stocked sheets
 
-**0.6 / 2.0 / 0.6 mm bonded G10, 3.2 mm total**, the middle sheet cut away over
+**1.0 / 2.0 / 1.0 mm bonded G10, 4.0 mm total** (0.8/2.0/0.8 before correction 61 — the
+skin over the slot fell to 1.93x at a horizontal launch's sea-level max q), the middle sheet cut away over
 12.1 × 25.5 mm at the root. That gap **is** the slot — it never gets machined.
+
+> **0.6 → 0.8 mm skins at the Sep 2026 freeze.** The panel went to 1.30 cal semispan, which
+> puts 28.8 N through the root instead of 21.1 and moves the CP outboard, so bending at the
+> wall doubled to 1.273 N·m. At 0.6 mm the skin spanning the slot worked at 327 MPa against
+> a 480 MPa allowable — **1.47×**, under the 2.0× this project requires. 0.8 mm restores
+> 2.65×. 0.8 mm is 1/32 in and is one of the most common G10 sheet thicknesses sold, so the
+> "sum of stocked sheets" argument is unchanged. See `docs/00-requirements.md` §7.2.
 
 The earlier spec, 0.6 / 1.8 / 0.6, is dead twice over: **1.8 mm G10 is not stocked
 anywhere**, and it was the thickness that produced the 1.69× above. Every thickness in the
@@ -488,9 +484,9 @@ anyone's judgement:
   Blend it. Do not shoulder it.
 - **THE PANEL STOPS BEING A PLATE.** A 1.8 mm slot 25.5 mm deep into the edge of a solid
   plate is a **13:1 blind cut**, which is not a thing you machine without a slitting saw. The panel is built as a
-  **0.6 / 2.0 / 0.6 mm bonded G10 laminate** with the core cut away where the tang goes.
-  Same planform and the same aerodynamics; the thickness goes 3.0 → 3.2 because a laminate
-  can only be a sum of sheets that are sold, and that is priced in "The panel is a laminate
+  **1.0 / 2.0 / 1.0 mm bonded G10 laminate, 4.0 mm** (correction 61) with the core cut away where the tang goes.
+  Same planform and the same aerodynamics; the thickness goes 3.0 → 3.2 → 3.6 because a
+  laminate can only be a sum of sheets that are sold, and that is priced in "The panel is a laminate
   of two stocked sheets" above. The real answer to "how does the shaft meet the panel"
   turned out to be "the panel is made differently."
 
@@ -563,7 +559,8 @@ Added August 2026, once it was established that parts get **bought** and the sho
 printer rather than a machine shop. Every dimension above is reachable that way, but only
 in a particular order, and the order is the part that is easy to get wrong.
 
-**One custom-machined part in the whole module.** The canard shaft: a ⌀6 6061-T6 rod,
+**One custom-machined part in the whole module.** The canard shaft: a **⌀10** 6061-T6 rod
+(⌀6 originally, ⌀8 at correction 61),
 32.2 mm long, with a 1.8 × 11.9 × 25.5 mm blade milled on one end. Everything else is
 bought or printed. If that goes to a shop, it is one drawing and four identical parts.
 
@@ -574,8 +571,14 @@ compound and push it onto the servo spline: the compound cures in the tooth vall
 
 An earlier revision of this file said to buy a ⌀4 mm 15T horn instead. **That does not
 fit** — there is 0.515 mm between the servo's output face and the bearing, and outboard of
-that everything passes down the ⌀6 journal; every female-spline part sold is ⌀7 or larger.
+that everything passes down the journal; every female-spline part sold is ⌀7 or larger.
 See docs/04 "The coupling" and docs/01 correction 21.
+
+**Corrections 61 and 62 took the journal to ⌀10, which is the first time that argument has
+had any slack in it, and it is NOT re-opened here.** A ⌀7 female-spline part would now pass
+down a ⌀10 journal — but the 0.515 mm between the servo face and the bearing has not moved, and
+that is the dimension the bought horn actually failed on. The cast socket stays. Anyone
+revisiting this must check the axial gap, not the diameter.
 
 Either way the reasoning that made broaching avoidable still holds: **the coupling carries
 torque only**, 0.520 N·m at servo stall, because the bearing sits outboard of it and takes
@@ -589,7 +592,7 @@ concentric — if they are not, the bearing is pinched and the hinge binds, whic
 mechanism failure rather than a stress one and no margin in this document protects against
 it. So:
 
-1. Print the bay with the collar bore **undersize**, about ⌀7.5. FDM holes come out
+1. Print the bay with the collar bore **undersize**, ⌀11.5 (⌀7.5 originally). FDM holes come out
    undersize and rough anyway; do not fight it.
 2. Bond the bay into the tube.
 3. Run a **⌀8 H7 chucking reamer** through the wall and the collar **in one pass**.
@@ -608,7 +611,7 @@ hardware"; it is not blocked any more, and this is the reason to build it.
 is set by the sheet rather than by a machine setup — but only if the three layers and the
 tang stay put while the epoxy cures. A printed fixture that clamps the stack flat and
 locates the tang on the hinge axis at the correct chordwise station costs an hour of print
-time and removes the only real risk in the approach. Keep epoxy off the ⌀6 journal; that
+time and removes the only real risk in the approach. Keep epoxy off the ⌀10 journal; that
 surface has to turn in the bearing.
 
 **Still unmodelled, deliberately:** the panel bonding jig. The aft gas seal was on this list
@@ -663,13 +666,13 @@ much of the collar's benefit they deliver. Plain PETG passes if there is no hard
 | | |
 |---|---|
 | Shell | ⌀74.500 × 2.400 wall, Z 53.129 → 94.629 (41.5 long). 0.150 mm radial epoxy gap to the ⌀74.8 tube ID |
-| Collars, 4 off | ⌀12 boss on each hinge axis, standing 1.150 mm proud of the shell bore, bore printed **⌀7.5** |
+| Collars, 4 off | **⌀16** boss on each hinge axis (⌀12 → ⌀14 → ⌀16; each step keeps 2.00 mm of wall around a bore that grew with the bearing), standing 1.150 mm proud of the shell bore, bore printed **⌀11.5** |
 | Servo trays, 4 off | flange face R 27.935, back face R 31.935, 15.0 wide, Z 59.129 → 88.629 |
 | Servo window | 24.100 × 8.600 through the tray — clears the **case** |
 | Flange relief | 8.600 wide over the full 29.5 lug envelope, R 26.935 → 27.935 — clears the **flange** |
 | Clamp inserts | 8 × M2 heat-set, ⌀3.2 × 4.0, at Y ±6.0 on two rows per servo |
 | Retainer bars | dog bone: 2.6 mm bridge × 8.6 wide across the flange, 4.7 mm pads out to 18.4 wide at the screws, 1.5 thick. Two per servo, 2× M2 each |
-| Collar bore, in the CAD | **⌀8.000 as reamed** — the assembly is the vehicle that flies, and it has been reamed. ⌀7.500 is the print size |
+| Collar bore, in the CAD | **⌀12.000 as reamed** — the assembly is the vehicle that flies, and it has been reamed. **⌀11.500 is the print size**, and it is DERIVED now (reamed bore less 0.250 mm of stock on the radius) rather than typed: it stayed at ⌀7.5 when the bore first grew, which is a boring operation and not a ream. See `design/bay.COLLAR_REAM_STOCK_ON_RADIUS` |
 
 The frame is the module Part Studio's own — origin on the rocket axis, Z 0 at the tube's
 forward face — so the bay drops into `Assembly 1` at **identity**. No transform to compute
@@ -766,7 +769,7 @@ sheet sizes and about 23 g.
 
 **G-10 sheet, 4.8 mm, 39 g**, bonded into the aft end of the module with a fillet either
 side. On its aft face: the charge well (⌀12 × 19.0 at R 22.6), a two-pole terminal block,
-and the harness U-bolt — **M8, not M5** — with its backing plate; all three sized in
+and the harness U-bolt — **M10, not M5, and no longer M8** — with its backing plate; all three sized in
 `design/recovery_hardware.py`, see docs/10 — the backing plate especially, which this
 section called for and which nothing sized until Sep 2026.
 Feed-through: **2 × ⌀4.0 mm at R 22.6 mm**, potted; the U-bolt legs are **⌀8.5 at
@@ -845,7 +848,7 @@ inside it will ever catch.
    goes **+13.0 → +6.8 mm**. The U-bolts cost more than the conduit: 24 cm³ of envelope
    against 4.7. Still fits. *(Those are correction 33's numbers and they are kept as history.
    The envelope was cut to 12 cm³ when the bounding box was replaced by a wire loop, and it is
-   **23.8 cm³** again now that the loop is M8 rather than M5 — plus 4.5 cm³ of charge wells,
+   **23.8 cm³** again now that the loop is M10 rather than M5 — plus 4.5 cm³ of charge wells,
    which `recovery.py` had explicitly said cost no packing volume. docs/01 correction 54.)*
 2. **The internal bulkhead** is now the same model applied a second time —
    `seal.internal_bulkhead_from_evaluation()`. **G-10 4.8 mm, 39 g**, 1 × ⌀6 mm feed-through

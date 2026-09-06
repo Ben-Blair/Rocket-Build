@@ -56,12 +56,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from design.configure import DEFLECTION_LIMIT_DEG
 from scripts.fusion_common import FUSION_PRELUDE
 
 OUT = Path(__file__).resolve().parents[1] / "out" / "make_canard_joints_fusion_generated.py"
 RESET_OUT = Path(__file__).resolve().parents[1] / "out" / "reset_canard_joints_fusion_generated.py"
 
-DRIVE_ANGLE_DEG = 8.0
+# DERIVED, NOT TYPED. It was 8.0, which was `DEFLECTION_LIMIT_DEG` when this file was
+# written and stopped being it at correction 61 (8.0 -> 9.2). A motion check that drives the
+# mechanism to less than its commanded limit is not a motion check -- it is the one place a
+# clash at full throw would hide. Correction 4 all over again.
+DRIVE_ANGLE_DEG = DEFLECTION_LIMIT_DEG
 
 
 def emit() -> str:

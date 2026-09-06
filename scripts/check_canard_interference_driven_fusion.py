@@ -20,8 +20,8 @@ each revolute joint's `rotationValue`, so it tests the thing the shaft/panel rea
 sweep through the deflection range and pass through it, not just sit at zero without
 touching anything.
 
-ANGLES: 0, +/-4, +/-8 deg -- deg matches design/configure.py's DEFLECTION_LIMIT_DEG (the
-whole commanded range, both directions) and 0/+lim/-lim/0 is the same order
+ANGLES: 0, +/-half, +/-full of design/configure.py's DEFLECTION_LIMIT_DEG (the
+whole commanded range, both directions), DERIVED from it rather than typed and 0/+lim/-lim/0 is the same order
 scripts/canard_sweep.py already used on the Onshape side; +/-4 is the "a few more points"
 correction 49 asked for. The model is reset to 0 deg at the end of the same script run --
 no screenshot is needed mid-sweep (this is a numeric check, not the motion-check screenshot
@@ -59,6 +59,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.fusion_common import FUSION_PRELUDE
 
+from design.configure import DEFLECTION_LIMIT_DEG
+
 OUT = Path(__file__).resolve().parents[1] / "out" / "check_canard_interference_driven_fusion_generated.py"
 
 # Same ceiling as the at-rest M4 sweep (scripts/check_canard_interference_fusion.py) --
@@ -66,7 +68,11 @@ OUT = Path(__file__).resolve().parents[1] / "out" / "check_canard_interference_d
 # this project has already measured what a residual, not-real, tolerance sliver reads like.
 INTERFERENCE_TOLERANCE_MM3 = 0.05
 
-DRIVE_ANGLES_DEG = (0.0, 4.0, 8.0, -4.0, -8.0, 0.0)
+# DERIVED FROM `DEFLECTION_LIMIT_DEG`, not typed. The docstring above already claimed these
+# matched it; they did when it was 8.0 and did not after correction 61 took it to 9.2, so the
+# driven interference check was sweeping 87% of the commanded throw and calling it the range.
+_LIM = DEFLECTION_LIMIT_DEG
+DRIVE_ANGLES_DEG = (0.0, _LIM / 2.0, _LIM, -_LIM / 2.0, -_LIM, 0.0)
 
 
 def emit() -> str:

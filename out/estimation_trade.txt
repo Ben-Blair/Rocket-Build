@@ -32,7 +32,7 @@ D8 -- THE FOUR ARCHITECTURES
        - pitch/yaw attitude has no in-flight reference in 'IMU only': the accelerometer
          cannot supply one (see the gate note below), so the GNSS velocity vector is the
          only aiding this vehicle has
-       - 'IMU only' has no attitude aiding at all, and unaided propagation reaches 8.4 deg
+       - 'IMU only' has no attitude aiding at all, and unaided propagation reaches 6.8 deg
          by apogee against a 5.0 deg budget
     B:
        - roll angle is unobservable in 'IMU + baro': no magnetometer, and specific force is
@@ -41,7 +41,7 @@ D8 -- THE FOUR ARCHITECTURES
        - pitch/yaw attitude has no in-flight reference in 'IMU + baro': the accelerometer
          cannot supply one (see the gate note below), so the GNSS velocity vector is the
          only aiding this vehicle has
-       - 'IMU + baro' has no attitude aiding at all, and unaided propagation reaches 8.4
+       - 'IMU + baro' has no attitude aiding at all, and unaided propagation reaches 6.8
          deg by apogee against a 5.0 deg budget
     C:
        - roll angle is unobservable in 'IMU + baro + GNSS': no magnetometer, and specific
@@ -79,20 +79,20 @@ FINDING 1 -- THE ACCELEROMETER GATE docs/01 PRESCRIBES PASSES ITS WORST DATA
 
     t (s)   |a| (g)   v (m/s)   phase                           
   ------------------------------------------------------------------
-     0.50     8.374      33.4   boost -- gate CLOSED, correctly 
-     1.00     8.401      69.9   boost -- gate CLOSED, correctly 
-     2.00     7.554     139.0   boost -- gate CLOSED, correctly 
-     2.85     0.968     171.6   coast -- GATE OPEN              
-     2.90     0.964     170.7   coast -- GATE OPEN              
-     3.50     0.829     159.6   coast -- GATE OPEN              
-     5.00     0.571     134.8   coast -- below the band         
-     7.00     0.344     106.6   coast -- below the band         
-    10.00     0.146      70.8   coast -- below the band         
-    13.00     0.046      40.0   coast -- below the band         
-    16.00     0.007      16.3   coast -- below the band         
+     0.50     7.201      29.0   boost -- gate CLOSED, correctly 
+     1.00     7.302      59.8   boost -- gate CLOSED, correctly 
+     2.00     6.180     118.3   boost -- gate CLOSED, correctly 
+     2.79     0.609     137.6   coast -- below the band         
+     2.90     0.593     135.9   coast -- below the band         
+     3.50     0.511     126.8   coast -- below the band         
+     5.00     0.348     106.0   coast -- below the band         
+     7.00     0.200      81.4   coast -- below the band         
+    10.00     0.070      49.0   coast -- below the band         
+    13.00     0.013      21.3   coast -- below the band         
+    14.66     0.005      13.4   coast -- below the band         
 
-  The gate opens at t = 2.85 s -- at burnout -- and stays open for
-  0.8 s, peaking at 0.97 g.
+  The gate opens at t = 0.00 s -- -2.79 s after burnout -- and stays open for
+  0.0 s, peaking at 0.00 g.
 
   **THE VECTOR IT ADMITS IS DRAG ALONG THE BODY AXIS, NOT GRAVITY.** A coasting
   rocket is in free fall; the only specific force on it is aerodynamic, and that
@@ -114,23 +114,23 @@ FINDING 2 -- 100 Hz INTEGRATION DRIFTS FASTER THAN THE GYRO DOES
 ============================================================================================
 
   board_requirements() derives ONE rate -- the control loop rate, 20x the pitch
-  mode, 85 Hz. A reader builds a 100 Hz system. But attitude is
+  mode, 71 Hz. A reader builds a 100 Hz system. But attitude is
   PROPAGATED, not sampled: q <- q * (1, w*dt/2) renormalised rotates by
   2*atan(|w|*dt/2), not by |w|*dt, and the shortfall is cubic in the step.
 
-    IMU rate   rot/step    drift @ 578   drift @ 2313
+    IMU rate   rot/step    drift @ 566   drift @ 2602
                   (deg) deg/s (capped)  deg/s (limit)
   ------------------------------------------------------
-       100 Hz      23.13          0.490         30.662
-       200 Hz      11.56          0.123          7.804
-       500 Hz       4.63          0.020          1.255
-      1000 Hz       2.31          0.005          0.314
-      2000 Hz       1.16          0.001          0.079
+       100 Hz      26.02          0.459         43.406
+       200 Hz      13.01          0.115         11.100
+       500 Hz       5.20          0.018          1.787
+      1000 Hz       2.60          0.005          0.447
+      2000 Hz       1.30          0.001          0.112
 
-  At 100 Hz and the 2313 deg/s the deflection limit allows, each step is a
-  23.1 degree rotation and the small-angle assumption underneath the
-  propagation is simply false. **30.7 deg/s -- with a PERFECT gyro.** Over the
-  11.5 s control window that is more than the whole sensor error budget.
+  At 100 Hz and the 2602 deg/s the deflection limit allows, each step is a
+  26.0 degree rotation and the small-angle assumption underneath the
+  propagation is simply false. **43.4 deg/s -- with a PERFECT gyro.** Over the
+  9.5 s control window that is more than the whole sensor error budget.
 
   FIX: sample the IMU at 1000 Hz. The error is cubic, so it costs almost
   nothing -- but it is a DIFFERENT REQUIREMENT from the control loop rate, it sets
@@ -169,7 +169,7 @@ FINDING 3 -- ROLL ANGLE WAS OBSERVED BY NOTHING ON THE SELECTED BOARD
 
   Note what pitch/yaw attitude is aided BY, because it is not obvious: the GNSS
   VELOCITY VECTOR, under a small-alpha assumption. That assumption is what
-  2.3-2.8 cal of static margin buys -- the one place in this
+  2.1-2.5 cal of static margin buys -- the one place in this
   project where stability margin shows up as a SENSING property rather than a
   handling one.
 
@@ -183,35 +183,34 @@ THE ATTITUDE ERROR BUDGET -- and the ranking is not the one a tutorial predicts
 
   source                                   at burnout    at apogee
   ------------------------------------------------------------------
-  gyro bias, pad-calibrated                   0.057 deg      0.335 deg
+  gyro bias, pad-calibrated                   0.056 deg      0.294 deg
   angular random walk                         0.005 deg      0.011 deg
-  gyro scale factor at roll rate              0.000 deg      8.312 deg
-  gyro g-sensitivity                          1.153 deg      1.153 deg
-  integration truncation at 1000 Hz           0.000 deg      0.014 deg
+  gyro scale factor at roll rate              0.000 deg      6.697 deg
+  gyro g-sensitivity                          0.882 deg      0.882 deg
+  integration truncation at 1000 Hz           0.000 deg      0.011 deg
   ------------------------------------------------------------------
-  RSS                                                        8.398 deg
+  RSS                                                        6.761 deg
 
   gyro bias, pad-calibrated:
       0.020 deg/s residual after averaging on the rail. Free, and mandatory: UNcalibrated
-      it is 0.50 deg/s, or 8.4 deg by apogee
+      it is 0.50 deg/s, or 7.3 deg by apogee
 
   angular random walk:
       0.0028 deg/sqrt(s) over sqrt(t). Grows as the square root, so a 17 s flight barely
       starts it
 
   gyro scale factor at roll rate:
-      0.5% of 578 deg/s is 2.9 deg/s while rolling, and the vehicle is taken as rolling
-      for 2.9 s of the 11.5 s window. THE DOMINANT TERM, and it is strictly proportional
-      to the roll command -- at the 2313 deg/s the deflection limit allows it would be 33
-      deg
+      0.5% of 566 deg/s is 2.8 deg/s while rolling, and the vehicle is taken as rolling
+      for 2.4 s of the 9.5 s window. THE DOMINANT TERM, and it is strictly proportional to
+      the roll command -- at the 2602 deg/s the deflection limit allows it would be 31 deg
 
   gyro g-sensitivity:
-      0.05 deg/s/g at 8.1 g for the 2.85 s of boost. Stops accruing at burnout, and it is
+      0.05 deg/s/g at 6.3 g for the 2.79 s of boost. Stops accruing at burnout, and it is
       an error the pad calibration cannot see because the pad is at 1 g
 
   integration truncation at 1000 Hz:
       arithmetic, not sensor error -- a PERFECT gyro drifts this much. At 100 Hz and the
-      uncapped 2313 deg/s the same term is 30.7 deg/s, which is 88 deg over the rolling
+      uncapped 2602 deg/s the same term is 43.4 deg/s, which is 103 deg over the rolling
       window and would lead every sensor term combined
 
   **Bias and random walk -- the two terms every AHRS article is about -- are
@@ -220,7 +219,59 @@ THE ATTITUDE ERROR BUDGET -- and the ranking is not the one a tutorial predicts
   tight. One root cause, and capping the roll command fixes both.
 
   Pad gyro-bias calibration is mandatory and free: averaging on the rail takes the
-  bias term from 8.4 deg to 0.33 deg by apogee.
+  bias term from 7.3 deg to 0.29 deg by apogee.
+
+============================================================================================
+THE GAP CORRECTION 58 FOUND -- THE AIDED NUMBER, WHICH DECIDES IF THE CAP CAN MOVE
+============================================================================================
+
+  Everything above is GYRO-ONLY, propagated open loop. But roll angle is observed by
+  the magnetometer or by nothing (finding 3) -- so the unaided total above is not the
+  number that decides whether `ROLL_COMMAND_CAP_DEG` can ever move, and until now
+  nothing here computed the number that is. `mag_aided_roll_error()` does: the
+  dominant unaided term, scale factor at roll rate, is a RATE error, and an absolute
+  reference turns a rate error into a bounded lag rather than an open-loop integral.
+
+                           roll rate      tau   gyro lag  mag noise     AIDED   UNAIDED
+  ----------------------------------------------------------------------------------
+  at the 2 deg cap             566°/s   15.4 ms    0.044°    0.062°     0.08°     6.76°
+  at the 9 deg limit          2602°/s    5.6 ms    0.073°    0.103°     0.13°    30.84°
+
+  **6.8° unaided becomes 0.08° aided at the cap -- and 30.8° unaided becomes 0.13°
+  aided at the limit.** The magnetometer does not refine the roll estimate here, it IS
+  the roll estimate, so correction 55's uncapped-gyro comparison was made on the wrong
+  instrument in both directions -- neither total is the sensor's noise floor: 0.103°
+  of it is MMC5983MA noise, which is not what either total is made of.
+
+  This number is only valid if the magnetometer can resolve roll PHASE at the rate it
+  is asked to: at the 9 deg limit that is 13.8 samples/rev at a 100 Hz read rate
+  against a 10/rev floor -- tracked, 1.4x margin. Checked, not just computed -- an
+  assumption this model depends on is a thing to read back, not a thing to assert and
+  move on from.
+
+  **What actually limits the aided number is not the sensor, and this is the part a
+  datasheet comparison would miss entirely.** Roll is resolved from the field
+  component PERPENDICULAR to a near-vertical roll axis -- the HORIZONTAL component,
+  0.211 gauss of 0.50 at 65° inclination, the SMALLER part of the field. Against that,
+  0.103° of MMC5983MA noise is nothing. What is not nothing is a disturbance FIXED IN
+  THE BODY FRAME -- it rotates with the vehicle, so it is coherent with the signal
+  being measured and no filter averages it away. It ADDS to the total rather than
+  RSS'ing into it, which is why hard/soft-iron calibration matters more here than
+  picking a quieter part.
+
+  `required_magnetic_cleanliness()` inverts the budget: at the 9 deg limit, the
+  airframe may carry **18.0 mgauss** of body-fixed disturbance and still meet the 5.0
+  deg budget. One servo lead at 1 A, 50 mm from the magnetometer, is 40 mgauss on its
+  own -- **over the whole allowance before anything else on the harness is counted.**
+  A twisted pair cancels to first order; an untwisted single-ended run past the sensor
+  does not.
+
+  **So correction 58's gap is closed, and closing it moved the open item rather than
+  retiring it.** The roll cap no longer waits on a gyro decision or an estimator
+  design -- it waits on HARNESS ROUTING, a number nobody has measured. `docs/07`'s
+  'four servos and a battery next to a magnetometer, in an airframe nobody has swung'
+  now has a threshold to swing it against. Swing it before trusting any roll number
+  this project produces.
 
 ============================================================================================
 THE AIDING SENSORS, AND WHAT THEY ARE ACTUALLY FOR
@@ -230,13 +281,13 @@ THE AIDING SENSORS, AND WHAT THEY ARE ACTUALLY FOR
 
       q (Pa)   alt (m)   port error   sensor noise
   --------------------------------------------------
-       17574       275       30.0 m         0.13 m
-       10504       600       18.5 m         0.13 m
-        2759      1099        5.1 m         0.14 m
-         127      1324        0.2 m         0.14 m
+       11352       223       19.3 m         0.13 m
+        6564       489       11.5 m         0.13 m
+        1350       863        2.4 m         0.14 m
+         113       970        0.2 m         0.14 m
 
-  At max q (18.1 kPa) a 2% static port error coefficient is
-  363 Pa, and dp/dh there is 11.4 Pa/m: **32 m of altitude error**,
+  At max q (11.8 kPa) a 2% static port error coefficient is
+  235 Pa, and dp/dh there is 11.4 Pa/m: **21 m of altitude error**,
   against 0.13 m of sensor noise. Two orders of magnitude apart, and the
   error a datasheet comparison would optimise is the small one.
 
@@ -245,24 +296,24 @@ THE AIDING SENSORS, AND WHAT THEY ARE ACTUALLY FOR
   during boost will happily fuse it. Baro is for coast and descent altitude, apogee
   detection, and cross-checking the StratoLoggerCF.
 
-  One thing that is genuinely NOT a problem: max Mach is 0.513, so there is no
+  One thing that is genuinely NOT a problem: max Mach is 0.412, so there is no
   transonic port anomaly. Worth stating, because the absence of a problem is a
   result too.
 
   GNSS -- a slow outer-loop sensor, and the only in-flight attitude reference.
 
-    receiver latency        150 ms  ->  25.7 m at 172 m/s
-    half-sample staleness   50 ms  ->   8.6 m at 10 Hz
-    total position lag               34.3 m
+    receiver latency        150 ms  ->  20.6 m at 138 m/s
+    half-sample staleness   50 ms  ->   6.9 m at 10 Hz
+    total position lag               27.5 m
     CEP                              2.0 m
 
-  **34 m of lag against 340 m of achievable crossrange -- 10%.**
+  **28 m of lag against 356 m of achievable crossrange -- 8%.**
   It is correctable: dead-reckon the fix forward on the IMU, which is what the IMU
   is for. But only if you know it is there, and the lag is not the CEP -- a
   datasheet comparison on accuracy alone would have missed it entirely.
 
   AND THE RECEIVER MAY NOT BE TRACKING AT ALL THROUGH BOOST. Peak axial is
-  8.1 g, and 'airborne <4 g' is the most permissive dynamic platform
+  6.3 g, and 'airborne <4 g' is the most permissive dynamic platform
   model u-blox offers. Expect lock loss under boost and reacquisition in early
   coast -- which is survivable, because the guidance window does not open until
   burnout, but it means GNSS cannot be part of the boost-phase estimate.
@@ -287,7 +338,7 @@ WHAT THIS COST, AND THE PATTERN IT MAKES
   A fourth thing fell out on the way past and it is a correction to D7, not to D8:
   the gyro requirement had been computed at 6 deg of deflection and printed under an
   8 deg heading. Roll rate is linear in deflection, so the real figure at the limit
-  is 2313 deg/s -- 116% of a +/-2000 dps part, SATURATED, not the
+  is 2602 deg/s -- 130% of a +/-2000 dps part, SATURATED, not the
   comfortable 89% docs/06 quoted. The roll command cap was already in baseline.py as
   a control convenience; it is load-bearing for the SENSOR. See
   design/configure.DEFLECTION_LIMIT_DEG.
@@ -304,22 +355,33 @@ THE CHECK baseline.py CARRIES
 
   note  'position' propagates open-loop through boost
 
-  note  an |a| ~ 0.8-1.2 g gate would be OPEN from t = 2.85 s to 3.64 s -- at burnout, for
-        0.8 s, peaking at 0.97 g -- and what it would admit is drag along the BODY AXIS, not
-        gravity
-
   note  THE ROLL COMMAND CAP IS A SENSING REQUIREMENT, not just a control one. At the 2 deg
-        cap the vehicle rolls at 578 deg/s, 29% of ICM-42688-P gyro's +/-2000. At the 8 deg
-        deflection LIMIT it rolls at 2313 deg/s, which is 116% -- SATURATED. Lifting the
+        cap the vehicle rolls at 566 deg/s, 28% of ICM-42688-P gyro's +/-2000. At the 9 deg
+        deflection LIMIT it rolls at 2602 deg/s, which is 130% -- SATURATED. Lifting the
         cap, or a fault that runs the canards to the stops, takes the gyro out of range
 
   note  IMU output data rate must be at least 1000 Hz: first-order quaternion propagation at
-        100 Hz drifts 30.7 deg/s at the 2313 deg/s the deflection limit allows, with a
-        PERFECT gyro. THIS IS NOT THE CONTROL LOOP RATE, which is 85 Hz -- a board built to
+        100 Hz drifts 43.4 deg/s at the 2602 deg/s the deflection limit allows, with a
+        PERFECT gyro. THIS IS NOT THE CONTROL LOOP RATE, which is 71 Hz -- a board built to
         the control loop rate would be built ten times too slow
 
-  note  UNAIDED propagation reaches 8.4 deg RSS by apogee against a 5.0 deg budget, led by
-        'gyro scale factor at roll rate' at 8.3 deg. The aiding is load-bearing, not a
+  note  UNAIDED propagation reaches 6.8 deg RSS by apogee against a 5.0 deg budget, led by
+        'gyro scale factor at roll rate' at 6.7 deg. The aiding is load-bearing, not a
         refinement. That is already WITH the roll command capped; at the deflection limit
-        the same term is 33 deg
+        the same term is 31 deg
+
+  note  AIDED roll angle is 0.08 deg at the 2 deg cap and 0.13 deg at the 9 deg limit,
+        against the same 5.0 deg budget unaided propagation misses by 3 deg. The
+        magnetometer does not refine the roll estimate, it IS the roll estimate -- so the
+        unaided budget is the wrong instrument for any question about the roll CAP
+
+  note  phase-tracking margin: 14 mag samples/rev at the 9 deg limit against the 10/rev
+        floor this model assumes -- 1.4x, at the default 100 Hz read rate
+
+  note  WHAT NOW LIMITS ROLL ANGLE IS THE AIRFRAME, NOT THE SENSOR: the budget allows 18.0
+        mgauss of BODY-FIXED disturbance, and one servo lead at 1 A and 50 mm is 40 mgauss
+        -- over it on its own. A twisted pair cancels to first order; an untwisted run past
+        the magnetometer does not. This is a HARNESS ROUTING requirement and it is
+        unmeasured -- docs/07's 'four servos and a battery next to a magnetometer, in an
+        airframe nobody has swung'. Swing it before trusting any roll number
 

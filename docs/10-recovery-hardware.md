@@ -50,18 +50,24 @@ why U-bolts work at all — and a straight beam is a different structure rather 
 this one. But this is the single most safety-critical joint in the vehicle, and what settles
 it is a destructive pull test on the actual bolt. That has not been done.
 
-Sized against the mode that governs: **M8, not M5.** The holes already placed in both
-bulkheads go from ⌀5.5 to ⌀8.5. They are not drilled yet, so the finding costs nothing but
+Sized against the mode that governs: **M10, not M5.** The holes already placed in both
+bulkheads go from ⌀5.5 to ⌀10.5. They are not drilled yet, so the finding costs nothing but
 the drill.
+
+> **M8 → M10 at the Sep 2026 agility freeze.** This file predicted it in as many words —
+> *"the next thing to gain mass anywhere in this vehicle may push it to M10"* — and the
+> next thing was the canards going to 1.30 cal. More fin → more mass → more descent weight
+> → more opening shock (1587.6 N now), and the crown-in-bending margin went under 2.0× at
+> M8. The four anchors go 191 → 302 g. See `docs/00-requirements.md` §7.2.
 
 ## The part
 
 | Part | Dimensions | Mass |
 |---|---|---|
-| U-bolt, ×4 | M8 stainless, 25.0 mm leg spacing, crown R 12.5, legs 20.0, rod 79.3 long | 43.28 g |
-| Backing plate, ×4 | G-10 39.0 × 22.5 × 3.2, ⌀8.5 holes; two of them relieved | 4.52 g |
+| U-bolt, ×4 | M10 stainless, 25.0 mm leg spacing, crown R 12.5, legs 20.0, rod 79.3 long | 70.87 g |
+| Backing plate, ×4 | G-10 39.0 × 24.5 × 3.2, ⌀10.5 holes; two of them relieved | 4.63 g |
 | Charge well, main | ⌀12 × 19.00 deep, at R 22.60 on the aft gas seal's aft face | 6.44 g |
-| Charge well, drogue | ⌀8 × 20.50 deep, at R 27.50 / 45° on the internal bulkhead's aft face | 6.07 g |
+| Charge well, drogue | ⌀8 × 20.50 deep, at R 29.40 / 45° on the internal bulkhead's aft face | 6.07 g |
 | **Total** | 4 anchors + 2 wells + charges | **205.3 g** |
 
 Both wells sit **on their own charge's lead hole** — the main over a feed-through, the drogue
@@ -93,7 +99,7 @@ passes — so every previously reported number still reproduces.
 
 ## The second finding — the harness does not fit through the U-bolt
 
-`recovery.size_harness()` selects 3/4" tubular nylon: **19.1 mm of webbing.** An M8 U-bolt on
+`recovery.size_harness()` selects 3/4" tubular nylon: **19.1 mm of webbing.** An M10 U-bolt on
 a 25 mm spacing leaves a **17.0 mm clear opening.** Two sized parts of this vehicle, and
 nothing had ever put them next to each other.
 
@@ -139,14 +145,21 @@ footprint radius, which the disc absorbs without noticing.
 `design/mass.py` had **no line** for any of the anchors. `recovery.py`'s own
 `SoftGood("2 x U-bolt", 0.030, …)` entries are dead code — `measured_volume` overrides the
 mass and nothing sums `Compartment.hardware` masses — and `docs/04` independently lists
-120 g for four. Three numbers for one part, none reconciled, and the real one is **191 g**
-because the U-bolt is M8. `mass.DEFAULT_RECOVERY_BUDGET["harness_anchors"] = 0.191` carries
+120 g for four. Three numbers for one part, none reconciled, and the real one is **302 g**
+because the U-bolt is M10. `mass.DEFAULT_RECOVERY_BUDGET["harness_anchors"] = 0.302` carries
 it now.
 
 **The anchor is self-loading**, which nothing else in this project is: its mass is in the
 recovery budget, so it raises the descent mass and therefore the opening shock it carries.
-One pass settles it because the rod size is discrete, and M8 survives the round trip at
-2.01×. It is thin — the next thing to gain mass anywhere in this vehicle may push it to M10.
+One pass settles it because the rod size is discrete, and M10 survives the round trip at
+**3.89×**.
+
+> **This paragraph used to end "it is thin — the next thing to gain mass anywhere in this
+> vehicle may push it to M10", at M8 and 2.01×.** That is exactly what happened: the Sep
+> 2026 freeze took the canards to 1.30 cal, the vehicle gained mass, and the round trip
+> landed on M10. The prediction is left standing above because a warning that came true is
+> worth more than a warning that was quietly edited out. At 3.89× there is now real room —
+> but the mechanism has not changed, and neither has the lesson.
 
 **Packing.** One anchor displaces **5.95 cm³** against the 3.00 cm³ `recovery.py` estimated —
 low by 2.0×, because the U-bolt it described was M5. And the wells are rigid too:
@@ -169,9 +182,21 @@ requirement moves out of bounds; R6's 1600 m cap has more room, not less.
 
 * **The crown model.** The straight-beam idealisation gives 1.28×. A destructive pull test on
   the bought bolt settles it and has not been done.
-* **The drogue harness's own opening shock** has never been computed by anything here. All
-  four anchors are sized against the main's, which is conservative for the two on the drogue
-  and buys one part number in four places — but the number does not exist.
+* ~~**The drogue harness's own opening shock** has never been computed by anything here.~~
+  **CLOSED by correction 61, and it stopped being the conservative case.** The number now
+  exists: `horizontal_agility_sweep.Candidate._deployment` computes it, and on a VERTICAL
+  flight it is nearly zero — the vehicle arrives at apogee doing about 1 m/s, which is
+  exactly why sizing all four anchors against the main's shock was conservative and why
+  nobody needed the number.
+  **On a horizontal launch it inverts.** A flat flight reaches apogee at ~94 m/s, because
+  the horizontal velocity component never goes away, and an 18 in drogue opening there makes
+  **2193 N against the 1604 N** the M10 anchors, the 3/4" harness and the quick links were
+  all sized for. Apogee is still the right trigger — it is the minimum-speed point of a flat
+  arc — so the fix is the canopy, not the trigger: **the drogue is sized by its own opening
+  shock rather than by descent rate, and horizontal mode flies a 15.4 in drogue** (R11).
+  That holds the shock to the existing design load, reaches the main's 200 m at 23.5 m/s,
+  and **changes nothing else in this document** — same anchors, same backing plates, same
+  harness, same quick links, same charge wells.
 * **`point_load_stress()` is a central-patch formula** and the U-bolt's load arrives at two
   patches at R 12.5 mm. The centre is the worst case, so using it is conservative — but it is
   not the actual load case, and nothing here models the real one.

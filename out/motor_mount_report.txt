@@ -1,6 +1,6 @@
 MOTOR MOUNT -- the last unsized structure in the vehicle
 Model: design/motor_mount.py   Verdict carried by: scripts/baseline.py
-Motor: J449BS  dia 54.0 x 321.0 mm, 1.122 kg loaded / 0.498 kg dry
+Motor: J401FJ  dia 54.0 x 325.0 mm, 0.912 kg loaded / 0.401 kg dry
 
 ============================================================================================
 WHY THIS WAS NEVER SIZED, AND WHAT IT WAS HIDING
@@ -41,8 +41,8 @@ THE FIRST FINDING -- the frozen 12 mm fin tab and a 54 mm mount tube cannot coex
 ============================================================================================
 THE SECOND FINDING -- the forward bulkhead and the thrust face are the same part
 ============================================================================================
-  booster tube                          416.28 mm
-  motor, aft-flush                      321.00 mm
+  booster tube                          420.28 mm
+  motor, aft-flush                      325.00 mm
   forward margin                         95.28 mm
     less coupler engagement          -   79.40 mm
     less joints.BULKHEAD_ALLOWANCE   -   12.00 mm
@@ -85,27 +85,27 @@ THE THIRD FINDING -- that gap is a closed volume in front of a live ejection cha
 THE PART -- stations local to the booster tube's forward face, positive aft
 ============================================================================================
   forward bulkhead / thrust face     dia  74.80 x 4.80     79.40 ..   84.20     39.0 g
-  mount tube                         dia  57.10 / 54.50     84.20 ..  416.28    140.0 g
-  forward centering ring             dia  74.80 / 57.10 x 3.20    266.22 ..  269.42     10.9 g
-  aft centering ring (slotted)       dia  74.80 / 57.10 x 3.20    398.08 ..  401.28     10.2 g [4 x 3.2 x 8.85 slots]
-  retainer (bought, Aeropack class)  bond 15 mm on the tube OD            401.28 ..  416.28     31.0 g
-  motor, aft-flush                   dia  54.00 x 321.00     95.28 ..  416.28
-  aft fin tab band                   depth 11.15 mm             271.42 ..  410.28
+  mount tube                         dia  57.10 / 54.50     84.20 ..  420.28    141.7 g
+  forward centering ring             dia  74.80 / 57.10 x 3.20    264.22 ..  267.42     10.9 g
+  aft centering ring (slotted)       dia  74.80 / 57.10 x 3.20    402.08 ..  405.28     10.2 g [4 x 3.2 x 8.85 slots]
+  retainer (bought, Aeropack class)  bond 15 mm on the tube OD            405.28 ..  420.28     31.0 g
+  motor, aft-flush                   dia  54.00 x 325.00     95.28 ..  420.28
+  aft fin tab band                   depth 11.15 mm             275.42 ..  414.28
 
-  ASSEMBLY 231.1 g against the 250 g design/mass.py has charged -- +18.9 g.
-  Mount tube length 332.08 mm settles make_ork.py's 331 against
+  ASSEMBLY 232.8 g against the 250 g design/mass.py has charged -- +17.2 g.
+  Mount tube length 336.08 mm settles make_ork.py's 331 against
   docs/04's 416: neither, and 416 was the booster's own length copied by mistake.
 
 ============================================================================================
 WHAT CARRIES WHAT -- and the headline is that the rings do not carry thrust
 ============================================================================================
-  peak thrust                               586.9 N
-  thrust into the forward bulkhead           6.60 MPa       73x   annular land 10.15 mm
-  drogue stuck-joint pressure              121.82 MPa      3.9x   at 1699 kPa
-  drogue U-bolt, bare 6 mm footprint        96.73 MPa      5.0x   at 1504 N
-  ring glue lines, REDUNDANT path            0.51 MPa       12x   293 N each
-  retainer base bond                         0.05 MPa      115x   at 147 N
-  mount tube, full thrust (redundant)        2.58 MPa      186x   buckling 39x
+  peak thrust                               488.1 N
+  thrust into the forward bulkhead           5.49 MPa       87x   annular land 10.15 mm
+  drogue stuck-joint pressure              123.29 MPa      3.9x   at 1719 kPa
+  drogue U-bolt, bare 6 mm footprint       107.18 MPa      4.5x   at 1666 N
+  ring glue lines, REDUNDANT path            0.43 MPa       15x   244 N each
+  retainer base bond                         0.04 MPa      143x   at 118 N
+  mount tube, full thrust (redundant)        2.14 MPa      224x   buckling 47x
 
   THRUST ENTERS THE AIRFRAME AT THE FORWARD BULKHEAD, not through the rings. The
   motor's forward closure bears on that disc through the mount tube's bore, and the
@@ -123,8 +123,8 @@ WHAT CARRIES WHAT -- and the headline is that the rings do not carry thrust
 THE HOLES IN THE FORWARD BULKHEAD
 ============================================================================================
   drogue charge feed-through   x  +22.60  y   +0.00  dia  4.0  edge 12.80 mm
-  U-bolt leg A                 x   +0.00  y  +12.50  dia  8.5  edge 20.65 mm
-  U-bolt leg B                 x   +0.00  y  -12.50  dia  8.5  edge 20.65 mm
+  U-bolt leg A                 x   +0.00  y  +12.50  dia 10.5  edge 19.65 mm
+  U-bolt leg B                 x   +0.00  y  -12.50  dia 10.5  edge 19.65 mm
 
   Positions come from design/motor_mount.hole_layout(), reusing seal.Hole, so the CAD
   script types nothing -- the same rule seal.py and access_bulkhead.py already follow.
@@ -138,14 +138,14 @@ VERDICT
     note  FIN TAB DEPTH IS 11.15 mm, NOT THE 12.00 mm THAT WAS FROZEN. The tab is measured inward from the booster OD, so 12.00 put its tip at R 27.70 mm -- 0.85 mm inside this mount tube's own wall, and only 0.70 mm clear of the bare motor case, which is what it was really drawn against. scripts/make_cad_profiles.py and scripts/make_aft_fin_cad_fusion.py must import motor_mount.fin_tab_depth() and the four AftFin bodies must be regenerated
     note  tab stands 8.85 mm proud of the airframe bore and lands tangent on the mount tube; 4 tabs x 3.2 mm x 138.9 mm gives 1777 mm2 of tab-to-tube bond, fillets not credited
     note  forward closure PLUGGED (a purchase, not a modification). Flying it live would put 1.2 g into 25.8 cm3 -- 10.2 MPa against the disc's 6.69 MPa capacity, 1.5x over. Nothing in this project had ever asked
-    note  thrust 587 N enters the airframe at the forward bulkhead, not through the rings: 6.6 MPa in the 10.15 mm annular land between the motor's bearing circle and the tube wall, 73x
-    note  same disc, same vessel as the internal bulkhead: 1699 kPa stuck-joint case gives 3.9x, design case 246 kPa
-    note  drogue harness U-bolt 1504 N on a bare 6 mm footprint gives 5.0x -- the FOURTH U-bolt, the one recovery.default_soft_goods() has priced since it was written and that had no bulkhead to stand on until this file
-    note  rings carry the REDUNDANT path only -- 293 N each if the bulkhead's bond let go -- at 12x. Their real job is alignment and tying the fin tabs in
-    note  retainer holds 147 N (498 g dry at 30 g) over a 15 mm bond, 115x -- the DRY mass, because the propellant is gone before descent begins
-    note  forward centering ring clears the tab LE by 2.00 mm
+    note  thrust 488 N enters the airframe at the forward bulkhead, not through the rings: 5.5 MPa in the 10.15 mm annular land between the motor's bearing circle and the tube wall, 87x
+    note  same disc, same vessel as the internal bulkhead: 1719 kPa stuck-joint case gives 3.9x, design case 246 kPa
+    note  drogue harness U-bolt 1666 N on a bare 6 mm footprint gives 4.5x -- the FOURTH U-bolt, the one recovery.default_soft_goods() has priced since it was written and that had no bulkhead to stand on until this file
+    note  rings carry the REDUNDANT path only -- 244 N each if the bulkhead's bond let go -- at 15x. Their real job is alignment and tying the fin tabs in
+    note  retainer holds 118 N (401 g dry at 30 g) over a 15 mm bond, 143x -- the DRY mass, because the propellant is gone before descent begins
+    note  forward centering ring clears the tab's ramp start by 2.00 mm (8.00 mm to full depth)
     note  aft centering ring (slotted) sits inside the tab band and is slotted 4 x 3.2 x 8.85 mm; an unslotted ring at that station is 4 interferences
-    note  assembly 231.1 g against the 250 g mass.py has charged: tube 140.0, rings 21.0, bulkhead 39.0, retainer 31.0
+    note  assembly 232.8 g against the 250 g mass.py has charged: tube 141.7, rings 21.0, bulkhead 39.0, retainer 31.0
     note  mount tube wall governed by: the practical minimum wall -- two rings and a retainer base bond to this tube's outside; local buckling alone would have cleared 2x at 0.9 mm
     note  ring thickness governed by: the practical minimum gauge -- a thinner ring tips in its own fillet and cannot be bonded square; the glue line alone would have cleared 2x at 1.6 mm
     note  forward bulkhead: 3 holes, tightest ligament 12.8 mm

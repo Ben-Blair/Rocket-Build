@@ -78,6 +78,12 @@ class MeasuredComponent:
     i_transverse: float  # kg m^2, about its own CoM
     i_roll: float  # kg m^2, about the vehicle roll axis
     source: str
+    # THE GEOMETRY THIS WAS MEASURED ON. A measured tensor is only a measurement of the
+    # part that was measured, and nothing in this file noticed when the part changed
+    # underneath it -- see `check_measured_geometry` for what that cost. Recorded so the
+    # mismatch is detectable instead of silent.
+    measured_at_semispan_cal: float = 0.0
+    measured_at_thickness: float = 0.0
 
 
 # Measured in Onshape from the canard module Part Studio, Aug 2026, after the 35.4 deg
@@ -106,19 +112,102 @@ class MeasuredComponent:
 # kg*mm^2. Roll is down 2.2%, which nudges roll acceleration the other way from the 6.5%
 # the CAD tensor bought in the first place.
 CANARD_MODULE_CAD = MeasuredComponent(
-    name="canard module (CAD assembly, real servos, hinge stack, root tang, 3.2 mm panels, "
-         "four hinge bearings, printed bay)",
-    mass=0.298729,
-    station_from_module_face=0.075147,
-    i_transverse=622.114e-6,
-    i_roll=673.185e-6,
-    source="Onshape canard-control module, Assembly 1, Aug 2026, after the root tang of "
-           "design/hinge.py, the 3.2 mm laminate panel of design/configure.py, the four "
-           "dia 6/8 x 6 plain bearings placed by scripts/place_bearings.py, the "
-           "printed bay of design/bay.py built by scripts/make_bay_cad.py, and the two "
-           "dia 2 mm overboard vents of design/venting.py cut by "
-           "scripts/make_module_vents.py",
+    name="canard module (Fusion assembly, real servos, hinge stack, root tang, 1.45 cal "
+         "4.0 mm POINTED-DELTA panels 88.6/8.9 at 42.2 deg LE, four dia 10/12 hinge "
+         "bearings, printed bay)",
+    mass=0.390847,
+    station_from_module_face=0.083694,
+    i_transverse=1169.543e-6,
+    i_roll=1539.655e-6,
+    measured_at_semispan_cal=1.45,
+    measured_at_thickness=0.0040,
+    source="Fusion CanardControlModule, Sep 2026, re-read after correction 63 rebuilt "
+           "Panel0-3 to the pointed-delta outline. Only the four panels changed: the tube "
+           "and shafts verified byte-identical, because the outline was solved to hold the "
+           "hinge station. 34 bodies in the module set. Geometry MEASURED; MATERIALS "
+           "REASSIGNED per body first -- see the note below, which fired twice.",
 )
+# CORRECTION 63 RE-READ (pointed-delta panels). ONLY THE FOUR PANELS WERE REBUILT -- the
+# outline was solved to hold `hinge.canard_hinge_station` to within a nanometre, so the
+# tube and the shafts verified byte-identical and nothing on the hinge axis moved.
+#
+# THE DENSITY TRAP FIRED TWICE IN ONE REBUILD. The new panels came back Steel, as always.
+# But so did the SHAFTS and the CANARD BAY, which were never rebuilt -- deleting the four
+# panel occurrences (and the joints attached to them) reverted material assignments made
+# after those features in the timeline. Reading the tensor there would have given
+# 0.598210 kg against a true 0.390847. **Reassign EVERY module body and verify none is
+# Steel before reading, not just the ones you rebuilt.** Cross-check: the previous
+# measurement plus four panels' growth is 0.386057 + 4 x (21649.3750 - 21002.0135) mm3 x
+# 1850 = 0.390847 kg, which is what Fusion reports to six figures.
+#
+# i_roll went DOWN, 1735.964 -> 1539.655e-6 kg m^2 (-11%), which is the sharper planform
+# doing what a sharper planform does: same span, same mass to within 1%, less area outboard.
+#
+# CORRECTION 62 RE-READ, AND THE DENSITY TRAP FIRED AGAIN EXACTLY AS WRITTEN BELOW.
+# The 34-body module came back at 1.574165 kg -- 4.08x the true 0.386057 -- because
+# rebuilding a body does not carry its material across and no generator assigns one. The
+# five custom materials the previous rebuild created were still in the document, so the fix
+# was reassignment rather than re-creation: G10 1850 to tube and panels (and the aft fins
+# and booster tube, which are not in this tensor but are in the document), 6061-T6 2700 to
+# the shafts, PETG-CF 1300 to the bay and its retainer bars, iglidur G 1450 to the
+# bearings. The servo bodies were never rebuilt and kept their 2304 effective density.
+#
+# CROSS-CHECKED against the repo's own volumes rather than trusted: 4 panels at 21002.0135
+# mm3 x 1850, tube 78577.0227 x 1850, 4 shafts at 1032.7638 x 2700, bay 27683.8621 x 1300,
+# 8 retainer bars at 90.8076 x 1300, 4 bearings at 204.5134 x 1450, and 4 servos at a
+# datasheet 9 g, sums to 0.386054 kg against Fusion's 0.386057. Three parts in a million,
+# from two routes that share no arithmetic.
+#
+# WHAT MOVED, and it is the whole reason this record exists: mass 0.352842 -> 0.386057 kg
+# (+9.4%), i_roll 1313.230 -> 1735.964e-6 kg m^2 (+32%). Roll inertia sets the bandwidth
+# every control gain is scheduled against, and a 1.45 cal panel puts its mass further out.
+# HOW THIS ONE WAS TAKEN, AND THE ONE THING IT IS NOT.
+#
+# Fusion reports `getXYZMomentsOfInertia` about the WORLD ORIGIN, not about the body's
+# centroid -- verified on the spot rather than assumed, because getting it backwards is a
+# silent factor-of-anything error: bearing q0 came back with Izz 0.013866 against an
+# m*r^2 of 0.013771 kg*cm^2, which is the parallel-axis term and settles it. The document
+# frame has Z = 0 at the canard module's forward face, so `station_from_module_face` is
+# read straight off it.
+#
+# EVERY BODY IN THE REBUILT DOCUMENT CAME BACK AS FUSION'S DEFAULT STEEL, 7850 kg/m^3.
+# The module weighed 1525.7 g that way against a real 352.8, and reading the tensor without
+# noticing would have written a number 4.3x too big into the roll axis this vehicle flies.
+# Rebuilding a body does not carry its material across, and nothing in the generators
+# assigns one -- so this will happen again on the next rebuild. Check the density before
+# trusting a mass, every time; it is the same trap that put steel shafts in the Aug 2026
+# tensor (see the shaft note further down).
+#
+# TAKEN TWICE, BY TWO ROUTES THAT SHARE NO ARITHMETIC, and they agree:
+#   1. Rescaled. Mass and inertia are both LINEAR in density at fixed shape, so each body's
+#      steel-density figure was multiplied by rho_true/7850 -- exact, not an approximation.
+#   2. Measured directly, after assigning real materials to all 39 rebuilt bodies in the
+#      document: G10 1850 (configure.material_density) for tube, panels, aft fins and
+#      booster; 6061-T6 2700 for the shafts; PETG-CF 1300 (design/bay.py) for the bay and
+#      retainer bars; iglidur G 1450 (docs/04) for the bearings; and an effective
+#      2304 kg/m^3 across the servo bodies so the four come to the KST X08 Plus datasheet
+#      9 g each.
+# Route 1 gave 0.352842 kg and route 2 gave 0.352843; the inertias match to the digits
+# printed here. The Fusion document now carries those materials, so the next read needs no
+# rescaling.
+#
+# WHAT IS STILL ASSERTED RATHER THAN MEASURED IS THE DENSITY ITSELF. The geometry is the
+# assembly's; the densities are the repo's own numbers, and the servo one is a lumped
+# effective value that puts the datasheet 9 g into an envelope rather than modelling a
+# gear train. A scale settles that, and nothing else does -- docs/01 step 5.
+#
+# Two checks it passed: the four-fold symmetry, |Ixx - Iyy| = 4e-6 kg*cm^2 about the CoM;
+# and Izz about the CoM equals Izz about the roll axis to 3e-12, which it must, because
+# the CoM sits on that axis (x, y = 0 to 3e-5 mm).
+#
+# WHAT MOVED, against the 0.85 cal / 3.2 mm tensor this replaces:
+#   mass          298.729 -> 352.842 g      +54.1 g
+#   i_roll        673.185 -> 1313.230e-6    +95.1%, very nearly a doubling
+#   i_transverse  622.114 ->  992.057e-6    +59.5%
+#   station        75.147 ->   81.173 mm    +6.0 mm aft
+# The roll number was predicted at +641 kg*mm^2 from the panel geometry alone before the
+# rebuild ran, against +640.0 measured. Agreeing to 0.2% is the check that the rebuild
+# put the panels where the analysis thinks they are.
 # THE VENTS MOVED THIS AND THE MOVE IS NOTHING: -26.7 mg, -0.01% on both inertias, CoM
 # forward by 4 microns. Recorded anyway, and re-measured rather than assumed, for the
 # reason verify_cad.py exists -- a tensor that is not re-read after a CAD change is a
@@ -186,6 +275,51 @@ CANARD_MODULE_CAD = MeasuredComponent(
 #   mass 0.259864 kg, station 0.075090 m, Itrans 585.266e-6, Iroll 612.442e-6
 
 MEASURED_COMPONENTS: tuple[MeasuredComponent, ...] = (CANARD_MODULE_CAD,)
+
+
+def check_measured_geometry(
+    rocket: Rocket, measured: tuple[MeasuredComponent, ...] = MEASURED_COMPONENTS,
+) -> list[str]:
+    """Does the CAD these tensors were measured on still describe the current vehicle?
+
+    THIS EXISTS BECAUSE IT DID NOT, AND NOTHING NOTICED. The Sep 2026 freeze took the
+    canards from 0.85 to 1.30 cal and 3.2 to 3.6 mm. `CANARD_MODULE_CAD` was still the
+    Aug 2026 measurement of the 0.85 cal module, and `estimate_inertia` went on
+    superposing it as though it were current -- silently, because a stale measurement
+    looks exactly like a fresh one.
+
+    The error is not small and it is not in a quantity nobody uses. Four canard panels
+    at 1.30 cal carry +641 kg*mm^2 of roll inertia against a recorded module total of
+    673 -- the tensor understates module roll inertia by about 95%, and its mass by 54 g.
+    Roll is the axis this vehicle flies, and roll inertia sets the bandwidth every gain
+    is scheduled against.
+
+    A measurement cannot be repaired by arithmetic, so this does NOT try to correct the
+    number. It reports that the number is no longer a measurement of anything, which is
+    the only honest thing available until the module is rebuilt in Fusion and re-read
+    over the API (scripts/verify_cad.py).
+    """
+    out: list[str] = []
+    if rocket.canards is None:
+        return out
+    d = rocket.diameter
+    for c in measured:
+        if not c.measured_at_semispan_cal:
+            continue  # provenance not recorded; nothing to compare against
+        now_cal = rocket.canards.semispan / d
+        if abs(now_cal - c.measured_at_semispan_cal) > 0.005:
+            out.append(
+                f"{c.name.split('(')[0].strip()}: tensor measured at "
+                f"{c.measured_at_semispan_cal:.2f} cal canards, vehicle now has "
+                f"{now_cal:.2f} cal -- roll inertia and pitch bandwidth are running on a "
+                f"measurement of a part that no longer exists. Rebuild the module in "
+                f"Fusion and re-read it (scripts/verify_cad.py)")
+        elif abs(rocket.canards.thickness - c.measured_at_thickness) > 1e-5:
+            out.append(
+                f"{c.name.split('(')[0].strip()}: tensor measured on a "
+                f"{c.measured_at_thickness * 1000:.1f} mm panel, vehicle now has "
+                f"{rocket.canards.thickness * 1000:.1f} mm")
+    return out
 
 
 def estimate_inertia(
@@ -461,3 +595,92 @@ def achievable_crossrange(
     if flight.apogee_time > t_end:
         crossrange += v_lateral * (flight.apogee_time - t_end)
     return crossrange, t_end - t_start
+
+
+@dataclass
+class TurnResult:
+    """How far the velocity vector actually turns, which is the thing a missile comparison
+    is really about.
+
+    `achievable_crossrange` answers a different question -- how far sideways does it get --
+    and the two diverge badly once you start changing speed, because crossrange rewards
+    time of flight while heading rate is punished by speed. See `heading_change`.
+    """
+
+    heading_deg: float  # total heading change over the usable window
+    peak_rate_deg_s: float
+    mean_rate_deg_s: float
+    min_radius_m: float
+    seconds: float
+    peak_lateral_g: float
+    stalled_anywhere: bool
+
+
+def heading_change(
+    rocket: Rocket,
+    flight: Flight,
+    deflection_deg: float = 8.0,
+    start_after_burnout: float = 0.5,
+    duty_cycle: float = 0.7,
+) -> TurnResult:
+    """Integrate the turn of the VELOCITY VECTOR, not the sideways displacement.
+
+    THIS IS THE NUMBER THE SIDEWINDER COMPARISON NEEDS, and it is not proportional to
+    lateral g. A turn rate is
+
+        omega = n * g0 / V
+
+    so speed appears in the numerator of n (through q ~ V^2) and again in the denominator
+    here. Doubling the speed quadruples the g and only doubles the turn rate -- and the
+    turn RADIUS, V^2/(n g0), does not improve at all if n went up as V^2, because the two
+    V^2 terms cancel exactly.
+
+    That is the trap in reading a "we need 3 g" target off a fixed airspeed: if you reach
+    the g by flying faster, the g needed for the same heading rate has gone up too. The
+    only knobs that buy heading rate for free are the ones that raise CN at fixed speed --
+    lower static margin, more canard area, more deflection.
+
+    `duty_cycle` and the q > 300 Pa window match `achievable_crossrange` deliberately, so
+    the two functions describe the same manoeuvre and can be quoted side by side.
+
+    LIMIT OF VALIDITY: `flight` is a vertical-plane trajectory flown with no manoeuvre in
+    it, so this integrates the turn a vehicle WOULD make against a speed history it did
+    not fly. Turning bleeds energy -- induced drag at trim alpha, and gravity once the
+    velocity vector leaves the vertical -- so the real heading change is smaller than this,
+    and the error grows with the answer. Treat anything past about 45 deg as an upper
+    bound and go to `scripts/virtual_flight.py` for the rest.
+    """
+    t_start = flight.burnout_time + start_after_burnout
+    usable = [p for p in flight.points if p.t >= t_start and p.q > 300.0]
+    if len(usable) < 2:
+        return TurnResult(0.0, 0.0, 0.0, float("inf"), 0.0, 0.0, False)
+
+    heading = 0.0
+    peak_rate = 0.0
+    peak_g = 0.0
+    min_radius = float("inf")
+    stalled = False
+    for prev, cur in zip(usable[:-1], usable[1:]):
+        dt = cur.t - prev.t
+        res = pitch_authority(rocket, cur, cur.mass, deflection_deg)
+        g_lat = res.lateral_accel_g * duty_cycle
+        if res.stalled:
+            stalled = True
+            g_lat *= 0.6  # same crude post-stall haircut achievable_crossrange applies
+        speed = max(cur.speed, 1.0)
+        rate = g_lat * atmosphere.G0 / speed  # rad/s
+        heading += rate * dt
+        peak_rate = max(peak_rate, rate)
+        peak_g = max(peak_g, g_lat)
+        min_radius = min(min_radius, speed / rate if rate > 0 else float("inf"))
+
+    seconds = usable[-1].t - t_start
+    return TurnResult(
+        heading_deg=math.degrees(heading),
+        peak_rate_deg_s=math.degrees(peak_rate),
+        mean_rate_deg_s=math.degrees(heading) / seconds if seconds > 0 else 0.0,
+        min_radius_m=min_radius,
+        seconds=seconds,
+        peak_lateral_g=peak_g,
+        stalled_anywhere=stalled,
+    )

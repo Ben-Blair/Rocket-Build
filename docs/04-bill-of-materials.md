@@ -28,11 +28,12 @@ Bay lengths, nose to tail: nav 127 mm, canard module 143 mm, recovery 357 mm, bo
 
 | Item | Spec | Qty | Mass | Price | |
 |---|---|---|---|---|---|
-| G10 sheet, 1/8 in (3.2 mm) | Aft fin blanks 155 × 124 mm each, plus through-wall tabs. One 12 × 24 in sheet covers both sets | 1 | 0.637 kg | ~$45 | |
-| G10 sheet, 3.0 mm | Canard blanks 68 × 68 mm each — cuts from the offcuts above | — | 0.142 kg | — | |
+| G10 sheet, 1/8 in (3.2 mm) | Aft fin blanks 151 × **147** mm each, plus through-wall tabs. One 12 × 24 in sheet covers the aft set | 1 | 0.385 kg | ~$45 | **1.85 cal semispan** since correction 62 (1.55 → 1.70 → 1.85) — the blanks have grown twice, check sheet yield before ordering |
+| G10 sheet, laminate | Canard blanks **114 × 115 mm** each (pointed delta, correction 63 — the blank is the swept bounding box, not the chord) — no longer cut from aft-fin offcuts, they are too big. See the **1.0 / 2.0 / 1.0** stack below | — | 0.170 kg | — | **1.45 cal semispan** since correction 62; **4.0 mm total** since correction 61 |
 
-Aft fins: 4 panels, root 150.9 / tip 67.9 / semispan 123.1 mm, 87.3 mm sweep, through-wall
-mounted. Canards: 4 panels, root 67.5 / tip 27.0 / semispan 67.5 mm, **47.9 mm sweep**,
+Aft fins: 4 panels, root 150.9 / tip 67.9 / **semispan 135.0 mm**, 87.3 mm sweep,
+through-wall mounted. Canards: 4 panels, root 67.5 / tip 27.0 / **semispan 103.2 mm**,
+**66.8 mm sweep (32.9°)**,
 interdigitated 45° from the aft fins. Both sets carry the same 35.4° leading-edge sweep.
 Flutter margins 1.97× and 4.46×.
 
@@ -40,8 +41,8 @@ Flutter margins 1.97× and 4.46×.
 
 | Item | Spec | Qty | Mass | Price | |
 |---|---|---|---|---|---|
-| Cesaroni Pro54 3-grain casing | P54-3G, reusable | 1 | 0.498 kg | **$98.20** | ✅ |
-| Cesaroni reload | 1261J449-15A Blue Streak, 1260 N·s | 1 | 0.624 kg prop | **$136.50** | ✅ |
+| ~~Cesaroni Pro54 3-grain casing~~ **AeroTech 54 mm casing** | For the J401FJ, 325 mm case | 1 | 0.401 kg | **price TBC** | **motor changed Sep 2026 — docs/02 banner.** Casing and reload prices below are the superseded Cesaroni ones and must be re-quoted |
+| **AeroTech J401FJ reload** | 1105 N·s, 325 mm, 0.511 kg propellant | 1 | 0.511 kg prop | **price TBC** | replaces the Cesaroni 1261J449-15A. Fits the 332 mm mount tube already sized in docs/09 |
 | Motor mount tube | 54 mm ID 54.5 / OD 57.1, **1.3 mm wall, 332 mm long** | 1 | 0.140 kg | ~$25 | **sized, not budgeted** — docs/09. 332 mm reconciles `make_ork.py`'s 331 against this table's own 416, which was the booster's length copied by mistake |
 | Centering rings | G-10 3.2 mm, ⌀74.8 / 57.1; **the aft one is SLOTTED** 4 × 3.2 × 8.85 mm for the fin tabs | 2 | 0.021 kg | ~$10 | they are **not** thrust structure — thrust enters at the booster's forward bulkhead |
 | Booster forward bulkhead | **G-10 4.8 mm**, ⌀74.8, 3 holes | 1 | 0.039 kg | ~$15 | the disc `seal.py` handed to the motor mount: drogue closure, thrust face and drogue U-bolt anchor in one part |
@@ -57,15 +58,15 @@ Requires **Level 2 certification**. Budget 5 reloads for the GV-1…GV-5 campaig
 |---|---|---|---|---|---|
 | Servo, KST X08 Plus V6.0 | 23.5 × 8.0 × 16.8 mm, 9 g, 5.3 kgf·cm @ 8.4 V | 4 | 0.036 kg | **$43–55 ea** | ✅ |
 | ~~Servo frame with outboard bearing~~ | **INVESTIGATED AND DROPPED, Aug 2026.** See the note below — it does not do what this line used to claim, and it probably does not fit | 0 | — | — | ❌ |
-| Canard hinge shaft | ⌀6 **6061-T6** rod, 32.2 mm long, one end milled to a **1.8 × 11.9 × 25.5 mm blade**. The only custom-machined part in the module | 4 | in shafts | stock rod ~$10 | |
-| ~~Servo horn, ⌀4 mm 15T~~ | **INVESTIGATED AND DROPPED, Aug 2026. It does not fit.** There is 0.515 mm between the servo's output face and the bearing, and outboard of that everything passes down the ⌀6 journal. Every female-spline part sold is ⌀7 or bigger. See the note below | 0 | — | — | ❌ |
+| Canard hinge shaft | **⌀10** (⌀6 → ⌀8 at correction 61, ⌀8 → ⌀10 at correction 62) **6061-T6** rod, 32.2 mm long, one end milled to a **1.8 × 11.9 × 25.5 mm blade**. The only custom-machined part in the module | 4 | in shafts | stock rod ~$10 | |
+| ~~Servo horn, ⌀4 mm 15T~~ | **INVESTIGATED AND DROPPED, Aug 2026. It does not fit.** There is 0.515 mm between the servo's output face and the bearing, and outboard of that everything passes down the journal. Every female-spline part sold is ⌀7 or bigger. **Correction 61 took the journal to ⌀8, so the DIAMETER objection is gone — the 0.515 mm axial gap, which is what it actually failed on, is not.** Still dropped. See the note below | 0 | — | — | ❌ |
 | Anaerobic retaining compound | **Loctite 638 class**, plus the matching activator/primer. This is the coupling: a ⌀4.100 × 3.20 drilled socket in the shaft, filled and pushed onto the spline, so the compound cures in the tooth valleys and *becomes* the female spline. Releases at ~250 °C, which is what makes a servo swappable | 1 bottle | in shafts | ~$20 | ✅ |
-| Canard hinge bearing | **⌀6 / ⌀8 × 6.0 plain sleeve, iglidur G class.** Housing reamed **⌀8 H7** — a standard reamer; the interference comes from the bushing being supplied oversize. This is the part that keeps the panel bending out of the servo | 4 | in shafts | ~$5 ea | |
-| ⌀8 H7 chucking reamer | The one piece of tooling this design actually requires. Reams the tube wall **and the printed collar together, after bonding** — see the build note below | 1 | — | ~$15 | |
+| Canard hinge bearing | **⌀10 / ⌀12 × 6.0 plain sleeve, iglidur G class** (⌀6/⌀8 originally, ⌀8/⌀10 at correction 61). Housing reamed **⌀12 H7** — a standard reamer; the interference comes from the bushing being supplied oversize. This is the part that keeps the panel bending out of the servo | 4 | in shafts | ~$5 ea | |
+| **⌀12 H7** chucking reamer | The one piece of tooling this design actually requires. **It has been ⌀8 and ⌀10 in earlier revisions of this file — order the ⌀12.** Reams the tube wall **and the printed collar together, after bonding** — see the build note below | 1 | — | ~$15 | |
 | Canard shafts, bushings, hardware | The lines above plus fasteners and epoxy | 4 | 0.240 kg | ~$40 | |
-| **G10 sheet, 0.6 mm** | Panel skins. 8 skins, 2 per panel | ~0.3 m² | in canards | ~$25 | |
+| **G10 sheet, 1.0 mm** | Panel skins. 8 skins, 2 per panel | ~0.3 m² | in canards | ~$25 | **0.6 → 0.8 mm at the Sep 2026 freeze, 0.8 → 1.0 mm at correction 61.** Same mechanism both times — skin stress over the tang slot goes as 1/t² — and the second time it was a horizontal launch's sea-level max *q*, not a bigger panel: 1.93× against 2.0×, now 3.09×. docs/12 §5 |
 | **G10 sheet, 2.0 mm** | Panel cores. The tang slot is a gap cut in this sheet, not a slot machined later | ~0.15 m² | in canards | ~$20 | |
-| Printed canard bay | **PETG-CF** (plain PETG passes too, at 10.0× instead of 14.5×) — **not PLA**, 8× M2 heat-set inserts. **Carries the bearing housing collar**, 3.700 mm of ⌀8 bore per hinge, worth 3.4× → 14.5× on the bearing seat. 39 g, one print. Design in `design/bay.py`, CAD by `scripts/make_bay_cad.py` | 1 | in structure | ~$10 | ✅ |
+| Printed canard bay | **PETG-CF** (plain PETG passes too, at 10.0× instead of 14.5×) — **not PLA**, 8× M2 heat-set inserts. **Carries the bearing housing collar**, 3.700 mm of ⌀12 bore per hinge, **⌀16 boss** since correction 62. **This part is STRUCTURE, not an improvement** — on the horizontal profile the bare wall is 1.74× against 2.0× and the collar takes it to 11.72× (R14). 39 g, one print. Design in `design/bay.py`, CAD by `scripts/make_bay_cad.py` | 1 | in structure | ~$10 | ✅ |
 | Printed panel bonding jig | Not a flight part. Holds skin/core/skin and the tang in alignment while the epoxy cures, 4× | 1 | — | ~$3 | |
 
 **Two lines here are load path, not hardware, and buying the wrong thing quietly deletes
@@ -84,7 +85,7 @@ a rod to a control surface. Their "counter bearing" supports that *arm* on the f
 the case; it does not give you a supported shaft coaxial with the servo output, which is
 what a direct-drive canard hinge needs. The third-bearing frame is also **50 × 37 × 9 mm**,
 against a servo of 23.5 × 8 × 16.8 — four of those inside a 74.8 mm bore is a packaging
-problem on its own. Our ⌀6/⌀8 sleeve in the wall already does the job the frame was
+problem on its own. Our ⌀10/⌀12 sleeve in the wall already does the job the frame was
 imagined to do, and does it in the right place.
 
 **What the search did turn up, and it is the useful half:** those kits all include a
@@ -129,7 +130,7 @@ stall. An adhesive joint in a bending path would be a bad idea — this is not o
 | shaft wall in torsion | 15.7 MPa — 10.2× on 6061-T6 |
 | serviceable? | yes: releases at ~250 °C, which is the whole reason to use a retaining compound and not epoxy |
 
-**The canard panels are a laminate, not a plate: 0.6 / 2.0 / 0.6 mm G10, bonded, 3.2 mm
+**The canard panels are a laminate, not a plate: 0.8 / 2.0 / 0.8 mm G10, bonded, 3.6 mm
 total.** The middle sheet is cut away over 12.1 × 25.5 mm at the root, and that gap IS the
 tang slot — so the slot never has to be machined. Cutting it into a solid plate instead
 would be a 13:1 deep blind cut needing a slitting saw on a mill; as a laminate it is a flat
@@ -276,10 +277,10 @@ Sized Aug 2026; `design/seal.py`, argument in `out/seal_report.txt`, docs/05.
 | Item | Spec | Qty | Mass | Price | |
 |---|---|---|---|---|---|
 | Aft gas seal disc | **G-10 sheet, 4.8 mm**, cut to 74.8 mm | 1 | 0.039 kg | ~$15 | thickness set by the wire hole, not the plate |
-| Internal bulkhead disc | **G-10 sheet, 4.8 mm**, 1 × ⌀6 mm conduit feed-through at **R 27.5 / 45°** | 1 | 0.039 kg | ~$15 | no shear pins protect this one; it anchors a harness BOTH ways, so its two U-bolts clock 90° apart and its conduit radius is set by the backing plates, not by the stress field |
-| Harness U-bolt | **M8 stainless**, 25 mm leg spacing, crown R 12.5 | 4 | 0.173 kg | ~$40 | **NOT M5** — a U-bolt used as an anchor bends at the CROWN, and a published U-bolt rating is for clamping a pipe. docs/10 |
-| Backing plate | **G-10 39.0 × 22.5 × 3.2**, ⌀8.5 holes; **the two on the internal bulkhead are relieved** 9.5 × 3.5 mm | 4 | 0.018 kg | ~$8 | takes the disc's U-bolt margin 4.95× → 7.98×. It is structure, and this is the part three CAD scripts refused to draw |
-| Quick links | 6 mm stainless, harness to U-bolt | 4 | in harness | ~$16 | **required, not optional** — 19.1 mm of webbing does not pass through a 17.0 mm opening. docs/10 |
+| Internal bulkhead disc | **G-10 sheet, 4.8 mm**, 1 × ⌀6 mm conduit feed-through at **R 29.4 / 45°** | 1 | 0.039 kg | ~$15 | no shear pins protect this one; it anchors a harness BOTH ways, so its two U-bolts clock 90° apart and its conduit radius is set by the backing plates, not by the stress field |
+| Harness U-bolt | **M10 stainless**, 25 mm leg spacing, crown R 12.5 | 4 | 0.284 kg | ~$50 | **NOT M5, and no longer M8** — the Sep 2026 fin freeze added descent mass, which raised opening shock, which took the crown-in-bending margin under 2.0× at M8. docs/00 §7.2, docs/10 |
+| Backing plate | **G-10 39.0 × 24.5 × 3.2**, ⌀10.5 holes; **the two on the internal bulkhead are relieved** 11.5 × 5.5 mm | 4 | 0.018 kg | ~$8 | takes the disc's U-bolt margin 4.90× → 8.09×. It is structure, and this is the part three CAD scripts refused to draw |
+| Quick links | **8 mm** stainless, harness to U-bolt | 4 | in harness | ~$18 | **required, not optional** — 19.1 mm of webbing does not pass through the M10 bolt's 15.0 mm opening either. docs/10 |
 | Charge well + 2-pole terminal block | Bulkhead-mount, fired face. Main **⌀12 × 19.0** at R 22.6; drogue **⌀8 × 20.5** at R 27.5 / 45° | 2 | 0.013 kg | ~$10 | each sits over its own charge's lead hole, so neither needs a new hole in a pressure boundary |
 | Shear pins | **3 × 2-56 nylon** per separation joint | pack | — | ~$6 | the intended fuse; buy spares, they are consumed |
 | High-temp RTV, potting | 315 °C service, **forward face only** | 1 | — | ~$10 | |

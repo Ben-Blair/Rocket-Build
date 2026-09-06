@@ -115,7 +115,7 @@ THE SHOULDER QUESTION -- SETTLED, and it went the good way
     nav bay           127.0 mm tube ->  115.0 mm usable, bore 74.8 mm (70.2 over 127 mm)
     canard module     142.9 mm tube ->  130.9 mm usable, bore 74.8 mm (70.2 over 159 mm)
     recovery bay      357.3 mm tube ->  357.3 mm usable, bore 74.8 mm (70.2 over 159 mm)
-    booster           416.3 mm tube ->  404.3 mm usable, bore 74.8 mm (70.2 over 79 mm)
+    booster           420.3 mm tube ->  408.3 mm usable, bore 74.8 mm (70.2 over 79 mm)
 
   The nav bay gains 12 mm of length (one bulkhead, not two -- the
   forward closure belongs to the nose module) and loses 3.6 mm of sled width to
@@ -149,12 +149,12 @@ THE NOSE AS A SWAPPABLE MODULE -- and what a future payload may weigh
 
     nose payload   SM min   SM max   verdict
   --------------------------------------------------
-            0 g     2.18     2.66   ok
-           50 g     2.24     2.72   ok
-          105 g     2.30     2.77   ok  <- instrumentation
-          200 g     2.39     2.87   ok
-          300 g     2.49     2.97   ok
-          500 g     2.68     3.16   SM over 3.0 -- over-stable
+            0 g     1.97     2.34   ok
+           50 g     2.02     2.40   ok
+          105 g     2.07     2.45   ok  <- instrumentation
+          200 g     2.17     2.54   ok
+          300 g     2.26     2.64   ok
+          500 g     2.44     2.82   SM over 3.0 -- over-stable
 
   SO: ANYTHING UP TO ABOUT 300 g GOES IN WITH NO OTHER CHANGE, and past that the
   vehicle turns over-stable rather than unstable -- it weathercocks and gives up

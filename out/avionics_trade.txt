@@ -59,23 +59,23 @@ WHAT THE BOARD HAS TO DO -- derived from this vehicle, not from a tutorial
 ============================================================================================
 
   GYRO FULL SCALE: at least +/-2000 deg/s, AND the roll command capped
-      why    steady roll rate is LINEAR in deflection: 578 deg/s at the 2 deg roll cap (29% of a +/-2000 dps part) but 2313 deg/s at the 8 deg deflection limit (116% -- SATURATED). Roll acceleration is 44671 deg/s^2
+      why    steady roll rate is LINEAR in deflection: 566 deg/s at the 2 deg roll cap (28% of a +/-2000 dps part) but 2602 deg/s at the 9 deg deflection limit (130% -- SATURATED). Roll acceleration is 127753 deg/s^2
       slack  TIGHT, and D8 found this line had been quoting the wrong deflection: 1783 deg/s is the 6 deg figure and it was printed under an 8 deg heading, which put the vehicle at a comfortable-looking 89% of full scale when the deflection limit actually saturates the part. THE ROLL CAP IS WHAT KEEPS THE GYRO IN RANGE -- it is a sensing requirement, not only a control one. A +/-1000 dps IMU is out at any deflection. See design/estimation.py
 
   IMU OUTPUT DATA RATE: at least 1000 Hz
-      why    first-order quaternion propagation rotates by 2*atan(w*dt/2), not w*dt, and the shortfall is cubic in the step: at 100 Hz and 2313 deg/s that is 30.7 deg/s of attitude drift with a PERFECT gyro, against 0.31 deg/s at 1000 Hz
-      slack  TIGHT, and it is NOT the control loop rate below. A board specified to the 85 Hz loop rate would sample the IMU ten times too slowly and the arithmetic would lead every sensor error term combined. It sets the SPI clock and the DMA, so it is fixed at layout
+      why    first-order quaternion propagation rotates by 2*atan(w*dt/2), not w*dt, and the shortfall is cubic in the step: at 100 Hz and 2602 deg/s that is 43.4 deg/s of attitude drift with a PERFECT gyro, against 0.45 deg/s at 1000 Hz
+      slack  TIGHT, and it is NOT the control loop rate below. A board specified to the 71 Hz loop rate would sample the IMU ten times too slowly and the arithmetic would lead every sensor error term combined. It sets the SPI clock and the DMA, so it is fixed at layout
 
   MAGNETOMETER: required, 3-axis, on the board
       why    roll angle is unobservable without one: specific force is invariant under rotation about the axis it lies along, so the accelerometer cannot see roll, and the GNSS velocity vector fixes where the nose points rather than how the vehicle is clocked about it. L1 -- hold roll angle -- is the MINIMUM success criterion (docs/00 section 1.1)
       slack  about $5 and one I2C address before layout, and unbuildable after. docs/01 step 4.2 already assumed a magnetometer; the board D7 selected did not have one, and nothing had checked. Keep it away from the servo bus and the battery leads
 
   ACCELEROMETER FULL SCALE: at least +/-16 g
-      why    peak axial is 8.1 g, and motor ignition and ejection are transients on top of that
+      why    peak axial is 6.3 g, and motor ignition and ejection are transients on top of that
       slack  comfortable at +/-16, and docs/02 already picked the motor partly to keep this under a clipping limit
 
-  CONTROL LOOP RATE: at least 85 Hz
-      why    pitch mode is 4.24 Hz and a digital loop wants 20x the mode it is closing
+  CONTROL LOOP RATE: at least 71 Hz
+      why    pitch mode is 3.53 Hz and a digital loop wants 20x the mode it is closing
       slack  trivial for any STM32; an F405 at 168 MHz is three orders of margin
 
   SERVO DRIVE: 4 channels, 333 Hz update
@@ -83,7 +83,7 @@ WHAT THE BOARD HAS TO DO -- derived from this vehicle, not from a tutorial
       slack  needs 4 timer channels, which is nothing on an F4 -- but they must be on a SEPARATE SUPPLY from the IMU (docs/01, 'things that will bite you')
 
   LOGGING: at least 100 Hz for 150 s
-      why    apogee at 17 s and the usable control window is 11.5 s; the whole flight to landing is about 120 s
+      why    apogee at 15 s and the usable control window is 9.5 s; the whole flight to landing is about 120 s
       slack  onboard flash is enough; an SD socket is easier to get data off
 
   DEPLOYMENT: NOT on this board
@@ -101,18 +101,18 @@ THE ONE THAT IS TIGHT -- and D8 found it had been quoted at the wrong deflection
 
     deflection    roll rate   of +/-2000 dps
   --------------------------------------------
-          2 deg       578 deg/s            29%   roll cap
-          6 deg      1735 deg/s            87%   the old default
-          8 deg      2313 deg/s           116%   deflection limit  SATURATED
+          2 deg       566 deg/s            28%   roll cap
+          6 deg      1697 deg/s            85%   the old default
+          9 deg      2602 deg/s           130%   deflection limit  SATURATED
 
-  Roll acceleration is 44671 deg/s^2.
+  Roll acceleration is 127753 deg/s^2.
 
   **A saturated rate gyro in a roll loop is not a degraded measurement, it is a
   wrong one**, and the controller cannot tell. What changed with the arithmetic is
   which way out is optional:
 
-    1. CAP THE ROLL COMMAND -- NOT OPTIONAL. At 2 deg the rate is 578 deg/s, 29% of full
-       scale; at the 8 deg deflection limit it is 2313 deg/s and a +/-2000 dps part is
+    1. CAP THE ROLL COMMAND -- NOT OPTIONAL. At 2 deg the rate is 566 deg/s, 28% of full
+       scale; at the 9 deg deflection limit it is 2602 deg/s and a +/-2000 dps part is
        out of range. The cap is what keeps the gyro in range, so it is a SENSING
        requirement and not only a control one -- and a fault that runs the canards
        to the stops takes the attitude estimate with it.
