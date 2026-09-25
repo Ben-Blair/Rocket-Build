@@ -166,6 +166,21 @@ the cable bosses sit. Regenerate with `python scripts/baseline.py`.
 Step 4 scope. **D7 and D8 are both closed** (docs/06, docs/07), so the sensor set is
 settled even though most envelopes are still estimates.
 
+> **THE CUSTOM BOARD'S LINE BELOW IS SUPERSEDED BY `14-flight-computer-bom.md`
+> (correction 64), WHICH IS PART-BY-PART AND DERIVED.** Two corrections to the table as it
+> stands, both of which this table's own format hid:
+>
+> - **The ~$400 is not one number.** It is ~$95 of chips and passives, ~$30 of 4-layer PCB
+>   and either hand assembly or ~$120 of low-volume PCBA — **$228 hand-built, $348 with
+>   PCBA**, and the split matters because the silicon is FPV-cheap and the process is not.
+> - **The "IMU daughterboard ~$30" and "GNSS receiver + antenna ~$40" lines double-count.**
+>   On a custom board those parts *are* the board: ICM-42688-P is $8 and MAX-M10S is $30, and
+>   both are inside the figure above rather than beside it.
+>
+> **The servo power BEC is not needed** — the KST X08 Plus is rated DC 3.8–8.4 V and the pack
+> is 2S, so the servos run directly off the battery. Reported, not adopted: it is 25 g and a
+> line item off a stack that is already checked, so it is a decision, not a correction.
+
 | Item | Qty | Mass | Price | |
 |---|---|---|---|---|
 | Dual-deploy altimeter — **PerfectFlite StratoLoggerCF** | 1 | **0.011 kg** | ~$70 | 50.8 × 21.3 × 12.7 mm, 20 Hz logging. **Fires the charges; independent of the flight computer in every stage** |

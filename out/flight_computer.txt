@@ -1,0 +1,153 @@
+
+============================================================================================
+STAGE 2 FLIGHT COMPUTER -- what to order, and what it has to survive
+============================================================================================
+  evaluated at deflection 9.2 deg, roll cap 2.0 deg
+  apogee 972 m at 14.7 s, peak axial 6.3 g, control window 9.5 s
+
+============================================================================================
+THE GYRO QUESTION docs/06 LEFT OPEN -- closed, by dropping the requirement
+============================================================================================
+  selected part           ICM-42688-P, +/-2000 dps
+  roll rate at the cap        566 deg/s   28.3% of full scale   (3.5x margin)
+  roll rate uncapped         2602 deg/s  130.1% -- SATURATED, and this is a FAULT condition, not a commanded one
+  required IMU rate          1000 Hz against 32000 Hz available
+  accel full scale             16 g against a 6.3 g peak (2.5x)
+
+  The +/-4000 dps option is REAL and is rejected on the numbers, not for want of a
+  part -- see design/flight_computer.GYRO_ALTERNATE_ICM45686:
+    ICM-45686 gyro (+/-4000 dps alternative)
+    range 4000 dps, ARW 3.8 mdps/sqrt(Hz) against the 42688's 2.8
+    Saturation is DETECTABLE and is wired to the R12 latch instead of bought around.
+
+============================================================================================
+BOM -- one board, one spin
+============================================================================================
+  item                         MPN                        pkg/iface                  qty     USD
+  ------------------------------------------------------------------------------------------
+  MCU                          STM32F405RGT6              LQFP64                       1   10.00
+  IMU                          ICM-42688-P                LGA-14, 2.5 x 3.0 mm         1    8.00
+  magnetometer                 MMC5983MA                  LGA-16, 3.0 x 3.0 mm         1    5.00
+  barometer                    MS5611-01BA03              QFN-8, 5.0 x 3.0 mm          1   10.00
+  GNSS receiver                MAX-M10S                   LCC, 9.7 x 10.1 mm           1   30.00
+  log flash                    W25Q128JVSIQ               SOIC-8 208 mil               1    2.00
+  3.3 V regulator              TPS62162DSGT               SON-8                        1    2.50
+  GNSS antenna                 chip or patch, u.FL        25 x 25 mm patch typ.        1    8.00  (est)
+  passives, connectors, LEDs, SWD header assorted                   0402/0603                    1   20.00  (est)
+  PCB, 4-layer                 70 x 45 mm, 1.6 mm, ENIG   4L                           1   30.00  (est)
+  ------------------------------------------------------------------------------------------
+  bought whole, off-board     
+  deployment altimeter         PerfectFlite StratoLoggerCF 50.8 x 21.3 x 12.7 mm        1   70.00
+  battery                      2S LiPo 1500 mAh           70 x 35 x 15 mm              1   20.00  (est)
+  spares                      
+  spare IMU                    ICM-42688-P                LGA-14                       1    8.00
+  spare magnetometer           MMC5983MA                  LGA-16                       1    5.00
+
+  optional, not flight hardware: NUCLEO-F446RE (or WeAct F405 'Blackpill') at 15.00
+
+  parts (chips, passives, connectors)     95.50
+  fab (4-layer PCB)                       30.00
+  bought whole (altimeter + battery)      90.00
+  spares                                  13.00
+  TOTAL, hand-assembled                  228.50
+  TOTAL, with low-volume PCBA            348.50
+  The chips are FPV-class cheap and the pain is fab. docs/04 section 5 carries a
+  flat $400 for 'custom STM32F405 board'; that is the assembled-board number and it
+  hides a 3:1 split between silicon and process.
+
+============================================================================================
+POWER -- the budget this project did not have
+============================================================================================
+  logic rail 3.3 V          112.4 mA  (0.37 W), so 59 mA off the 2S pack at 85% buck
+      MCU                     86.00 mA
+      IMU                      0.88 mA
+      magnetometer             1.00 mA
+      barometer                1.00 mA
+      GNSS receiver            8.50 mA
+      log flash               15.00 mA
+
+  servos                  4 x 7.4 V direct off the pack -- the KST X08 Plus is rated 3.8-8.4 V, so THERE IS NO BEC
+      peak hinge moment   0.1022 N m (1.04 kgf.cm) per panel
+      per servo, active     0.26 A   (read off the datasheet curve)
+      all four, active      1.03 A
+      all four, stalled     4.00 A
+      all four, idle       0.040 A   (APPROX -- not on the datasheet)
+
+  pad, 60 min armed        0.732 Wh
+  flight, 209 s to landing   0.062 Wh  (servos work for 9.5 s of it)
+  total                     0.794 Wh
+  pack                     11.100 Wh, 8.88 Wh usable at 80% depth
+  MARGIN                     11.2x
+
+  servo torque margin        2.03x on STALL torque
+  servo duty margin          1.15x on the datasheet's own CONTINUOUS band (1.2 kgf.cm)
+  peak pack current          4.06 A -- what sizes the C-rating, the battery lead, and the conductors through the potted pass-through
+
+============================================================================================
+LOGGING -- 'onboard flash is enough' was never checked, and it is not
+============================================================================================
+  channel                                           B/sample       Hz        B/s
+  ------------------------------------------------------------------------------------------
+  raw gyro + accel, 6 x int16 + timestamp                 16     1000      16000
+  magnetometer, 3 x int16 + timestamp                     10      100       1000
+  baro pressure + temperature, 2 x int32 + ts             12       50        600
+  GNSS position, velocity, fix quality                    36       10        360
+  estimator state: quaternion, roll, rate                 24       71       1695
+  control: 4 servo commands, phase, flags                 12       71        847
+  ------------------------------------------------------------------------------------------
+  total                                                                    20502
+
+  window logged           239 s (pad reference + boost + coast + descent)
+      that window is a deliberate UPPER BOUND -- the whole descent is priced at the main's 5 m/s
+      when the drogue leg is much faster. Against the requirement's own 150 s window it is 3.08 MB, still 3.9x short. The conclusion does not depend on which window is used.
+  per flight              4.90 MB
+  STM32F405 flash         1.05 MB total, 0.79 MB after a 256 KB firmware allowance
+      margin              0.16x -- 6.2x SHORT
+  W25Q128JVSIQ            17 MB, margin 3.4x, 3.4 flights
+
+  The IMU line is 78% of the rate and it is the one that cannot be cut: logging raw
+  gyro and accel at the PROPAGATION rate is what turns GV-2 into a measurement of
+  Cm_delta and Cl_delta. At the loop rate it would fit on-chip and the flight the
+  thesis rests on would stop producing the data it exists to produce.
+
+============================================================================================
+BOARD ENVELOPE -- against the sled, which is the arbiter
+============================================================================================
+  board target            70 x 45 x 12 mm  (a LAYOUT TARGET, not a measurement)
+  sled plate              109.04 x 59.41 mm
+  usable height per face  18.70 mm against a 9.6 mm stack (1.6 mm PCB + 8 mm tallest)
+  margins                 +39.04 mm long, +14.41 mm wide, +9.10 mm tall
+  fits                    YES
+  Do NOT grow this board. docs/06 records that the sled already widened to 0.846 of
+  the bore to place the 80 g loom, and past that width comes out of headroom.
+
+============================================================================================
+BUS MAP -- SPI for everything flight-critical, no I2C
+============================================================================================
+  SPI1  (up to 24 MHz)   CS1  ICM-42688-P      burst read, DMA, 1 kHz+
+        dedicated to the IMU so its transfer never queues behind anything
+  SPI2                   CS2  MMC5983MA        magnetometer, 100 Hz
+                         CS3  MS5611           barometer, 50 Hz
+  SPI3                   CS4  W25Q128JV        log flash, write-mostly
+  USART1                      MAX-M10S         GNSS, 10 Hz, UBX binary
+  USART2                      debug / console  bring-up only
+  TIM4 CH1-4             PB6 PB7 PB8 PB9       4x servo PWM at 333 Hz (1520 us)
+  SWD                         PA13 PA14        bring-up and flashing
+
+  KST X08 Plus signal is 3.3-5.0 V HIGH, so the F405's 3.3 V timer outputs drive it
+  directly with no level shift. Its 1520 us / 333 Hz frame is the datasheet's own,
+  which is where avionics.board_requirements()'s 333 Hz figure independently lands.
+
+============================================================================================
+VERDICT
+============================================================================================
+  note      battery energy margin 11.2x -- the pack is sized by CONVENTION, not by energy. 0.73 Wh of the 0.79 Wh is the 60 min on the pad and only 0.062 Wh is the flight
+  note      peak pack current 4.1 A (four servos stalled) -- this, not capacity, is what sizes the pack's C-rating, the battery lead and the 14 conductors through the potted pass-through
+  note      servo duty: 2.03x on STALL torque but only 1.15x on the datasheet's own CONTINUOUS band (1.2 kgf.cm) -- a margin the torque check cannot see, read off a curve and worth measuring on a real part
+  note      storage: 4.90 MB per flight against 0.79 MB usable on the F405 -- 6.2x SHORT. External flash is not a convenience
+  note      external flash 17 MB holds 3.4 flights
+  note      board fits the sled with 14.4 mm across and 9.1 mm of headroom over a 9.6 mm stack
+  note      IMU rate: 1000 Hz required against 32 kHz available, 32x
+  note      gyro: 566 deg/s at the roll cap is 28% of +/-2000 dps. Uncapped it is 2602 deg/s and SATURATES -- which is a fault condition, is detectable, and is wired to the R12 latch rather than bought around
+
+  OK

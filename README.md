@@ -64,6 +64,7 @@ design/
                   frozen baseline airframe every script imports
   control.py      canard pitch authority, roll authority, wake interference, crossrange
   estimation.py   D8: observability per flight phase, attitude error budget, sensor specs
+  flight_computer.py  the Stage 2 board: BOM, power budget, log budget, board envelope
   flutter.py      fin flutter margin
   geometry.py     nose / tube / fin set definitions, Barrowman CP geometry
   hinge.py        the hinge as a load path: shaft, bearing, coupling, root joint
@@ -99,6 +100,7 @@ scripts/
   place_*.py            place built parts into Onshape Assembly 1
   recovery_study.py     descent, drift and the recovery footprint constraint
   robustness.py         Monte Carlo on static margin; sets the aft fin size
+  flight_computer_report.py  the Stage 2 board's BOM, power, logging and envelope
   seal_report.py        the aft gas seal argument and check
   sil_demo.py           software-in-the-loop: closed-loop roll hold, bank-to-turn,
                         R12 failsafe -- synthetic sensors, no hardware
@@ -119,6 +121,8 @@ docs/
                                 hinge bearing is what stops it. PROPOSAL, not frozen
   13-sil-demo.md                software-in-the-loop closed loop: how to run it, what
                                 it proves, what it does not
+  14-flight-computer-bom.md     the Stage 2 board, part by part: what to order, the
+                                power and log budgets, and what was rejected
 ```
 
 ## How this fits with OpenRocket and RocketPy

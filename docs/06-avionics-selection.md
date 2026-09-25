@@ -163,7 +163,45 @@ fully instrumented vehicle.
 
 ## Still open
 
-- **SPECIFY A GYRO WITH SELECTABLE FULL SCALE TO ±4000 dps — AND RUN IT AT ±2000**
+- ~~**SPECIFY A GYRO WITH SELECTABLE FULL SCALE TO ±4000 dps**~~ **CLOSED, AND THE
+  REQUIREMENT IS DROPPED — `14-flight-computer-bom.md`, correction 64.** The bullet below is
+  kept as written because its reasoning is still right; only its conclusion is reversed.
+  Three things settled it:
+  1. The option is **real** — TDK's ICM-45686 does ±4000 dps and ±32 g for about the same
+     money — so this is a decision against hardware, not a shortage. `GYRO_WIDE`, the
+     `measured=False` placeholder everything below was checked against, is deleted;
+     `estimation.GYRO_ICM45686` replaces it.
+  2. The range is **unusable while the roll cap holds**, and the bullet below is what proves
+     it. The cap is R13 and it is locked.
+  3. The one condition that saturates ±2000 dps is a **fault** — 2602 °/s at the deflection
+     limit, which R13 forbids as a command — and **a gyro pegged at full scale is
+     detectable.** Wiring FS saturation into the R12 latch turns that scenario into a
+     detected fault that centres the canards inside 0.5 s. That is better than measuring the
+     fault accurately while flying it, and it is free.
+
+  Also closed on the way past: the bullet below ends "the number that would decide this does
+  not exist yet — `attitude_error_budget()` is gyro-only." **Correction 59 built it.** Aided,
+  the 7.94°/62.89° pair becomes 0.08°/0.12°, and what limits roll angle is the airframe's own
+  magnetic cleanliness, not the sensor.
+
+- **THE NUMBERS IN THE REQUIREMENTS TABLE ABOVE ARE PRE-CORRECTION-63 AND ARE STALE.**
+  They are left in place because the table's *arguments* are unchanged and rewriting a
+  document to match a regenerated number is how this project loses the record of what it
+  used to believe. Current values, from `python scripts/flight_computer_report.py`:
+
+  | table says | now | why it moved |
+  |---|---|---|
+  | 594 °/s at the 2° cap | **566 °/s** | corrections 60–63 |
+  | 2378 °/s at the 8° limit | **2602 °/s at the 9.2° limit** | R13's deflection cap moved |
+  | peak axial 8.3 g | **6.3 g vertical, 7.1 g horizontal** | correction 62's freeze |
+  | loop rate ≥ 86 Hz | **≥ 72 Hz** | pitch mode 4.30 → 3.6 Hz |
+  | drift 33.3 °/s at 100 Hz | **43.4 °/s** | it scales with roll rate, which grew |
+
+  The requirement that did NOT move is the IMU rate: still **≥ 1 kHz**, and it now passes its
+  own 0.5 °/s budget by only 11%, which is why `docs/14` buys a part that does 32 kHz.
+
+- **SUPERSEDED — the original bullet, kept for its reasoning.**
+  **SPECIFY A GYRO WITH SELECTABLE FULL SCALE TO ±4000 dps — AND RUN IT AT ±2000**
   (`docs/01` correction 58, which reverses correction 55). Way out 1 above — *"cap the roll
   command — not optional"* — is still the right answer, and way out 2 ("pick a wider part")
   does **not** let you lift the cap. Correction 55 claimed it did, on the saturation
@@ -217,3 +255,24 @@ fix available.
 
 Two things in this document are still the binding unknowns for that packing, and both are
 under your control: the **board outline**, and the **conductor count** the loom carries.
+
+---
+
+## What goes on the board — Sep 2026
+
+**`14-flight-computer-bom.md`**, `design/flight_computer.py`,
+`python scripts/flight_computer_report.py`. The board this document selected is specified to
+the point of an order: STM32F405RGT6, ICM-42688-P, MMC5983MA, MS5611, MAX-M10S, W25Q128JV,
+SPI for every flight-critical sensor and UART for the GNSS. **$228 hand-assembled, $348 with
+low-volume PCBA** — against the flat $400 `docs/04` §5 carries, which turns out to hide a 3:1
+split between silicon and fab.
+
+Three things it found that this document could not have:
+
+- **There is no BEC.** The KST X08 Plus is rated DC 3.8–8.4 V and the pack is 2S, so the
+  servos run directly off the battery. Reported, not adopted — it is 25 g and a line item,
+  and it changes a frozen stack.
+- **Servo torque margin is 2.03× on stall and 1.15× on the datasheet's own CONTINUOUS-duty
+  band.** Two different failure modes, and this project had only ever looked at the first.
+- **"Onboard flash is enough" was wrong by 6×.** 4.9 MB a flight against 0.79 MB usable, and
+  the channel that causes it is the one GV-2 exists to record.

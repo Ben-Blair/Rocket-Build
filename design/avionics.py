@@ -446,14 +446,24 @@ MAG_BREAKOUT = Component("magnetometer breakout", 0.005, 0.0254, 0.0178, 0.005,
 GNSS_MODULE = Component("GNSS module + patch antenna", 0.030, 0.030, 0.030, 0.010,
                         note="wants sky view; the patch antenna sets the footprint")
 BATTERY_2S = Component("battery, 2S 1500 mAh", 0.090, 0.070, 0.035, 0.015)
-BEC = Component("servo power BEC", 0.025, 0.030, 0.020, 0.010)
+# REPORTED, NOT ADOPTED (docs/14). The KST X08 Plus V6.0 is rated DC 3.8-8.4 V and the pack
+# is 2S, so the servos run DIRECTLY off the battery and this part has no job: "separate supply
+# from the IMU" is satisfied by a separate feed and filter off a star point at the pack, which
+# is a layout rule rather than a component. Deleting it is 25 g and one line item off a nav
+# bay that configure.py already flags as 114 g heavy -- but it changes the frozen stack and
+# the packing that was checked against it, so it is Ben's call and not this file's.
+BEC = Component("servo power BEC", 0.025, 0.030, 0.020, 0.010,
+                note="NOT NEEDED -- see docs/14. 2S direct-drives an 8.4 V-rated servo")
 STM32_BOARD = Component(
     "custom STM32 guidance board", 0.045, 0.070, 0.045, 0.012,
     note="ONE board: STM32F405, IMU, MAGNETOMETER, baro, GNSS, flash, 4x servo drive. The "
          "magnetometer is D8's doing and it is the whole reason D8 had to close before the "
          "schematic -- see docs/07. The envelope is a "
          "LAYOUT TARGET, not a measurement -- it is the only line here a design decision "
-         "can shrink, and the only one whose accuracy is under Ben's control")
+         "can shrink, and the only one whose accuracy is under Ben's control. "
+         "docs/14 now specifies what goes on it: STM32F405RGT6, ICM-42688-P, MMC5983MA, "
+         "MS5611, MAX-M10S, W25Q128JV, all SPI but the GNSS. The 70 x 45 still fits the "
+         "sled with 14.4 mm across and 9.1 mm of headroom -- DO NOT GROW IT")
 
 
 @dataclass(frozen=True)
@@ -541,7 +551,12 @@ def board_requirements(ev) -> list[BoardRequirement]:
             "vehicle at a comfortable-looking 89% of full scale when the deflection limit "
             "actually saturates the part. THE ROLL CAP IS WHAT KEEPS THE GYRO IN RANGE -- it "
             "is a sensing requirement, not only a control one. A +/-1000 dps IMU is out at "
-            "any deflection. See design/estimation.py"),
+            "any deflection. See design/estimation.py. "
+            "THE +/-4000 dps PART OF THIS IS NOW DROPPED (docs/14): the option is real "
+            "(ICM-45686) and the range is unusable while the cap holds, correction 58 having "
+            "already shown a wider part flown uncapped is ~8x worse. The one condition that "
+            "saturates +/-2000 is a FAULT, and a pegged gyro is detectable -- it is wired to "
+            "the R12 latch instead of bought around"),
         BoardRequirement(
             "IMU output data rate", f"at least {imu_hz:.0f} Hz",
             f"first-order quaternion propagation rotates by 2*atan(w*dt/2), not w*dt, and "
@@ -584,7 +599,26 @@ def board_requirements(ev) -> list[BoardRequirement]:
             "logging", "at least 100 Hz for 150 s",
             f"apogee at {f.apogee_time:.0f} s and the usable control window is "
             f"{ev.control_seconds:.1f} s; the whole flight to landing is about 120 s",
-            "onboard flash is enough; an SD socket is easier to get data off"),
+            "NOT TIGHT, BUT THE SLACK NOTE HERE WAS WRONG. It used to read 'onboard flash is "
+            "enough'; written out as a channel list it is 20.5 kB/s and 4.9 MB a flight "
+            "against 0.79 MB usable on an F405, which is 6.2x SHORT. The driver is raw IMU "
+            "at the 1 kHz PROPAGATION rate -- 78% of the total -- and that channel is what "
+            "makes GV-2 a measurement of Cm_delta rather than an anecdote, so it cannot be "
+            "cut to fit. External flash, and design/flight_computer.py sizes it"),
+        BoardRequirement(
+            "power", "2S direct to the servos, 3.3 V buck for logic",
+            "the KST X08 Plus is rated DC 3.8-8.4 V, so a 2S pack drives it with NO BEC; "
+            "logic is 112 mA at 3.3 V and four servos are 1.03 A active, 4.0 A stalled",
+            "CAPACITY IS NOT THE CONSTRAINT and nothing in this project had checked: the "
+            "flight costs 0.06 Wh of 8.88 usable and 92% of the demand is an hour armed on "
+            "the pad. PEAK CURRENT is what sizes the pack's C-rating, the battery lead and "
+            "the 14 conductors through access_bulkhead's potted pass-through. See docs/14"),
+        BoardRequirement(
+            "storage", "external flash, soldered",
+            "4.9 MB per flight at the rates above; the F405 has 1 MB shared with firmware",
+            "a microSD socket is an ejection-shock liability for convenience a USB dump "
+            "already provides, and every COTS altimeter this project trusts uses soldered "
+            "flash. The SDIO pins stay free if that is ever revisited"),
         BoardRequirement(
             "deployment", "NOT on this board",
             "an independent commercial altimeter fires the charges (docs/04 section 5), "

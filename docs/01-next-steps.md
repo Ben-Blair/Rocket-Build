@@ -4,6 +4,49 @@
 
 Read this first if you are picking the project back up.
 
+- **THE STAGE 2 FLIGHT COMPUTER CAN BE ORDERED NOW, AND SPECIFYING IT FOUND THREE THINGS
+  (Sep 2026, correction 64).** `docs/14-flight-computer-bom.md`,
+  `design/flight_computer.py`, `python scripts/flight_computer_report.py`, verdict in
+  `baseline.py`. STM32F405RGT6 + ICM-42688-P + MMC5983MA + MS5611 + MAX-M10S + W25Q128JV,
+  SPI for every flight-critical sensor, UART for the GNSS, 4 × servo PWM on TIM4 at 333 Hz.
+  **$228 hand-assembled, $348 with low-volume PCBA** against the flat $400 docs/04 carried —
+  the chips are FPV-class cheap and the cost is fab, roughly 3:1. Ejection stays on the
+  independent StratoLoggerCF; there is no pyro on this board. **Nothing about the airframe
+  moves.** The three findings, none of which was visible from docs/06 or docs/07:
+  - **THE ±4000 dps GYRO REQUIREMENT IS DROPPED, NOT BOUGHT.** docs/06 had asked for it, and
+    the thing it was checked against was `estimation.GYRO_WIDE` — `measured=False`, no part
+    number — which is this project's own rule broken inside the file that states it. The
+    option turns out to be **real** (TDK ICM-45686, ±4000 dps and ±32 g, same money), so the
+    rejection is now against hardware: the range is **unusable while R13's 2° roll cap
+    holds** (566 °/s is 28% of ±2000), correction 58 already showed a wider part flown
+    uncapped is ~8× worse, and **the only thing that saturates ±2000 is a fault.** A gyro
+    pegged at full scale is DETECTABLE, so it is wired to the R12 latch instead — which
+    turns the one scenario the range was for into a detected fault that centres the canards
+    inside 0.5 s, for free. `GYRO_WIDE` is deleted and `GYRO_ICM45686` replaces it.
+  - **THE SERVO TORQUE MARGIN IS 2.03x ON STALL AND 1.15x ON THE DATASHEET'S OWN CONTINUOUS
+    BAND** — two different failure modes, and this project had only ever checked the first.
+    The KST X08 Plus datasheet's performance curve carries an operation-model banding
+    (continuous only to ~1.2 kgf.cm; the peak hinge moment is 1.04) that no spec table would
+    have shown. Nothing fails — the 9.5 s control window is inside the 10 s short-time
+    rating — but it is a 1.15x margin read off a chart, and it belongs on Step 5's actuation
+    test with a current probe on it. Priced at the HORIZONTAL flight's q, which is R15's
+    primary mode; at the sweep's own 25° search elevation it is **2.001x**, on the
+    requirement rather than above it.
+  - **"ONBOARD FLASH IS ENOUGH" WAS WRONG BY 6x, and the channel that causes it is the one
+    GV-2 exists to record.** Written out as a channel list the log is 20.5 kB/s and
+    **4.90 MB a flight against 0.79 MB usable on an F405 — 6.2x short**, still 3.9x short
+    against the requirement's own 150 s window. Raw IMU at the 1 kHz PROPAGATION rate is
+    **78%** of it, and dropping that channel to the 71 Hz loop rate would fit on-chip and
+    stop GV-2 measuring `Cm_delta` and `Cl_delta`. So: W25Q128JV, 16 MiB, SOLDERED — every
+    COTS altimeter this project trusts uses soldered flash and a microSD socket is an
+    ejection-shock liability for convenience USB already provides.
+  - Two smaller ones. **There is no BEC** — the KST is rated DC 3.8-8.4 V and the pack is 2S,
+    so the servos run direct; 25 g, REPORTED NOT ADOPTED because it changes a checked stack.
+    And **capacity was never the battery's constraint**: the flight costs 0.06 Wh of 8.88
+    usable, 92% of the demand is an hour armed on the pad, and what actually sizes the pack
+    is the **4.1 A peak** with four servos stalled — which is also the number the 14
+    conductors through the potted pass-through have never been sized against.
+
 - **THE CANARDS ARE POINTED DELTAS NOW -- 88.6 root / 8.9 tip, 42.2 deg LE (correction 63,
   docs/12 section 13).** A COSMETIC change, asked for as one and priced as one: 9.92 ->
   9.76 deg/s, **-1.63%** against a 3% budget. **A canard outline is NOT free on this

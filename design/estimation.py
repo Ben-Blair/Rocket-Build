@@ -180,12 +180,27 @@ GYRO_ICM42688 = SensorSpec(
     note="TDK datasheet: +/-2000 dps max FS, 0.0028 deg/sqrt(s) ARW, +/-0.5% SF tolerance, "
          "32 kHz max ODR. The 0.05 deg/s/g g-sensitivity is a typical figure, not a spec "
          "limit -- it is the one term here that is an estimate")
-GYRO_WIDE = SensorSpec(
-    "wide-range gyro (+/-4000 dps class)", "gyro",
-    full_scale_deg_s=4000.0, bias_deg_s=0.03, bias_uncal_deg_s=1.0,
-    arw_deg_rt_s=0.005, scale_factor=0.01, g_sensitivity_deg_s_g=0.1,
-    note="ESTIMATED. Wider parts exist and trade noise and scale-factor tolerance for range; "
-         "listed to price the 'just buy more range' answer to the saturation problem")
+# WAS `GYRO_WIDE`, AN ESTIMATE, AND THAT WAS THIS FILE'S OWN RULE BROKEN. Correction 58
+# concluded "specify a gyro with selectable FS to +/-4000 dps", and the thing that conclusion
+# was checked against was a SensorSpec with `measured=False` and no part number -- which is
+# exactly the failure the comment above this block warns about: a requirement you cannot buy
+# a part against is not a requirement. docs/06 then carried it as a purchasing instruction
+# for a month.
+#
+# It is a real part now. The +/-4000 dps option EXISTS and is buyable, so the decision not to
+# take it is made against hardware -- see `design/flight_computer.py`, which drops the
+# +/-4000 requirement because the roll cap makes the range unusable, not because the part is
+# unavailable.
+GYRO_ICM45686 = SensorSpec(
+    "ICM-45686 gyro (+/-4000 dps alternative)", "gyro", measured=True,
+    full_scale_deg_s=4000.0, bias_deg_s=0.02, bias_uncal_deg_s=0.5,
+    arw_deg_rt_s=0.0038, scale_factor=0.005, g_sensitivity_deg_s_g=0.05,
+    note="TDK DS-000577: +/-4000 dps AND +/-32 g, 3.8 mdps/sqrt(Hz) rate noise, 0.42 mA "
+         "six-axis low-noise. NOT SELECTED. The SCALE FACTOR AND G-SENSITIVITY HERE ARE "
+         "ASSUMED EQUAL TO THE ICM-42688-P's AND WERE NOT READ OFF THE DATASHEET -- scale "
+         "factor is the dominant term in attitude_error_budget(), so this spec is only good "
+         "enough to reject the part on range-usability grounds. If the roll cap is ever "
+         "revisited, read the real number before quoting anything computed from this")
 
 ACCEL_16G = SensorSpec(
     "+/-16 g accelerometer", "accel", measured=True, accel_full_scale_g=16.0,
@@ -212,7 +227,7 @@ GNSS_M10 = SensorSpec(
          "UART and is an ESTIMATE; it is the term the position lag is most sensitive to")
 
 SENSORS: list[SensorSpec] = [
-    GYRO_ICM42688, GYRO_WIDE, ACCEL_16G, MAG_MMC5983, BARO_MS5611, GNSS_M10]
+    GYRO_ICM42688, GYRO_ICM45686, ACCEL_16G, MAG_MMC5983, BARO_MS5611, GNSS_M10]
 
 
 # ---------------------------------------------------------------------------------------
