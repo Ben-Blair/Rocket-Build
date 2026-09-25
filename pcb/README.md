@@ -736,27 +736,37 @@ layout freezes" expired for the active-antenna option.
   power-save equations, the LP2985 from its ripple-rejection figures; every assumption is a
   named constant at the top of the script. Trust ratios and orders of magnitude, not µV.
 
+### Pre-fab audit (2026-09-24, third pass)
+
+- **Pack voltage to the MCU.** Nothing could read the 2S pack. `R34` 100k / `R35` 33k /
+  `C33` 100 nF into **PA0** (ADC123_IN0): 8.4 V reads 2.08 V, full scale 13.3 V. `R34` sits
+  at `FB1` so no VBATT copper crosses the board; the divided, filtered node does.
+- **BOM re-checked on LCSC product pages**: 32 of 39 lines confirmed with stock. `SW1` moved
+  to TL3342F160QG (C2886898, 2,200 in stock) — the reel part was out.
+- Pins re-read against datasheets where a wrong tie is a dead part: MS5611 PS = GND (SPI).
+- `R8` pinned in `MANUAL_FIXUP` — adding parts at the MCU re-rolled `relax()` and threw it
+  20.8 mm from U4.
+
 ## What is not done
 
-**The board is routed and has a fab package. Before ordering:**
+**Routed, simulated, DRC-clean, fab package built. What is left before and after ordering:**
 
-0. ~~Decide the servo-return grounding~~ **Done** — star ground via `SERVO_GND`/`NT1`;
-   see "IMU LDO, GNSS via fence, and simulation", item 3.
+1. **At order time** (`fab/ORDERING.md`): `U4` ICM-42688-P and `L1` are out of stock at LCSC
+   (global sourcing / any 2.2 µH 1210 with Isat ≥ 1.2 A); confirm 7 flagged lines in JLC's
+   BOM tool; **check every rotation in JLC's placement preview**; select the
+   **JLC04161H-7628** stackup.
+2. **Height is a mechanical question, not a PCB one.** The four vertical servo headers are
+   8.5 mm and a mated servo plug stands ~14-15 mm above the copper — inside the sled's
+   18.7 mm half-height per face, but over `docs/14`'s "≤ 8 mm tallest component" and the
+   12 mm envelope `avionics.STM32_BOARD` feeds the packing check. Options: accept and update
+   the envelope, right-angle headers (needs the header rows turned to exit an edge), or
+   solder the servo leads like the XT30 pigtail.
+3. **No firmware exists** (memory/`docs/01`: Step 4 is hardware-first). Bring-up needs at
+   least: clocks + SWD, each SPI device's WHO_AM_I, the ADC on PA0, TIM4 PWM, GNSS UART.
+4. **First-article checks the simulations cannot replace:** scope `+3V3` and `+3V3_IMU`
+   ripple; log IMU and magnetometer with the servos stalled vs idle (the star ground's real
+   test); verify `J1` polarity before the first pack.
+5. No 3D models for `J4`/`U8` (renders show bare pads) — cosmetic.
+6. The `.kicad_pcb` is KiCad-10-only format (20260206).
 
-1. **Two parts are out of stock at LCSC today**: `U4` ICM-42688-P (use JLC global
-   sourcing or consign) and `L1` (any 2.2 µH 1210 with Isat ≥ 1.2 A). `fab/ORDERING.md`.
-2. **Check every rotation in JLC's placement preview.** KiCad and JLC disagree on zero
-   orientation for some packages and nothing here can see JLC's library.
-3. **Select the JLC04161H-7628 stackup** when ordering — the RF and USB widths assume it.
-4. **18 LCSC numbers came from search results, not product pages** (listed in
-   `ORDERING.md`). JLC's BOM tool re-checks each line at upload.
-5. **Re-run `scripts/sled_report.py`** — the outline did not change, but the tallest part
-   did not either; worth confirming the board still clears the sled with the XT30 pigtail's
-   lead exit on the aft edge.
-6. **Order the pack with an XT30** (female, on the pack) — `docs/14`'s BOM line and
-   `design/flight_computer.py` now say XT30; a pack that ships with JST-GH needs
-   re-terminating.
-7. **No 3D models** for `J4` and `U8` (the renders show bare pads); cosmetic.
-8. **The `.kicad_pcb` is KiCad-10-only format** (20260206) — see "Opening it."
-
-Nothing here has been committed. Nothing here has been ordered.
+Committed on branch `flight-computer-pcb`. Nothing has been ordered.

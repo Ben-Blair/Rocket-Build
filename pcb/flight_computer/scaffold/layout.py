@@ -79,6 +79,8 @@ OVERRIDE_ANCHOR = {
     "C24": ("U5", "2"), "C25": ("U5", "13"),             # mag +3V3 (pins 2 & 13)
     # IMU LDO: without these C30 (VIN) would resolve to U1 -- VIN's other IC -- 30 mm away.
     "C30": ("U9", "1"), "C31": ("U9", "4"), "C32": ("U9", "5"), "R33": ("U9", "1"),
+    # pack-voltage divider: R35/C33 on the ADC pin; R34 is pinned at FB1 in MANUAL_FIXUP
+    "R35": ("U2", "14"), "C33": ("U2", "14"), "R34": ("FB1", "1"),
     "C26": ("U6", "1"),                                  # baro +3V3
     "C27": ("U7", "8"),                                  # flash +3V3
     "C28": ("U8", "6"), "C29": ("U8", "7"),               # GNSS +3V3
@@ -961,6 +963,12 @@ def main(pcb_path):
         # at the bottom straight into C30 pad 1 and U9 pin 1.  C27 (U7's +3V3 bypass) moves
         # 1 mm up-left out of C30's way, still 2.2 mm from U7 pin 8.
         "R33": (129.4, 101.6, -90), "C27": (127.3, 102.9, 0),
+        # R34, top of the pack-voltage divider, in the empty strip above FB1: pad 1 (VBATT)
+        # 1.8 mm from FB1 pad 1, pad 2 (VBAT_SENSE) pointing away into open board.
+        "R34": (117.7, 131.6, 90),
+        # R8 (IMU CS pull-up): adding R35/C33 at the MCU re-rolled relax() and sent it 20.8 mm
+        # away.  Pinned where it was, beside U4 pin 12 and 4 mm from U9's +3V3_IMU.
+        "R8": (137.5, 102.87, -90),
     }
     for ref, (x, y, rot) in MANUAL_FIXUP.items():
         fpmap[ref].SetOrientationDegrees(rot)

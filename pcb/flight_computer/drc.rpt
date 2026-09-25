@@ -1,5 +1,5 @@
 ** Drc report for flight_computer.kicad_pcb **
-** Created on 2026-09-24T22:29:07 **
+** Created on 2026-09-24T22:41:58 **
 ** Report includes: Errors, Warnings, Exclusions **
 
 ** Found 14 DRC violations **
@@ -13,36 +13,36 @@
     @(137.7000 mm, 143.3000 mm): Segment of J4 on F.Silkscreen
 [lib_footprint_mismatch]: Footprint 'PinHeader_1x03_P2.54mm_Vertical' does not match copy in library 'Connector_PinHeader_2.54mm'
     Local override; warning
-    @(103.5000 mm, 131.0000 mm): Footprint J9
+    @(103.5000 mm, 110.0000 mm): Footprint J6
 [lib_footprint_mismatch]: Footprint 'PinHeader_1x03_P2.54mm_Vertical' does not match copy in library 'Connector_PinHeader_2.54mm'
     Local override; warning
-    @(103.5000 mm, 110.0000 mm): Footprint J6
-[lib_footprint_mismatch]: Footprint 'SW_SPST_TL3342' does not match copy in library 'Button_Switch_SMD'
-    Local override; warning
-    @(158.5000 mm, 140.1500 mm): Footprint SW1
+    @(103.5000 mm, 124.0000 mm): Footprint J8
 [lib_footprint_mismatch]: Footprint 'Crystal_SMD_3225-4Pin_3.2x2.5mm' does not match copy in library 'Crystal'
     Local override; warning
     @(127.5000 mm, 117.5000 mm): Footprint Y1
-[lib_footprint_mismatch]: Footprint 'U.FL_Hirose_U.FL-R-SMT-1_Vertical' does not match copy in library 'Connector_Coaxial'
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x03_P2.54mm_Vertical' does not match copy in library 'Connector_PinHeader_2.54mm'
     Local override; warning
-    @(167.0800 mm, 129.3000 mm): Footprint J5
+    @(103.5000 mm, 131.0000 mm): Footprint J9
+[lib_footprint_mismatch]: Footprint 'SW_SPST_TL3342' does not match copy in library 'Button_Switch_SMD'
+    Local override; warning
+    @(158.5000 mm, 140.1500 mm): Footprint SW1
 [lib_footprint_mismatch]: Footprint 'PinHeader_1x04_P2.54mm_Vertical' does not match copy in library 'Connector_PinHeader_2.54mm'
     Local override; warning
     @(157.5000 mm, 133.7900 mm): Footprint J10
 [lib_footprint_mismatch]: Footprint 'PinHeader_1x03_P2.54mm_Vertical' does not match copy in library 'Connector_PinHeader_2.54mm'
     Local override; warning
-    @(103.5000 mm, 124.0000 mm): Footprint J8
-[lib_footprint_mismatch]: Footprint 'PinHeader_1x03_P2.54mm_Vertical' does not match copy in library 'Connector_PinHeader_2.54mm'
-    Local override; warning
     @(103.5000 mm, 117.0000 mm): Footprint J7
-[silk_over_copper]: Silkscreen clipped by solder mask
+[lib_footprint_mismatch]: Footprint 'U.FL_Hirose_U.FL-R-SMT-1_Vertical' does not match copy in library 'Connector_Coaxial'
     Local override; warning
-    @(157.5000 mm, 142.9000 mm): Segment of SW1 on F.Silkscreen
-    @(156.6000 mm, 143.3000 mm): Pad 1 [NRST] of SW1 on F.Cu
+    @(167.0800 mm, 129.3000 mm): Footprint J5
 [silk_over_copper]: Silkscreen clipped by solder mask
     Local override; warning
     @(157.5000 mm, 142.9000 mm): Segment of SW1 on F.Silkscreen
     @(160.4000 mm, 143.3000 mm): Pad 2 [GND] of SW1 on F.Cu
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(157.5000 mm, 142.9000 mm): Segment of SW1 on F.Silkscreen
+    @(156.6000 mm, 143.3000 mm): Pad 1 [NRST] of SW1 on F.Cu
 [silk_over_copper]: Silkscreen clipped by solder mask
     Local override; warning
     @(157.5000 mm, 137.4000 mm): Segment of SW1 on F.Silkscreen

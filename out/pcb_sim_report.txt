@@ -28,17 +28,17 @@
   LP2985 legacy silicon: 45 dB at 1 kHz   |   buck in power-save at 1.12 MHz, 345 mA peaks
                                         OLD: IMU on +3V3     NEW: +3V3_IMU   better by
 --------------------------------------------------------------------------------------------
-  servo frame + MCU bursts (<50 kHz)          6.854 mVpp        1.610 mVpp     12.6 dB
-  regulator switching (MHz)                   0.337 mVpp        0.020 mVpp     24.4 dB
-  total rms (+ LDO self-noise)                 2634 uVrms         293 uVrms     19.1 dB
+  servo frame + MCU bursts (<50 kHz)          7.047 mVpp        1.610 mVpp     12.8 dB
+  regulator switching (MHz)                   0.312 mVpp        0.020 mVpp     23.7 dB
+  total rms (+ LDO self-noise)                 2711 uVrms         293 uVrms     19.3 dB
   (for scale: VIN itself swings 148 mVpp with the servos working; +3V3 at the buck 3.6 mVpp switching ripple)
 
   LP2985 new silicon: 70 dB at 1 kHz   |   buck in power-save at 1.12 MHz, 345 mA peaks
                                         OLD: IMU on +3V3     NEW: +3V3_IMU   better by
 --------------------------------------------------------------------------------------------
-  servo frame + MCU bursts (<50 kHz)          6.854 mVpp        0.039 mVpp     44.9 dB
-  regulator switching (MHz)                   0.337 mVpp        0.001 mVpp     49.2 dB
-  total rms (+ LDO self-noise)                 2634 uVrms          34 uVrms     37.8 dB
+  servo frame + MCU bursts (<50 kHz)          7.047 mVpp        0.039 mVpp     45.2 dB
+  regulator switching (MHz)                   0.312 mVpp        0.001 mVpp     48.5 dB
+  total rms (+ LDO self-noise)                 2711 uVrms          34 uVrms     38.0 dB
   (for scale: VIN itself swings 148 mVpp with the servos working; +3V3 at the buck 3.6 mVpp switching ripple)
 
   The ICM-42688-P datasheet gives no supply-rejection figure, so this is reported as

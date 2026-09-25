@@ -47,7 +47,7 @@ PARTS = {
                                          "verified; 16 V not 50 V -- see ORDERING.md"),
     ("12pF", "C_0402_1005Metric"): ("C1547", "0402CG120J500NT 50V C0G", "verified"),
     ("10nF", "C_0402_1005Metric"): ("C15195", "CL05B103KB5NNNC 50V X7R", "verified"),
-    ("1uF", "C_0603_1608Metric"): ("C5673", "CL10A105KA8NNNC 25V X5R", "search"),
+    ("1uF", "C_0603_1608Metric"): ("C5673", "CL10A105KA8NNNC 25V X5R", "verified"),
     ("2.2uF", "C_0603_1608Metric"): ("C23630", "CL10A225KO8NNNC 16V X5R", "verified"),
     ("2.2uF", "C_0805_2012Metric"): ("C19110", "CL21B225KAFNNNE 25V X7R", "search"),
     ("4.7uF", "C_0805_2012Metric"): ("C1779", "CL21A475KAQNNNE 25V X5R", "verified"),
@@ -56,40 +56,41 @@ PARTS = {
     ("10uF SET/RESET", "C_0805_2012Metric"): ("C15850", "CL21A106KAYNNNE 25V X5R",
                                               "verified"),
     ("22uF/16V", "C_0805_2012Metric"): ("C45783", "CL21A226MAQNNNE 25V X5R", "verified"),
-    ("22uF/25V", "C_1210_3225Metric"): ("C52306", "CL32A226KAJNNNE 25V X5R", "search"),
+    ("22uF/25V", "C_1210_3225Metric"): ("C52306", "CL32A226KAJNNNE 25V X5R", "verified"),
     ("100k", "R_0402_1005Metric"): ("C25741", "0402WGF1003TCE", "verified"),
     ("10k", "R_0402_1005Metric"): ("C25744", "0402WGF1002TCE", "verified"),
     ("5.1k", "R_0402_1005Metric"): ("C25905", "0402WGF5101TCE", "verified"),
     ("10", "R_0402_1005Metric"): ("C25077", "0402WGF100JTCE 10R", "verified"),
     ("1k", "R_0402_1005Metric"): ("C11702", "0402WGF1001TCE", "verified"),
+    ("33k", "R_0402_1005Metric"): ("C25779", "0402WGF3302TCE", "verified"),
     ("600R@100MHz 2A", "L_0805_2012Metric"): ("C1017", "GZ2012D601TF 600R 0.5A",
-                                              "search; 0.5 A not 2 A -- see ORDERING.md"),
-    ("600R@100MHz", "L_0603_1608Metric"): ("C1002", "GZ1608D601TF 600R 0.2A", "search"),
+                                              "JLC-listed, LCSC page gone -- confirm stock at upload; 0.5 A not 2 A"),
+    ("600R@100MHz", "L_0603_1608Metric"): ("C1002", "GZ1608D601TF 600R 0.2A", "JLC-listed, LCSC page gone -- confirm stock at upload"),
     ("2.2uH", "L_1210_3225Metric"): ("C86074", "LQH32PN2R2NN0L 1.55A",
                                      "verified OUT OF STOCK -- pick at order"),
-    ("SS14", "D_SOD-123"): ("C8598", "B5819W SL 40V 1A SOD-123", "search; SS14-equivalent"),
-    ("green", "LED_0603_1608Metric"): ("C12624", "KT-0603G", "search"),
+    ("SS14", "D_SOD-123"): ("C8598", "B5819W SL 40V 1A SOD-123", "verified; SS14-equivalent"),
+    ("green", "LED_0603_1608Metric"): ("C12624", "KT-0603G", "verified"),
     ("blue", "LED_0603_1608Metric"): ("", "any 0603 blue, Vf <= 3.0 V", "pick at order"),
     ("8MHz", "Crystal_SMD_3225-4Pin_3.2x2.5mm"): ("C2682775", "X32258MOB4SI 8MHz 12pF",
-                                                  "search"),
+                                                  "verified"),
     ("TPS62162DSGT", "Texas_DSG0008A_WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm"):
-        ("C2863597", "TPS62162DSGT", "search"),
+        ("C2863597", "TPS62162DSGT", "verified; only ~150 in stock"),
     ("STM32F405RGT6", "LQFP-64_10x10mm_P0.5mm"): ("C15742", "STM32F405RGT6", "verified"),
-    ("LP2985-33DBVR", "SOT-23-5"): ("C95414", "LP2985-33DBVR", "search"),
+    ("LP2985-33DBVR", "SOT-23-5"): ("C95414", "LP2985-33DBVR", "verified"),
     ("USBLC6-2SC6", "SOT-23-6"): ("C7519", "USBLC6-2SC6", "verified"),
     ("ICM-42688-P", "LGA-14_3x2.5mm_P0.5mm_LayoutBorder3x4y"):
         ("C1850418", "ICM-42688-P", "verified OUT OF STOCK at LCSC -- see ORDERING.md"),
-    ("MMC5983MA", "MMC5983MA_LGA-16_3x3mm_P0.5mm"): ("C404329", "MMC5983MA", "search"),
+    ("MMC5983MA", "MMC5983MA_LGA-16_3x3mm_P0.5mm"): ("C404329", "MMC5983MA", "verified"),
     ("MS5611-01BA03", "LGA-8_3x5mm_P1.25mm"): ("C15639", "MS561101BA03-50", "verified"),
     ("W25Q128JVSIQ", "SOIC-8_5.3x5.3mm_P1.27mm"): ("C97521", "W25Q128JVSIQ", "verified"),
-    ("MAX-M10S", "ublox_MAX"): ("C4153167", "MAX-M10S-00B", "search"),
+    ("MAX-M10S", "ublox_MAX"): ("C4153167", "MAX-M10S-00B", "verified"),
     ("USB-C", "USB_C_Receptacle_HRO_TYPE-C-31-M-12"): ("C165948", "TYPE-C-31-M-12",
                                                         "verified"),
     ("u.FL GNSS ant", "U.FL_Hirose_U.FL-R-SMT-1_Vertical"): ("C88373", "U.FL-R-SMT-1(10)",
-                                                             "search"),
+                                                             "verified"),
     ("SWD (ARM 10-pin 1.27mm)", "PinHeader_2x05_P1.27mm_Vertical_SMD"):
-        ("C2962219", "X1270WVS-2x05B-9TV01", "search"),
-    ("reset", "SW_SPST_TL3342"): ("C2918453", "TL3342F160QG/TR", "search"),
+        ("C2962219", "X1270WVS-2x05B-9TV01", "verified"),
+    ("reset", "SW_SPST_TL3342"): ("C2886898", "TL3342F160QG", "verified; the /TR reel C2918453 was out of stock"),
 }
 
 # Not placed by JLC.  Test points, holes and solder jumpers are copper, not parts; the
@@ -227,7 +228,7 @@ Everything else was checked on its LCSC product page (MPN, package, stock) on 20
 def ordering_md():
     lines = []
     for (value, fp), (lcsc, mpn, note) in PARTS.items():
-        if note != "verified":
+        if not note.startswith("verified") or "OUT OF STOCK" in note or "only" in note:
             lines.append("- **%s** (`%s`) -> %s %s -- %s" % (value, fp, lcsc or "(none)", mpn, note))
     extra = [
         "- **ICM-42688-P (U4)** is out of stock at LCSC.  Use JLC Global Sourcing, or "
@@ -243,8 +244,8 @@ def ordering_md():
     ]
     path = os.path.join(OUT, "ORDERING.md")
     with open(path, "w") as f:
-        f.write(ORDERING % "\n".join(extra + ["", "Not individually re-checked (from search "
-                                                 "results, not the product page):", ""] + lines))
+        f.write(ORDERING % "\n".join(extra + ["", "Lines to confirm in JLC's BOM tool at upload "
+                                                 "(unconfirmed, low or no stock):", ""] + lines))
     return path
 
 
@@ -268,8 +269,9 @@ def main(argv):
                          % (sorted(bom_refs - cpl_refs), sorted(cpl_refs - bom_refs)))
     print("assembly drawing:", assembly_pdf())
     print("ordering notes:", ordering_md())
-    flagged = [(k, v) for k, v in PARTS.items() if v[2] != "verified"]
-    print("lines not fully verified on LCSC: %d (see ORDERING.md)" % len(flagged))
+    flagged = [(k, v) for k, v in PARTS.items()
+               if not v[2].startswith("verified") or "OUT OF STOCK" in v[2] or "only" in v[2]]
+    print("lines to confirm at upload: %d (see ORDERING.md)" % len(flagged))
 
 
 if __name__ == "__main__":

@@ -136,6 +136,10 @@ EXEMPT = {
     # the VIN run on purpose (it filters what arrives there).  Its VIN_IMU side, into C30 and
     # U9 pin 1, is the one that has to be tight, and is checked normally.
     ("R33", "1"): "Series R of U9's RC pre-filter, fed by the VIN run; VIN_IMU side is checked.",
+    # The pack-voltage divider is split on purpose: R34 at the VBATT end so no VBATT copper
+    # crosses the board, R35/C33 at the ADC pin.  The long run is the divided, filtered,
+    # 63 uA node.  R34.1 (VBATT) and R35/C33 (at U2 pin 14) are checked normally.
+    ("R34", "2"): "Divider tap: the long run is the filtered VBAT_SENSE node, by design.",
 }
 
 # Not real nets: KiCad emits one of these per unconnected pin.

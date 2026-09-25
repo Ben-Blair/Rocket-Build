@@ -96,7 +96,8 @@ MCU_PINS = {
     "11": "GNSS_RESET",     # PC3
     "12": "GND",            # VSSA
     "13": "VDDA",
-    "14": NC, "15": NC,     # PA0/PA1
+    "14": "VBAT_SENSE",     # PA0  ADC123_IN0 -- pack voltage, R34/R35 divider
+    "15": NC,               # PA1
     "16": "DBG_TX",         # PA2  USART2_TX
     "17": "DBG_RX",         # PA3  USART2_RX
     "18": "GND", "19": "+3V3",
@@ -147,6 +148,19 @@ MCU = [
      {"1": "OSC_IN", "2": "GND"}),
     ("C8", "Device:C", "12pF", "Capacitor_SMD:C_0402_1005Metric",
      {"1": "OSC_OUT", "2": "GND"}),
+    # Pack voltage to PA0 (added 2026-09-24).  Nothing on the board could read the 2S pack,
+    # and docs/01 has 92 % of its energy going into an hour armed on the pad: a go/no-go and a
+    # LiPo low-voltage floor both need it.  100k/33k = /4.03 -> 8.4 V reads 2.08 V, full
+    # scale 13.3 V; 63 uA.  C33 at the ADC pin is the filter AND the SAR's charge reservoir
+    # (25 k source).  R34 sits at the VBATT end (FB1) and the divided node is what crosses
+    # the board -- so no VBATT copper runs past the sensors.  Referenced to GND, which meets
+    # the pack's negative at NT1: at a 4.1 A stall the offset is a few mV.
+    ("R34", "Device:R", "100k", "Resistor_SMD:R_0402_1005Metric",
+     {"1": "VBATT", "2": "VBAT_SENSE"}),
+    ("R35", "Device:R", "33k", "Resistor_SMD:R_0402_1005Metric",
+     {"1": "VBAT_SENSE", "2": "GND"}),
+    ("C33", "Device:C", "100nF", "Capacitor_SMD:C_0402_1005Metric",
+     {"1": "VBAT_SENSE", "2": "GND"}),
 ] + [
     ("C%d" % n, "Device:C", "100nF", "Capacitor_SMD:C_0402_1005Metric",
      {"1": "+3V3", "2": "GND"}) for n in range(9, 14)

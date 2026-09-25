@@ -38,26 +38,14 @@ Not placed by JLC -- hand-solder after:
 - **Y1** is a 12 pF-load crystal on 12 pF caps (~10 pF effective with stray): a few ppm fast.  USB full-speed allows 2500 ppm.
 - **Blue LED (D3)**: pick any 0603 blue with Vf <= 3.0 V; R7 is 1k.
 
-Not individually re-checked (from search results, not the product page):
+Lines to confirm in JLC's BOM tool at upload (unconfirmed, low or no stock):
 
-- **100nF/50V** (`C_0402_1005Metric`) -> C1525 CL05B104KO5NNNC 16V X7R -- verified; 16 V not 50 V -- see ORDERING.md
-- **1uF** (`C_0603_1608Metric`) -> C5673 CL10A105KA8NNNC 25V X5R -- search
 - **2.2uF** (`C_0805_2012Metric`) -> C19110 CL21B225KAFNNNE 25V X7R -- search
-- **22uF/25V** (`C_1210_3225Metric`) -> C52306 CL32A226KAJNNNE 25V X5R -- search
-- **600R@100MHz 2A** (`L_0805_2012Metric`) -> C1017 GZ2012D601TF 600R 0.5A -- search; 0.5 A not 2 A -- see ORDERING.md
-- **600R@100MHz** (`L_0603_1608Metric`) -> C1002 GZ1608D601TF 600R 0.2A -- search
+- **600R@100MHz 2A** (`L_0805_2012Metric`) -> C1017 GZ2012D601TF 600R 0.5A -- JLC-listed, LCSC page gone -- confirm stock at upload; 0.5 A not 2 A
+- **600R@100MHz** (`L_0603_1608Metric`) -> C1002 GZ1608D601TF 600R 0.2A -- JLC-listed, LCSC page gone -- confirm stock at upload
 - **2.2uH** (`L_1210_3225Metric`) -> C86074 LQH32PN2R2NN0L 1.55A -- verified OUT OF STOCK -- pick at order
-- **SS14** (`D_SOD-123`) -> C8598 B5819W SL 40V 1A SOD-123 -- search; SS14-equivalent
-- **green** (`LED_0603_1608Metric`) -> C12624 KT-0603G -- search
 - **blue** (`LED_0603_1608Metric`) -> (none) any 0603 blue, Vf <= 3.0 V -- pick at order
-- **8MHz** (`Crystal_SMD_3225-4Pin_3.2x2.5mm`) -> C2682775 X32258MOB4SI 8MHz 12pF -- search
-- **TPS62162DSGT** (`Texas_DSG0008A_WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm`) -> C2863597 TPS62162DSGT -- search
-- **LP2985-33DBVR** (`SOT-23-5`) -> C95414 LP2985-33DBVR -- search
+- **TPS62162DSGT** (`Texas_DSG0008A_WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm`) -> C2863597 TPS62162DSGT -- verified; only ~150 in stock
 - **ICM-42688-P** (`LGA-14_3x2.5mm_P0.5mm_LayoutBorder3x4y`) -> C1850418 ICM-42688-P -- verified OUT OF STOCK at LCSC -- see ORDERING.md
-- **MMC5983MA** (`MMC5983MA_LGA-16_3x3mm_P0.5mm`) -> C404329 MMC5983MA -- search
-- **MAX-M10S** (`ublox_MAX`) -> C4153167 MAX-M10S-00B -- search
-- **u.FL GNSS ant** (`U.FL_Hirose_U.FL-R-SMT-1_Vertical`) -> C88373 U.FL-R-SMT-1(10) -- search
-- **SWD (ARM 10-pin 1.27mm)** (`PinHeader_2x05_P1.27mm_Vertical_SMD`) -> C2962219 X1270WVS-2x05B-9TV01 -- search
-- **reset** (`SW_SPST_TL3342`) -> C2918453 TL3342F160QG/TR -- search
 
 Everything else was checked on its LCSC product page (MPN, package, stock) on 2026-09-24.
