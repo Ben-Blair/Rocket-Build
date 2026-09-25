@@ -10,3 +10,15 @@ out/javacls/
 *.class
 out/cad/*.png
 out/_rollcheck_*.ork
+
+# Freerouting jar (64 MB) -- download per pcb/README.md; KiCad lock/backup files
+pcb/flight_computer/tools/
+pcb/**/~*.lck
+pcb/**/*-backups/
+pcb/flight_computer/fab/gerbers/
+pcb/**/.history/
+pcb/**/.kicad-mcp/
+pcb/**/.mcp.json
+pcb/**/__pycache__/
+pcb/**/output/*.json
+pcb/**/*.kicad_prl

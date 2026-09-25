@@ -1,0 +1,60 @@
+2026-09-24 22:26:05.757 INFO   Freerouting v2.4.1 (build-date: 2026-09-03)
+2026-09-24 22:26:07.129 INFO   [535DCC\F750F0] Loading board file 'board.dsn'...
+2026-09-24 22:26:07.197 WARN   Wiring: duplicate via skipped at (1370300, -1372550)
+2026-09-24 22:26:07.207 WARN   DSN file 'board.dsn' was loaded with 1 warning(s).
+2026-09-24 22:26:07.215 INFO   [535DCC\F750F0] Job '535DCC\F750F0' started at 2026-09-25T04:26:07.215334Z.
+2026-09-24 22:26:07.420 INFO   [535DCC\F750F0] Fanout stage started on board 'ec6d11f54283a18f89b9e21fdcdd01a9' with 253 of 298 SMD pins needing fanout (45 already connected, 0 netless).
+2026-09-24 22:26:09.077 INFO   [535DCC\F750F0] Fanout pass #1 on board '1723ca4f1e4b7f35e5362de033e13d3e' completed in 1.47 seconds with 89 SMD pins fanouted, 86 not routed, 0 insert errors, +0 extra vias (0 SMD pins still to check in pass, ripup costs=100).
+2026-09-24 22:26:10.453 INFO   [535DCC\F750F0] Fanout pass #2 on board '766566ce92cdbdd76e27676beec23bec' completed in 1.36 seconds with 17 SMD pins fanouted, 105 not routed, 0 insert errors, +0 extra vias (0 SMD pins still to check in pass, ripup costs=200).
+2026-09-24 22:26:11.620 INFO   [535DCC\F750F0] Fanout pass #3 on board '94edba599e15281ceb1a862fe0460f80' completed in 1.16 seconds with 11 SMD pins fanouted, 112 not routed, 0 insert errors, +1 extra via (0 SMD pins still to check in pass, ripup costs=300).
+2026-09-24 22:26:12.663 INFO   [535DCC\F750F0] Fanout pass #4 on board 'cdc0165b7065a5c27e72a4898f14a9b0' completed in 1.03 seconds with 9 SMD pins fanouted, 107 not routed, 0 insert errors, +0 extra vias (0 SMD pins still to check in pass, ripup costs=400).
+2026-09-24 22:26:13.699 INFO   [535DCC\F750F0] Fanout pass #5 on board '555b98e467cc6cde106596607a20dbaa' completed in 1.03 seconds with 9 SMD pins fanouted, 105 not routed, 0 insert errors, +0 extra vias (0 SMD pins still to check in pass, ripup costs=500).
+2026-09-24 22:26:14.685 INFO   [535DCC\F750F0] Fanout pass #6 on board '04950ed5d6ba15f9526aba546903942c' completed in 0.98 seconds with 8 SMD pins fanouted, 108 not routed, 0 insert errors, +1 extra via (0 SMD pins still to check in pass, ripup costs=600).
+2026-09-24 22:26:15.723 INFO   [535DCC\F750F0] Fanout pass #7 on board '6ddefca8264c3d5e11134fd4caa219d9' completed in 1.03 seconds with 10 SMD pins fanouted, 107 not routed, 0 insert errors, +0 extra vias (0 SMD pins still to check in pass, ripup costs=700).
+2026-09-24 22:26:16.718 INFO   [535DCC\F750F0] Fanout pass #8 on board '6f4af88e88581229e742f5d66e44a400' completed in 0.99 seconds with 9 SMD pins fanouted, 107 not routed, 0 insert errors, +0 extra vias (0 SMD pins still to check in pass, ripup costs=800).
+2026-09-24 22:26:17.721 INFO   [535DCC\F750F0] Fanout pass #9 on board 'b0d9c05166d3a43463eabc62900928f1' completed in 0.99 seconds with 9 SMD pins fanouted, 107 not routed, 0 insert errors, +0 extra vias (0 SMD pins still to check in pass, ripup costs=900).
+2026-09-24 22:26:18.729 INFO   [535DCC\F750F0] Fanout pass #10 on board '5e590198dae7ec86b1eb5abc3da69839' completed in 1.00 seconds with 9 SMD pins fanouted, 107 not routed, 0 insert errors, +0 extra vias (0 SMD pins still to check in pass, ripup costs=1000).
+2026-09-24 22:26:19.722 INFO   [535DCC\F750F0] Fanout pass #11 on board '9395bdbc730e52c97f7712bdb5aecbd9' completed in 0.98 seconds with 9 SMD pins fanouted, 107 not routed, 0 insert errors, +0 extra vias (0 SMD pins still to check in pass, ripup costs=1100).
+2026-09-24 22:26:19.722 INFO   Fanout stopped after 11 passes: no progress for 3 consecutive passes.
+2026-09-24 22:26:19.827 INFO   [535DCC\F750F0] Fanout stage completed: started with 298 total SMD pins, completed in 12.24 seconds, escaped pins: 186/298 (62.4%), using 12.31 total CPU seconds, 130.35 GB total allocated, and 743.1 MB peak heap usage.
+2026-09-24 22:26:19.835 INFO   [535DCC\F750F0] Auto-routing stage started on board '9395bdbc730e52c97f7712bdb5aecbd9' for 54 unrouted items.
+2026-09-24 22:26:31.811 INFO   [535DCC\F750F0] Auto-routing pass #1 on board '9395bdbc730e52c97f7712bdb5aecbd9' was completed in 11.73 seconds with score 869.36 (21 unrouted and 40 violations), using 23.65 CPU seconds and the job allocated 230.92 GB of memory so far.
+2026-09-24 22:26:35.723 INFO   [535DCC\F750F0] Auto-routing pass #2 on board '9629f2c385197c50aa5627fa73829a5a' was completed in 3.60 seconds with score 909.90 (12 unrouted and 40 violations), using 27.60 CPU seconds and the job allocated 270.58 GB of memory so far.
+2026-09-24 22:26:38.532 INFO   [535DCC\F750F0] Auto-routing pass #3 on board '7e510ffb98dbe814ea7f947ad9bc8116' was completed in 2.49 seconds with score 927.92 (8 unrouted and 40 violations), using 30.56 CPU seconds and the job allocated 299.50 GB of memory so far.
+2026-09-24 22:26:40.069 INFO   [535DCC\F750F0] Auto-routing pass #4 on board '5fa54046f224441698e355839a064ee7' was completed in 1.21 seconds with score 927.92 (8 unrouted and 40 violations), using 31.56 CPU seconds and the job allocated 310.09 GB of memory so far.
+2026-09-24 22:26:41.309 INFO   [535DCC\F750F0] Auto-routing pass #5 on board '9dcedd57d313295aae1db88f0361b4ea' was completed in 0.91 seconds with score 927.92 (8 unrouted and 40 violations), using 32.55 CPU seconds and the job allocated 322.15 GB of memory so far.
+2026-09-24 22:26:42.859 INFO   [535DCC\F750F0] Auto-routing pass #6 on board '87bb084db82e85fd0d9f808e0a4e817b' was completed in 1.23 seconds with score 927.92 (8 unrouted and 40 violations), using 34.53 CPU seconds and the job allocated 344.43 GB of memory so far.
+2026-09-24 22:26:44.505 INFO   [535DCC\F750F0] Auto-routing pass #7 on board 'd1612f578480270d9789585ba0e40217' was completed in 1.32 seconds with score 932.42 (7 unrouted and 40 violations), using 36.51 CPU seconds and the job allocated 366.79 GB of memory so far.
+2026-09-24 22:26:45.446 INFO   [535DCC\F750F0] Auto-routing pass #8 on board 'e6a4e0232929b6717c3e2d510d17adf5' was completed in 0.61 seconds with score 932.42 (7 unrouted and 40 violations), using 37.50 CPU seconds and the job allocated 379.64 GB of memory so far.
+2026-09-24 22:26:46.229 INFO   [535DCC\F750F0] Auto-routing pass #9 on board 'e6a4e0232929b6717c3e2d510d17adf5' was completed in 0.61 seconds with score 932.42 (7 unrouted and 40 violations), using 37.50 CPU seconds and the job allocated 379.64 GB of memory so far.
+2026-09-24 22:26:47.011 INFO   [535DCC\F750F0] Auto-routing pass #10 on board 'e6a4e0232929b6717c3e2d510d17adf5' was completed in 0.61 seconds with score 932.42 (7 unrouted and 40 violations), using 38.48 CPU seconds and the job allocated 392.59 GB of memory so far.
+2026-09-24 22:26:47.793 INFO   [535DCC\F750F0] Auto-routing pass #11 on board 'e6a4e0232929b6717c3e2d510d17adf5' was completed in 0.62 seconds with score 932.42 (7 unrouted and 40 violations), using 39.48 CPU seconds and the job allocated 405.53 GB of memory so far.
+2026-09-24 22:26:48.731 INFO   [535DCC\F750F0] Auto-routing pass #12 on board 'e6a4e0232929b6717c3e2d510d17adf5' was completed in 0.61 seconds with score 932.42 (7 unrouted and 40 violations), using 40.47 CPU seconds and the job allocated 418.69 GB of memory so far.
+2026-09-24 22:26:49.513 INFO   [535DCC\F750F0] Auto-routing pass #13 on board 'e6a4e0232929b6717c3e2d510d17adf5' was completed in 0.61 seconds with score 932.42 (7 unrouted and 40 violations), using 41.46 CPU seconds and the job allocated 431.78 GB of memory so far.
+2026-09-24 22:26:50.293 INFO   [535DCC\F750F0] Auto-routing pass #14 on board 'e6a4e0232929b6717c3e2d510d17adf5' was completed in 0.61 seconds with score 932.42 (7 unrouted and 40 violations), using 41.46 CPU seconds and the job allocated 431.78 GB of memory so far.
+2026-09-24 22:26:51.076 INFO   [535DCC\F750F0] Auto-routing pass #15 on board 'e6a4e0232929b6717c3e2d510d17adf5' was completed in 0.62 seconds with score 932.42 (7 unrouted and 40 violations), using 42.46 CPU seconds and the job allocated 444.77 GB of memory so far.
+2026-09-24 22:26:51.857 INFO   [535DCC\F750F0] Auto-routing pass #16 on board 'e6a4e0232929b6717c3e2d510d17adf5' was completed in 0.61 seconds with score 932.42 (7 unrouted and 40 violations), using 43.45 CPU seconds and the job allocated 457.69 GB of memory so far.
+2026-09-24 22:26:52.651 INFO   [535DCC\F750F0] Auto-routing pass #17 on board 'e6a4e0232929b6717c3e2d510d17adf5' was completed in 0.63 seconds with score 932.42 (7 unrouted and 40 violations), using 44.44 CPU seconds and the job allocated 470.90 GB of memory so far.
+2026-09-24 22:26:53.471 INFO   [535DCC\F750F0] Auto-routing pass #18 on board 'e6a4e0232929b6717c3e2d510d17adf5' was completed in 0.65 seconds with score 932.42 (7 unrouted and 40 violations), using 45.43 CPU seconds and the job allocated 483.34 GB of memory so far.
+2026-09-24 22:26:53.490 INFO   [535DCC\F750F0] The router's best score (932.42) has not improved by more than 0.5 points since pass #8. Stopping the auto-router after 18 passes (7 items still unconnected).
+The following connections could not be routed -- please review your design (e.g. check pad clearances, trace width rules, and available routing space):
+  Net 'GND' (6 unrouted connections):
+    - U4-6  ->  U4-7
+    - U7-4  ->  via
+    - via  ->  U3-2
+    - U9-2  ->  via
+    - U4-6  ->  via
+    - U1-1  ->  U1-9
+  Net 'VBATT' (1 unrouted connection):
+    - J1-1  ->  TP1-1
+2026-09-24 22:26:53.909 INFO   [535DCC\F750F0] Auto-routing stage completed: started with 138 unrouted nets, completed in 46.49 seconds, final score: 932.42 (7 unrouted and 40 violations), using 45.43 total CPU seconds, 483.34 GB total allocated, and 704.2 MB peak heap usage.
+2026-09-24 22:26:54.073 INFO   [535DCC\F750F0] Optimization stage started on board 'e6a4e0232929b6717c3e2d510d17adf5' with score 932.42 (7 unrouted and 40 violations).
+2026-09-24 22:27:12.494 INFO   [535DCC\F750F0] Stopping optimization pass #1 early after 50 consecutive items could not be improved.
+2026-09-24 22:27:12.663 INFO   [535DCC\F750F0] Optimizer pass #1 on board '7c89efe5ddeca1e49a4cc747bb16e4cc' was completed in 18.09 seconds with the score of 932.42 (7 unrouted and 40 violations).
+2026-09-24 22:27:29.165 INFO   [535DCC\F750F0] Stopping optimization pass #2 early after 50 consecutive items could not be improved.
+2026-09-24 22:27:29.334 INFO   [535DCC\F750F0] Optimizer pass #2 on board '02b06ac0dcd7c136d70fa2a667298247' was completed in 16.02 seconds with the score of 932.42 (7 unrouted and 40 violations).
+2026-09-24 22:27:29.491 INFO   [535DCC\F750F0] Stopping optimizer because the improvement in this pass (0.0000%) is below the threshold (1.00%).
+2026-09-24 22:27:29.649 INFO   [535DCC\F750F0] Optimization stage completed: started with score 932.42 (7 unrouted and 40 violations), completed in 35.42 seconds, final score: 932.42 (7 unrouted and 40 violations), using 34.55 total CPU seconds, 444.82 GB total allocated, and 752.1 MB peak heap usage.
+2026-09-24 22:27:29.660 INFO   [535DCC\F750F0] Job '535DCC\F750F0' finished with state: COMPLETED (elapsed: 1 minute 22.44 seconds, finished at UTC: 2026-09-25T04:27:29.659612Z).
+2026-09-24 22:27:29.996 INFO   Saving output file '/private/tmp/claude-501/-Users-user-Documents-Projects-RocketSenior/082d5fcc-8c30-459b-9ee2-c61957e72816/scratchpad/proj/routing/board.ses' (SES)...
+2026-09-24 22:27:30.002 INFO   Successfully saved output file '/private/tmp/claude-501/-Users-user-Documents-Projects-RocketSenior/082d5fcc-8c30-459b-9ee2-c61957e72816/scratchpad/proj/routing/board.ses' (76545 bytes).

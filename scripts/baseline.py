@@ -13,8 +13,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from design import (
-    access_bulkhead, aero, avionics, control, estimation, flutter, hinge, joints,
-    motor_mount, ports, recovery_hardware, seal, sled, trajectory, tube_section, venting,
+    access_bulkhead, aero, avionics, control, estimation, flight_computer, flutter, hinge,
+    joints, motor_mount, pcb_placement, ports, recovery_hardware, seal, sled, trajectory,
+    tube_section, venting,
 )
 # Aliased because `bay` is a local in main() -- check_direct_drive's result. Same reason
 # design/configure.py imports mass as mass_mod.
@@ -623,6 +624,56 @@ def main() -> None:
         if "NOT SOLVED" in n:
             print(f"  OPEN                {n}")
     print("     Full argument: python scripts/motor_mount_report.py")
+
+    rule("STAGE 2 FLIGHT COMPUTER")
+    fc_pwr = flight_computer.power_budget(ev)
+    fc_log = flight_computer.log_budget(ev)
+    fc_env = flight_computer.envelope_check(ev)
+    fc_chk = flight_computer.check_flight_computer(ev)
+    print(f"  board               {flight_computer.MCU.mpn} + {flight_computer.IMU.mpn} + "
+          f"{flight_computer.MAG.mpn} + {flight_computer.BARO.mpn} + "
+          f"{flight_computer.GNSS.mpn}")
+    print(f"  gyro range          {flight_computer.IMU_FULL_SCALE_DEG_S:.0f} dps against "
+          f"{estimation.capped_roll_rate(ev):.0f} deg/s at the roll cap -- the +/-4000 dps "
+          f"requirement is DROPPED")
+    print(f"                      (docs/06 asked for it; the cap makes the range unusable and "
+          f"saturation is a FAULT the R12 latch can see)")
+    print(f"  power               logic {fc_pwr.logic_ma_3v3:.0f} mA, servos "
+          f"{fc_pwr.servo_active_total_a:.2f} A active / {fc_pwr.servo_stall_total_a:.1f} A "
+          f"stalled, NO BEC (the KST is an 8.4 V part on a 2S pack)")
+    print(f"  battery             {fc_pwr.total_wh:.2f} Wh needed against "
+          f"{fc_pwr.usable_wh:.2f} Wh usable, {fc_pwr.margin:.0f}x -- and "
+          f"{fc_pwr.pad_wh / fc_pwr.total_wh * 100:.0f}% of the demand is PAD TIME, not flight")
+    print(f"  SERVO DUTY          {fc_pwr.stall_torque_margin:.2f}x on stall torque but "
+          f"{fc_pwr.continuous_duty_margin:.2f}x on the datasheet's CONTINUOUS band -- a margin "
+          f"no torque check in this project could see")
+    print(f"  logging             {fc_log.bytes_per_s / 1000:.1f} kB/s, "
+          f"{fc_log.total_bytes / 1e6:.2f} MB/flight against "
+          f"{fc_log.onchip_usable_bytes / 1e6:.2f} MB on-chip -- "
+          f"{1 / fc_log.onchip_margin:.1f}x SHORT, so external flash is not optional")
+    print(f"  board envelope      {fc_env.board_l * 1000:.0f} x {fc_env.board_w * 1000:.0f} mm "
+          f"on a {fc_env.max_plate_l * 1000:.1f} x {fc_env.max_plate_w * 1000:.1f} mm plate, "
+          f"{fc_env.height_margin * 1000:.1f} mm of headroom")
+    print(f"  flight computer     {'OK' if fc_chk.ok else 'VIOLATIONS: ' + '; '.join(fc_chk.violations)}")
+    # Board GEOMETRY, which is a different question from the board SPEC above and was the
+    # one nothing checked: ERC and DRC both passed on a board whose crystal load cap sat
+    # 21 mm from its crystal.  Connectivity was right and placement was wrong.
+    try:
+        pcb_placement.self_check()
+        pcb = pcb_placement.check_placement()
+        worst = max(pcb.links, key=lambda l: l.mm) if pcb.links else None
+        print(f"  board placement     {'OK' if pcb.ok else 'VIOLATIONS: ' + str(len(pcb.failures))}"
+              f" -- {pcb.n_pads} pads checked, median {pcb.median_mm:.2f} mm"
+              + (f", worst {worst.ref}.{worst.number} [{worst.net}] {worst.mm:.2f} mm"
+                 if worst else ""))
+        for link in pcb.failures[:6]:
+            print(f"                      {link.ref}.{link.number} [{link.net}] "
+                  f"{link.mm:.2f} mm from {link.to_ref}.{link.to_number}, "
+                  f"limit {link.limit:.1f} mm")
+    except (FileNotFoundError, AssertionError) as exc:
+        print(f"  board placement     NOT CHECKED -- {exc}")
+    print("     Full argument: python scripts/flight_computer_report.py")
+    print("                    python scripts/pcb_placement_report.py")
 
     rule("OPENROCKET ENTRY VALUES")
     print(f"""  Nose cone

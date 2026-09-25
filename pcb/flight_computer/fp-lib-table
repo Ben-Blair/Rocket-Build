@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "RocketSenior")(type "KiCad")(uri "${KIPRJMOD}/RocketSenior.pretty")(options "")(descr "Footprints redrawn for this board"))
+)

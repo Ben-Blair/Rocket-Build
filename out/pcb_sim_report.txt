@@ -1,0 +1,59 @@
+
+============================================================================================
+4. VBATT TRUNK -- DC drop and heating at the 4.1 A stall, from the routed copper
+============================================================================================
+  J1 -> J9 pin 2    3.83 mohm of copper    15.7 mV at stall
+  J1 -> J8 pin 2    5.55 mohm of copper    21.0 mV at stall
+  J1 -> J7 pin 2    7.27 mohm of copper    24.5 mV at stall
+  J1 -> J6 pin 2    8.99 mohm of copper    26.3 mV at stall
+  hottest segment   2.00 mm carrying 4.10 A -> +10.9 degC (IPC-2221, conservative)
+
+============================================================================================
+1. SERVO STALL -- all four stall together at t = 1 ms (ngspice transient)
+============================================================================================
+  pack                   J6 before   J6 min  VIN before  VIN min   margin to TPS UVLO / LDO dropout
+--------------------------------------------------------------------------------------------
+  fresh 8.4 V               8.399V   8.236V      8.384V   8.271V   +5.67 V / +4.62 V
+  nominal 7.4 V             7.397V   7.153V      7.381V   7.186V   +4.59 V / +3.54 V
+  depleted, cold 6.6 V      6.592V   6.019V      6.574V   6.049V   +3.45 V / +2.40 V
+
+  The sag is the PACK's internal resistance, not the board: 4.1 A x the copper above
+  is tens of mV.  No brown-out of either regulator in any case, including a cold,
+  nearly flat pack.  Servo torque at 6.6 V - sag is the servo's problem, not this board's.
+
+============================================================================================
+2. IMU SUPPLY NOISE -- old (shared +3V3) vs new (own LP2985 from VIN), ngspice
+============================================================================================
+
+  LP2985 legacy silicon: 45 dB at 1 kHz   |   buck in power-save at 1.12 MHz, 345 mA peaks
+                                        OLD: IMU on +3V3     NEW: +3V3_IMU   better by
+--------------------------------------------------------------------------------------------
+  servo frame + MCU bursts (<50 kHz)          6.854 mVpp        1.610 mVpp     12.6 dB
+  regulator switching (MHz)                   0.337 mVpp        0.020 mVpp     24.4 dB
+  total rms (+ LDO self-noise)                 2634 uVrms         293 uVrms     19.1 dB
+  (for scale: VIN itself swings 148 mVpp with the servos working; +3V3 at the buck 3.6 mVpp switching ripple)
+
+  LP2985 new silicon: 70 dB at 1 kHz   |   buck in power-save at 1.12 MHz, 345 mA peaks
+                                        OLD: IMU on +3V3     NEW: +3V3_IMU   better by
+--------------------------------------------------------------------------------------------
+  servo frame + MCU bursts (<50 kHz)          6.854 mVpp        0.039 mVpp     44.9 dB
+  regulator switching (MHz)                   0.337 mVpp        0.001 mVpp     49.2 dB
+  total rms (+ LDO self-noise)                 2634 uVrms          34 uVrms     37.8 dB
+  (for scale: VIN itself swings 148 mVpp with the servos working; +3V3 at the buck 3.6 mVpp switching ripple)
+
+  The ICM-42688-P datasheet gives no supply-rejection figure, so this is reported as
+  volts at the pin, not dps.  What it establishes is the RATIO: the IMU's supply is
+  now isolated from both the servo current on the pack and every load on +3V3.
+
+============================================================================================
+3. MAGNETOMETER -- field from the board's own VBATT copper + plane return at stall
+============================================================================================
+  sensor at (162.0, 110.5) mm, 58 mm from the pack pads
+  supply copper alone             24.809 mgauss
+  IF the return used the planes   25.288 mgauss   (the board before the star ground)
+  AS BUILT (SERVO_GND star return)   3.221 mgauss   against the 18.0 mgauss allowance
+  compare: ONE untwisted 1 A servo lead 50 mm away = 40 mgauss (docs/14: twist them).
+  VERDICT: board copper uses 17.9 % of the magnetometer allowance at the 4.1 A worst
+  case -- NOT negligible.  The servo leads, off-board, remain the real risk.
+  DC is the worst case for a PLANE return (it spreads by resistance); the star return
+  is a trace, so it stays beside/under the trunk at every frequency.

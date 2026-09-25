@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "RocketSenior")(type "KiCad")(uri "${KIPRJMOD}/RocketSenior.kicad_sym")(options "")(descr "Parts with no stock KiCad symbol"))
+)
