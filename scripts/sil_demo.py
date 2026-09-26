@@ -28,10 +28,11 @@ WHAT THIS DOES NOT PROVE, and do not let it be quoted as if it did.
     use -- the WEAKEST part of this project's analysis, per docs/00 section 5 -- and GV-2's
     open-loop deflection sweep is still the only thing that turns it into a measurement.
     Closing this loop in software cannot validate the aerodynamics it runs on.
-  * It is not a timing or embedded-execution proof. The loop here runs at 100 Hz using an
-    EXACT analytic update for the roll axis (a closed-form exponential, not a fixed-step
-    integrator), which sidesteps the ~20 ms roll time constant's stability demands entirely.
-    Real firmware still needs the >=1 kHz quaternion propagation docs/07 calls for; this
+  * It is not a timing or embedded-execution proof. The controller runs at 100 Hz with one
+    period of latency; the servo (`control.servo_step`: slew limit plus an ASSUMED 30 ms lag,
+    the datasheet gives none) and the roll axis (exact exponential per substep) are stepped at
+    1 kHz inside it. Before 2026-09-26 the servo was a pure slew limit with no lag, which hid
+    that the old Kp = 1.0 was unstable -- see scripts/roll_bandwidth.py. Real firmware still needs the >=1 kHz quaternion propagation docs/07 calls for; this
     script says nothing about whether an STM32F405 can hit that rate with margin.
   * The magnetometer is modelled as a virtual roll-angle sensor with an angular noise sigma
     derived the same way `design/estimation.py`'s error budget derives one (field-perpendicular
@@ -79,10 +80,14 @@ SLEW_DEG_S = 60.0 / SERVOS["kst_x08_plus"].speed_60deg  # 667 deg/s, same figure
 
 # R12: "fault-to-centred latency <= 0.5 s" (docs/00-requirements.md). Not a tuning knob.
 R12_LATENCY_S = 0.5
+# The COMMAND must reach centre early: the surface trails it by one loop period plus the servo
+# lag, and ramping the command over the full 0.5 s left the canards ~0.7 deg off at 0.5 s.
+R12_RAMP_S = 0.35
 
 BANK_TARGET_DEG = 90.0   # full bank-to-turn, matching scripts/virtual_flight.py's "btt" mode
 BANK_TOL_DEG = 3.0       # roll-hold tolerance before the pitch pull is allowed to start
-ROLL_KP = 1.0            # deg of commanded differential per deg of estimated roll error
+ROLL_KP, ROLL_KD = control.ROLL_KP, control.ROLL_KD
+PHYSICS_SUBSTEPS = 10    # servo lag + roll axis stepped at 10x the controller rate
 
 RAIL_LENGTH_M = 3.66
 RAIL_HEIGHT_M = 2.0
@@ -124,12 +129,6 @@ def roll_step(p0_dps: float, delta_cmd_deg: float, cl_net: float, cl_p: float,
     return math.degrees(p1), math.degrees(integral)
 
 
-def slew(cur_deg: float, cmd_deg: float, dt: float, rate_deg_s: float = SLEW_DEG_S) -> float:
-    err = cmd_deg - cur_deg
-    step = max(-rate_deg_s * dt, min(rate_deg_s * dt, err))
-    return cur_deg + step
-
-
 @dataclass
 class SilCase:
     label: str
@@ -169,6 +168,7 @@ def run(rocket, motor, masses, ev, *, elevation_deg: float, label: str, horizont
     roll_est = 0.0
     roll_cmd_act = 0.0
     pitch_cmd_act = 0.0
+    roll_cmd_out = pitch_cmd_out = 0.0   # last period's command: one period of latency
     fault_latched = False
     roll_cmd_at_fault = pitch_cmd_at_fault = 0.0
     vec_turn_deg = 0.0
@@ -215,7 +215,8 @@ def run(rocket, motor, masses, ev, *, elevation_deg: float, label: str, horizont
         roll_cmd_nom = 0.0
         if roll_gate:
             err = wrap180(roll_target - roll_est)
-            roll_cmd_nom = max(-ROLL_COMMAND_CAP_DEG, min(ROLL_COMMAND_CAP_DEG, ROLL_KP * err))
+            u = ROLL_KP * err - ROLL_KD * gyro_meas
+            roll_cmd_nom = max(-ROLL_COMMAND_CAP_DEG, min(ROLL_COMMAND_CAP_DEG, u))
             if abs(err) <= BANK_TOL_DEG and t >= steer_start and bank_locked_t is None:
                 bank_locked_t = t
 
@@ -228,7 +229,7 @@ def run(rocket, motor, masses, ev, *, elevation_deg: float, label: str, horizont
             if not fault_latched:
                 fault_latched = True
                 roll_cmd_at_fault, pitch_cmd_at_fault = roll_cmd_nom, pitch_cmd_nom
-            frac = max(0.0, 1.0 - (t - fault_time) / R12_LATENCY_S)
+            frac = max(0.0, 1.0 - (t - fault_time) / R12_RAMP_S)
             roll_cmd, pitch_cmd = roll_cmd_at_fault * frac, pitch_cmd_at_fault * frac
         else:
             roll_cmd, pitch_cmd = roll_cmd_nom, pitch_cmd_nom
@@ -242,8 +243,11 @@ def run(rocket, motor, masses, ev, *, elevation_deg: float, label: str, horizont
             roll_cmd = pitch_cmd = 0.0
             floor_tripped = True
 
-        roll_cmd_act = slew(roll_cmd_act, roll_cmd, dt)
-        pitch_cmd_act = slew(pitch_cmd_act, pitch_cmd, dt)
+        roll_apply, pitch_apply = roll_cmd_out, pitch_cmd_out
+        roll_cmd_out, pitch_cmd_out = roll_cmd, pitch_cmd
+        h = dt / PHYSICS_SUBSTEPS
+        for _ in range(PHYSICS_SUBSTEPS):
+            pitch_cmd_act = control.servo_step(pitch_cmd_act, pitch_apply, h, SLEW_DEG_S)
 
         # -- physics: translation (pitch/yaw channel) + roll (analytic step) ----------------
         cd = aero.drag_coefficient(rocket, speed, max(z, 0.0))
@@ -272,17 +276,21 @@ def run(rocket, motor, masses, ev, *, elevation_deg: float, label: str, horizont
             if n > 1e-9:
                 force = force + mass * a_lat * (lift_dir / n)
 
-        # roll: exact analytic step against the current (frozen-over-dt) coefficients
-        if not on_rail and q > 50.0 and speed > 1.0:
+        # roll: servo lag and exact analytic roll step per substep, coefficients frozen over dt
+        roll_live = not on_rail and q > 50.0 and speed > 1.0
+        if roll_live:
             pt = FlightPoint(t=t, x=float(pos[0]), z=z, vx=speed, vz=0.0, mass=mass,
                               thrust=thrust, mach=mach, q=q, cg=cg, static_margin=0.0)
             roll_res = control.roll_authority(rocket, pt, mass, 1.0, interference)
             inertia = control.estimate_inertia(rocket, mass, cg)
-            p_true, dtheta = roll_step(p_true, roll_cmd_act, roll_res.cl_delta_net,
-                                        roll_res.cl_p, q, speed, inertia.roll, d, area, dt)
-            roll_true += dtheta
-        else:
-            roll_true += p_true * dt
+        for _ in range(PHYSICS_SUBSTEPS):
+            roll_cmd_act = control.servo_step(roll_cmd_act, roll_apply, h, SLEW_DEG_S)
+            if roll_live:
+                p_true, dtheta = roll_step(p_true, roll_cmd_act, roll_res.cl_delta_net,
+                                            roll_res.cl_p, q, speed, inertia.roll, d, area, h)
+                roll_true += dtheta
+            else:
+                roll_true += p_true * h
 
         acc = force / mass
         if on_rail:

@@ -1,16 +1,16 @@
 === SIL DEMO: closed-loop roll hold, bank-to-turn, R12 failsafe ===
-mag aiding: ON   seed=0
+mag aiding: OFF (gyro-only dead reckoning)   seed=0
 
 --- Horizontal (28 deg, R15) ---
-  steer_start=3.28s  fault_time=6.28s  bank_locked_t=3.4499999999999704
-  L1 roll hold:      PASS  (roll error in the 0.3 s before bank-to-turn starts: 0.05 deg)
+  steer_start=3.28s  fault_time=6.28s  bank_locked_t=3.519999999999969
+  L1 roll hold:      PASS  (roll error in the 0.3 s before bank-to-turn starts: 0.22 deg)
   R12 fault latency: PASS  (centred by t=6.78s)
   R12 altitude floor: tripped (<50 m AGL forces centre)
-  peak path-turn rate 9.60 deg/s, total path turn 26.8 deg over 10.3 s
+  peak path-turn rate 9.40 deg/s, total path turn 25.6 deg over 10.2 s
 
 --- Vertical (85 deg, R15) ---
-  steer_start=3.28s  fault_time=6.28s  bank_locked_t=3.47999999999997
-  L1 roll hold:      PASS  (roll error in the 0.3 s before bank-to-turn starts: 0.04 deg)
+  steer_start=3.28s  fault_time=6.28s  bank_locked_t=3.5499999999999683
+  L1 roll hold:      PASS  (roll error in the 0.3 s before bank-to-turn starts: 0.22 deg)
   R12 fault latency: PASS  (centred by t=6.78s)
-  peak path-turn rate 7.78 deg/s, total path turn 19.1 deg over 14.1 s
+  peak path-turn rate 7.49 deg/s, total path turn 18.2 deg over 14.1 s
 

@@ -28,22 +28,49 @@ Two cases, same airframe, same control law: `elevation_deg=28` (R15's horizontal
    sensor set (`design/estimation.py`). Checked at the *end* of the hold phase, not the peak
    over it: canards have no authority below `Q_MIN`, so the vehicle free-drifts through the
    first fraction of a second no controller can do anything about. Both cases settle to
-   <0.1° of roll error with the magnetometer aiding on; gyro-only settles to ~0.2° over the
+   0.02° of roll error with the magnetometer aiding on; gyro-only settles to ~0.2° over the
    same window — small on this timescale, but the direction of the effect is the same one
    docs/07 found: gyro-only roll drifts, and the dominant term is the gyro's SCALE FACTOR
    error during the fast bank-to-turn snap, not its bias or noise.
 2. **Bank-to-turn.** Once the estimate is within 3° of the 90° bank target, the canards pull
    `DEFLECTION_LIMIT_DEG` (9.2°) in the banked plane. Peak turn rate driven by the canard
-   force alone comes out to 9.60°/s (horizontal) and 7.78°/s (vertical) — within a few
+   force alone comes out to 9.40°/s (horizontal) and 7.49°/s (vertical) — within a few
    percent of docs/12's frozen 9.76°/s and docs/11's 7.31°/s, which is the cross-check that
    matters: this script's closed loop is flying the same airframe/aero everything else in
    the repo flies, not a different one.
-3. **R12 failsafe.** A fault is injected mid-pull. Both canard channels ramp to centred and
+3. **R12 failsafe.** A fault is injected mid-pull. Both canard channels' COMMANDS ramp to
+   centred over 0.35 s (not 0.5 s — see the correction below), and the lagged surfaces
    PASS the check that they are within 0.15° of zero by the 0.5 s latency R12 requires,
    regardless of what the guidance law wanted next. On the horizontal case the canards are
    additionally forced to centre, unconditionally, once the vehicle is *descending* below
    50 m AGL — this catches the fault-independent half of R12, the "reaches the ground with
    the canards fully effective" case docs/00 describes.
+
+**Correction, 2026-09-26 — the roll loop was unstable and this demo could not see it.** The
+original roll law was proportional-only, `ROLL_KP = 1.0`, against an actuator modelled as a
+pure 667°/s slew limit with no lag. That model has no phase, so the loop looked perfect.
+With any plausible servo lag it is not: the roll plant is ~300°/s per degree of canard with
+a 17–20 ms time constant, and the Routh limit on Kp is 0.29 at a 30 ms servo lag
+(`scripts/roll_bandwidth.py` section 3). Now:
+
+- The law is PD on the gyro: `delta = 0.07·(phi_cmd − phi) − 0.0024·p`, gains in
+  `design/control.py` (`ROLL_KP`, `ROLL_KD`), derived in `scripts/roll_bandwidth.py`
+  section 4: ≥ 45° phase margin at the planned 71 Hz loop with 10–30 ms servo lag, ≥ 38° at
+  60 ms, ~3 Hz crossover at max q (slower, with more margin, at lower speed).
+- The servo is `control.servo_step`: slew limit plus a first-order lag, **SERVO_LAG_S = 30 ms,
+  assumed** — the KST datasheet gives no lag. The controller output takes effect one loop
+  period later, and the servo and roll axis are stepped at 1 kHz inside the 100 Hz loop.
+- Under this model the old Kp = 1.0 limit-cycles at ~32° peak-to-peak and fails the roll-hold
+  check; the new gains hold to 0.05–0.13° at 0–60 ms servo lag.
+- The same lag broke R12: ramping the command to zero over the full 0.5 s left the surface
+  ~0.7° off at 0.5 s, because the surface trails the command. The ramp is now 0.35 s
+  (`R12_RAMP_S`), which leaves ~150 ms for latency and lag. **Firmware must do the same**:
+  R12's 0.5 s is a surface position requirement, not a command one.
+- `scripts/sil_guidance.py` uses the same roll gains and roll servo model. Its pitch/yaw
+  channels are still slew-only and their gains (Kp 1.2, Kd 0.35) are unchecked against lag.
+
+The servo bench test (docs/15 C1) turns the assumed 30 ms into a number; re-run
+`scripts/roll_bandwidth.py` with it and it will say whether the gains still hold.
 
 **A bug the first draft of this script had, worth recording because it is exactly the kind
 of thing a SIL demo exists to catch on the bench rather than in the air:** gating the L1

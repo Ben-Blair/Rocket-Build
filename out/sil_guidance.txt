@@ -1,0 +1,58 @@
+============================================================================================
+SIL L2 / L3 -- attitude hold, and guidance to a ground target
+============================================================================================
+
+  airframe: frozen baseline, deflection cap 9.2 deg, roll cap 2.0 deg
+  magnetometer aiding: ON     attitude gains Kp=1.2 Kd=0.35
+
+THE PITCH MODE at max coast q -- this is what shapes both loops
+  Cm_alpha -104.1 /rad      Cm_q -2529.8 /rad   (control.pitch_damping_cm_q, NEW and UNVERIFIED)
+  natural frequency 3.60 Hz      damping ratio 0.079
+  -> ring-down to 2% takes ~2.2 s on aero damping alone, which is
+     longer than the control window. The RATE term is doing the work, not the
+     airframe: run with --kd 0 and L2 oscillates instead of holding.
+
+  [PASS]  L2 attitude hold    attitude-error RMS 10.12 deg held vs 43.76 deg locked (4.3x better)
+  [PASS]  L2 stall margin     peak alpha under control 3.21 deg against the 12 deg limit, 0.00 s stalled  (rail-exit transient, before the loop runs: 21.0 deg)
+  [PASS]  L3 target capture   crosstrack miss 201 -> 2.6 m, captured at t=6.27 s; actual impact 157 m from target
+  [PASS]  L3 stall margin     peak alpha under control 2.87 deg against the 12 deg limit, 0.00 s stalled  (rail-exit transient, before the loop runs: 2.5 deg)
+
+L2 -- 85 deg rail, steady 8 m/s crosswind
+  attitude error, peak     18.73 deg held   vs  87.83 deg with canards locked
+  apogee                     973 m      vs    912 m
+  peak alpha under control  3.21 deg
+
+  THE RAIL-EXIT TRANSIENT IS NOT A CONTROL PROBLEM AND IS THE LARGEST ALPHA IN
+  THE FLIGHT: 21.0 deg, before the loop is allowed to run. At the 8 m/s
+  crosswind above and this vehicle's 20.6 m/s rail-exit speed, the relative wind
+  is already ~21 deg off the rail -- geometry, not aerodynamics, and no canard
+  authority exists there anyway (q < Q_MIN). It is the argument for a wind limit
+  on the launch card, and it is what R1's static margin is carrying.
+
+L3 -- 28 deg rail, target 200 m across the unguided ground track
+  unguided impact           1261, 1 m
+  target                    1261, 201 m
+  guided impact             1111, 156 m
+  crossrange achieved        155 m of the 200 m asked (77%)
+  captured at             t = 6.27 s
+  peak bank                 90.1 deg
+
+  TWO THINGS THE LOOP CANNOT FIX, and both are in the numbers above.
+  1. MANOEUVRING COSTS 150 m OF DOWNRANGE (12%).
+     Banking 90 deg points the whole normal force sideways, so nothing holds the
+     vehicle up while it turns, and the induced drag of the trimmed alpha is paid
+     for the entire manoeuvre. A ballistic vehicle cannot buy that range back.
+     Downrange is therefore NOT a controllable axis and the impact will always
+     fall short of a target placed at the unguided range.
+  2. THE PREDICTOR IS BIASED BY THE MANOEUVRE ITSELF. `predict_impact` propagates
+     with canards NEUTRAL, so while the vehicle is banked and pulling, the
+     prediction it is nulling is not the trajectory it is flying -- 45 m of the
+     crossrange asked for is lost to exactly that. Closing this properly needs a
+     predictor that carries the current command forward, which is a real firmware
+     design decision and is NOT made here.
+
+WHAT THIS DOES NOT PROVE -- the module docstring has the full list. The short
+version: Cm_q is new and unverified, pitch and yaw are treated as independent
+planes (which a 90 deg bank violates), the canard wake is still unmeasured on
+both channels, and nothing here has touched hardware.
+

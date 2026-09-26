@@ -18,6 +18,22 @@ from .trajectory import Flight, FlightPoint
 
 STALL_LIMIT_DEG = 12.0
 
+# Roll-angle loop: delta = ROLL_KP*(phi_cmd - phi) - ROLL_KD*p, deg of canard per deg / per
+# deg/s. Derived and checked in scripts/roll_bandwidth.py section 4 against the planned loop
+# rate and an ASSUMED servo lag -- the KST datasheet gives no lag, so re-derive both gains
+# once the servo bench test (docs/15 C1) measures it. The old Kp = 1.0 was unstable.
+ROLL_KP = 0.07
+ROLL_KD = 0.0024
+ROLL_LOOP_HZ = 71.0
+SERVO_LAG_S = 0.030
+
+
+def servo_step(cur_deg: float, cmd_deg: float, dt: float, slew_deg_s: float,
+               lag_s: float = SERVO_LAG_S) -> float:
+    """Advance the surface one step: first-order lag toward the command, capped at the slew rate."""
+    lag = (cmd_deg - cur_deg) * (1.0 - math.exp(-dt / lag_s)) if lag_s > 0 else cmd_deg - cur_deg
+    return cur_deg + max(-slew_deg_s * dt, min(slew_deg_s * dt, lag))
+
 
 @dataclass
 class InterferenceModel:
@@ -476,6 +492,49 @@ def roll_damping_cl_p(rocket: Rocket, mach: float = 0.0) -> float:
             continue
         panel = aero.single_fin_cn_alpha(fins, d, mach)
         total += fins.count * panel * fins.mean_square_radius / d**2
+    return -2.0 * total
+
+
+def pitch_damping_cm_q(rocket: Rocket, cg: float, mach: float = 0.0,
+                       include_body_lift: bool = True) -> float:
+    """Pitch damping derivative Cm_q, per radian of the nondimensional pitch rate
+    q_hat = omega*d/(2V). Negative.
+
+    ADDED Sep 2026 for L2 attitude hold, which is the first thing in this project that needs
+    it: `pitch_authority` returns an undamped natural frequency, and an undamped frequency is
+    enough to size a loop rate but NOT enough to close a loop -- the damping ratio is what
+    decides whether a commanded attitude settles or rings.
+
+    Derivation is the same strip argument `roll_damping_cl_p` uses, one axis over. A surface
+    whose centre of pressure sits a distance l aft of the CG, on a vehicle pitching at omega,
+    is carried transversely at omega*l and so sees a local incidence omega*l/V. Its normal
+    force acts at that same l, so the restoring moment scales as l^2:
+
+        Cm_q = -2 * sum_over_surfaces[ CNa_surface * (l/d)^2 ],      l = x_cp - x_cg
+
+    and the contributions are exactly `aero.stability`'s, which is why this reads them from
+    it rather than rebuilding the buildup: whatever CNa and CP the static analysis believes,
+    the damping is derived from the same numbers. Note the FIN-SET slope is the right one
+    here (a body at angle of attack is Barrowman's own roll-averaged case), unlike roll
+    damping, where every fin damps regardless of clocking and the set value understates each
+    one by 2x. Getting that backwards is the error corrected in `roll_damping_cl_p`.
+
+    THE SIGN IS NOT AUTOMATIC. Every term is negative only because l is squared; a surface
+    forward of the CG damps pitch just as one aft of it does, which is why the canards
+    contribute damping while simultaneously destabilising the vehicle statically. Do not
+    read a large |Cm_q| as stability -- `cm_alpha` is what carries that.
+
+    UNVERIFIED AGAINST ANYTHING. Both cross-check codes this project uses report pitch
+    damping their own way (RocketPy in its own frame, OpenRocket not at all as a derivative),
+    and `sim/probe.py`'s T2 found three implementations of ROLL damping disagreeing by 2x.
+    Treat this the same way until it has been probed: good enough to size a gain and show a
+    damping ratio, not good enough to quote.
+    """
+    d = rocket.diameter
+    stab = aero.stability(rocket, cg, mach, include_body_lift)
+    total = 0.0
+    for cn_alpha, cp in stab.contributions.values():
+        total += cn_alpha * ((cp - cg) / d) ** 2
     return -2.0 * total
 
 

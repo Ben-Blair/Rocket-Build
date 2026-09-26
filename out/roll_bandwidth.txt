@@ -1,0 +1,143 @@
+============================================================================================
+ROLL LOOP BANDWIDTH -- can the KST X08 Plus close the roll axis?
+============================================================================================
+
+  servo: KST X08 Plus V6.0 (9 g, 8 mm, 5.3 kgf.cm @ 8.4 V)
+  published: stall 0.52 N*m, 0.090 s/60deg = 667 deg/s slew.  NO frequency response, NO deadband, NO lag spec.
+
+1. THE ROLL PLANT -- p/delta = gain / (1 + tau s)
+
+   condition          q (Pa)   V    Cl_delta   tau (ms)  corner   gain (deg/s per deg)
+   vertical max q     11760  137.6     21.87      19.7   8.09 Hz             282.9
+   horizontal max q   15500  156.1     22.51      16.5   9.67 Hz             320.9
+
+   The roll mode is the FASTEST mode on this vehicle -- 8-10 Hz against the pitch
+   mode's 3.6 Hz, which is what the existing 72 Hz loop-rate requirement was sized
+   from. And the gain is the largest in the vehicle by a wide margin: one degree of
+   canard is three hundred degrees per second of roll.
+
+2. THE RATE LIMIT IS NOT WHAT BINDS
+
+   Largest sine the servo can track at the published slew rate:
+
+     amplitude  0.5 deg   ->   212.2 Hz
+     amplitude  1.0 deg   ->   106.1 Hz
+     amplitude  2.0 deg   ->    53.1 Hz  <- R13 roll cap
+     amplitude  9.2 deg   ->    11.5 Hz  <- R13 pitch/yaw cap
+
+   At the 2 deg roll cap the servo is good for 53 Hz on slew rate alone, five times
+   the roll mode's own corner. This is why a rate-limit-only actuator model makes the
+   roll loop look easy, and it is the wrong thing to be checking.
+
+3. WHAT ACTUALLY BINDS -- PHASE LAG, WHICH IS UNMEASURED
+
+   Stability limit on a proportional roll-angle gain, exactly (Routh on the cubic):
+       Kp_max = (tau_roll + tau_servo) / (tau_roll * tau_servo * gain)
+
+   servo lag    Kp_max, vertical    Kp_max, horizontal    with 6 dB gain margin
+   (ms)         (deg surf / deg)    (deg surf / deg)      (horizontal)
+        5              0.887                 0.813                0.406
+       10              0.533                 0.501                0.251
+       15              0.415                 0.397                0.199
+       20              0.356                 0.345                0.173
+       30              0.298                 0.293                0.147
+       40              0.268                 0.267                0.134
+       60              0.239                 0.241                0.121
+
+   The repo used Kp = 1.0 (`sil_demo.ROLL_KP`, docs/13's closed-loop result) until
+   2026-09-26. That is ABOVE the limit for every servo lag in the table, 2x at an
+   optimistic 10 ms and 4x at a realistic 30 ms -- and docs/13's clean roll hold came
+   from an actuator model with no phase in it. Section 4 replaces it.
+
+4. THE FIX -- a gyro rate term AND a much smaller gain
+
+   Law: delta = Kp*(phi_cmd - phi) - Kd*p, p from the gyro. With the rate term the
+   Routh limit (no delay) becomes Kp_max = (tau_r + tau_s)(1 + gain*Kd)/(tau_r*tau_s*gain):
+   Kd raises the ceiling, but the loop's own sample delay caps what it can buy, so the
+   margins below include 1.5 loop periods of delay rather than trusting Routh.
+
+   4a. Phase margin / gain margin / crossover, worst of the two flight conditions
+
+   loop    servo    Kp=1.0, Kd=0          Kp=0.07, Kd=0.0024
+   (Hz)    lag(ms)  PM(deg) GM(dB) fc(Hz)    PM(deg) GM(dB) fc(Hz)
+     71      10       -148  -17.7   15.2         61    6.1    3.5
+     71      30       -123  -19.5   11.2         47    7.5    3.1
+     71      60       -103  -20.3    8.8         38    9.2    2.5
+    100      10       -110  -15.8   15.2         71    8.2    3.5
+    100      30        -96  -17.8   11.2         55   10.1    3.1
+    100      60        -81  -18.8    8.8         44   12.3    2.5
+    200      10        -64  -12.5   15.2         82   13.0    3.5
+    200      30        -62  -15.1   11.2         64   15.6    3.1
+    200      60        -55  -16.2    8.8         51   18.4    2.5
+
+   Kp = 1.0 is unstable everywhere (negative margins). The new gains are stable at
+   every servo lag and loop rate here, and improve with loop rate.
+
+   4b. Where the gains come from
+
+   Requirement at the planned 71 Hz loop: PM >= 45 deg at 10 and 30 ms servo lag,
+   PM >= 30 deg at 60 ms, GM >= 6 dB throughout, both flight conditions.
+   Among gains that pass, take the highest crossover at 30 ms.
+
+   search result: Kp = 0.07, Kd = 0.0024, crossover 3.1 Hz at 30 ms
+   matches control.ROLL_KP / ROLL_KD.
+
+   The achievable bandwidth is ~3 Hz, set by servo lag plus loop delay, and nothing
+   in the gains can raise it. Kp is 14x smaller than before because the plant gain
+   is ~300 deg/s per degree: 0.07 deg of canard per degree of error already commands
+   ~21 deg/s of roll rate per degree. Gyro noise through Kd is ~1e-4 deg of canard.
+
+   4c. Nonlinear time-domain check -- 90 deg bank step, 71 Hz loop, surface cap
+   +/-2 deg, slew 667 deg/s, servo lag, one period of latency
+
+   condition          lag(ms)   Kp     Kd       settled  overshoot  t_settle(2deg)  p2p last 1s
+   vertical max q        10    1.00  0.0000      NO       20.4           never       37.77
+   vertical max q        10    0.07  0.0024      yes      -0.0          0.29 s        0.00
+   vertical max q        30    1.00  0.0000      NO       23.4          2.99 s       46.17
+   vertical max q        30    0.07  0.0024      yes       2.7          0.30 s        0.00
+   vertical max q        60    1.00  0.0000      NO       29.3           never       52.38
+   vertical max q        60    0.07  0.0024      yes      10.6          0.54 s        0.00
+   horizontal max q      10    1.00  0.0000      NO       22.8           never       45.19
+   horizontal max q      10    0.07  0.0024      yes      -0.0          0.27 s        0.00
+   horizontal max q      30    1.00  0.0000      NO       29.6           never       50.08
+   horizontal max q      30    0.07  0.0024      yes       2.4          0.26 s        0.00
+   horizontal max q      60    1.00  0.0000      NO       35.4           never       56.56
+   horizontal max q      60    0.07  0.0024      yes      10.8          0.50 s        0.00
+
+   New gains settle in every case: YES.
+   Kp = 1.0 limit-cycles in every case (large p2p, never settles).
+
+   STILL ASSUMED: the servo lag. SERVO_LAG_S = 30 ms is a guess; if the bench test
+   (docs/15 C1) measures worse than 60 ms these gains lose their margin. Also assumed:
+   the roll gain itself, which cfd/vlm.py says may be ~4x LOWER (78% fin take-back,
+   section 5) -- that would drop crossover to ~1 Hz with more margin, not less.
+
+5. THE PART THIS CANNOT ANSWER, and it is the part your question was really about
+
+   You asked about the canards throwing flow onto the aft fins AT AN ANGLE -- i.e.
+   whether the interference, and so the roll gain above, changes when the vehicle is
+   flying at incidence. IT MIGHT, AND NOTHING IN THIS PROJECT WOULD KNOW:
+
+   `control.InterferenceModel.strength()` is a function of ONE variable, canard-to-fin
+   spacing in calibers. It has no angle-of-attack term, no deflection term and no roll-
+   rate term. So every roll number in this repo is computed at the same interference
+   strength whether the vehicle is at 0 deg or at the 11 deg local incidence the
+   bank-to-turn condition actually flies.
+
+   Physically the wake does move: the canard vortex pair is convected by the crossflow,
+   so at incidence it is displaced off the axis and the 45 deg interdigitation that
+   buys the favourable 10.5% cancellation is no longer symmetric between the fins on
+   the windward and leeward sides. The mechanism for an ANGLE-DEPENDENT, and possibly
+   ASYMMETRIC, induced roll is there in the geometry. Its size is unknown.
+
+   Two independent checks now say the interference term is bigger than the model:
+   `cfd/vlm.py` puts the aft fins taking back 78% of canard roll authority against the
+   model's 10.5%, at zero incidence. If the true figure is anywhere near that, the roll
+   GAIN in section 1 falls by roughly the same factor -- which relaxes the bandwidth
+   problem above while making the control authority worse. Both move together and
+   neither is measured.
+
+   This is GV-2's job and it cannot be closed on the bench: an open-loop deflection
+   sweep, flown, logging commanded deflection against measured roll rate AT SEVERAL
+   ANGLES OF ATTACK, is the only thing that turns any of it into a number.
+
