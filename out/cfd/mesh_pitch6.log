@@ -1,0 +1,451 @@
+{'FARFIELD': 6, 'BODY': 6, 'STING': 1, 'CANARD0': 7, 'CANARD1': 7, 'CANARD2': 7, 'CANARD3': 7, 'FIN0': 7, 'FIN1': 7, 'FIN2': 7, 'FIN3': 7}
+Info    : Meshing 1D...
+Info    : [  0%] Meshing curve 177 (Line)
+Info    : [  0%] Meshing curve 52 (BSpline)
+Info    : [  0%] Meshing curve 27 (Circle)
+Info    : [  0%] Meshing curve 1 (Circle)
+Info    : [  0%] Meshing curve 127 (BSpline)
+Info    : [  0%] Meshing curve 77 (Line)
+Info    : [  0%] Meshing curve 102 (BSpline)
+Info    : [  0%] Meshing curve 152 (BSpline)
+Info    : [  0%] Meshing curve 53 (BSpline)
+Info    : [  0%] Meshing curve 54 (BSpline)
+Info    : [  0%] Meshing curve 28 (BSpline)
+Info    : [  0%] Meshing curve 178 (BSpline)
+Info    : [  0%] Meshing curve 55 (BSpline)
+Info    : [  0%] Meshing curve 103 (Line)
+Info    : [  0%] Meshing curve 128 (BSpline)
+Info    : [  0%] Meshing curve 78 (BSpline)
+Info    : [  0%] Meshing curve 56 (BSpline)
+Info    : [ 10%] Meshing curve 2 (Circle)
+Info    : [ 10%] Meshing curve 57 (BSpline)
+Info    : [ 10%] Meshing curve 58 (BSpline)
+Info    : [ 10%] Meshing curve 104 (BSpline)
+Info    : [ 10%] Meshing curve 179 (Line)
+Info    : [ 10%] Meshing curve 59 (BSpline)
+Info    : [ 10%] Meshing curve 129 (BSpline)
+Info    : [ 10%] Meshing curve 3 (Circle)
+Info    : [ 10%] Meshing curve 60 (Circle)
+Info    : [ 10%] Meshing curve 79 (Line)
+Info    : [ 10%] Meshing curve 4 (Circle)
+Info    : [ 10%] Meshing curve 180 (BSpline)
+Info    : [ 10%] Meshing curve 105 (Line)
+Info    : [ 20%] Meshing curve 5 (Circle)
+Info    : [ 20%] Meshing curve 130 (BSpline)
+Info    : [ 20%] Meshing curve 80 (BSpline)
+Info    : [ 20%] Meshing curve 6 (Circle)
+Info    : [ 20%] Meshing curve 106 (BSpline)
+Info    : [ 20%] Meshing curve 7 (Circle)
+Info    : [ 20%] Meshing curve 61 (Line)
+Info    : [ 20%] Meshing curve 8 (Circle)
+Info    : [ 20%] Meshing curve 181 (Line)
+Info    : [ 20%] Meshing curve 81 (Line)
+Info    : [ 20%] Meshing curve 9 (Circle)
+Info    : [ 20%] Meshing curve 153 (Line)
+Info    : [ 20%] Meshing curve 131 (BSpline)
+Info    : [ 20%] Meshing curve 10 (Circle)
+Info    : [ 20%] Meshing curve 82 (BSpline)
+Info    : [ 20%] Meshing curve 107 (Line)
+Info    : [ 20%] Meshing curve 11 (Circle)
+Info    : [ 20%] Meshing curve 12 (Circle)
+Info    : [ 20%] Meshing curve 83 (Line)
+Info    : [ 30%] Meshing curve 13 (Circle)
+Info    : [ 30%] Meshing curve 154 (BSpline)
+Info    : [ 30%] Meshing curve 182 (BSpline)
+Info    : [ 30%] Meshing curve 14 (Circle)
+Info    : [ 30%] Meshing curve 84 (BSpline)
+Info    : [ 30%] Meshing curve 15 (Circle)
+Info    : [ 30%] Meshing curve 16 (Circle)
+Info    : [ 30%] Meshing curve 17 (Circle)
+Info    : [ 30%] Meshing curve 85 (Line)
+Info    : [ 30%] Meshing curve 18 (Circle)
+Info    : [ 30%] Meshing curve 108 (BSpline)
+Info    : [ 30%] Meshing curve 19 (Circle)
+Info    : [ 30%] Meshing curve 86 (BSpline)
+Info    : [ 30%] Meshing curve 155 (Line)
+Info    : [ 30%] Meshing curve 62 (BSpline)
+Info    : [ 30%] Meshing curve 20 (Circle)
+Info    : [ 30%] Meshing curve 87 (Line)
+Info    : [ 30%] Meshing curve 88 (BSpline)
+Info    : [ 30%] Meshing curve 156 (BSpline)
+Info    : [ 30%] Meshing curve 63 (Line)
+Info    : [ 40%] Meshing curve 21 (Circle)
+Info    : [ 40%] Meshing curve 109 (Line)
+Info    : [ 40%] Meshing curve 89 (Line)
+Info    : [ 40%] Meshing curve 64 (BSpline)
+Info    : [ 40%] Meshing curve 132 (BSpline)
+Info    : [ 40%] Meshing curve 22 (Circle)
+Info    : [ 40%] Meshing curve 90 (BSpline)
+Info    : [ 40%] Meshing curve 65 (Line)
+Info    : [ 40%] Meshing curve 23 (Circle)
+Info    : [ 40%] Meshing curve 91 (Line)
+Info    : [ 40%] Meshing curve 110 (Line)
+Info    : [ 40%] Meshing curve 66 (BSpline)
+Info    : [ 40%] Meshing curve 24 (Circle)
+Info    : [ 40%] Meshing curve 183 (Line)
+Info    : [ 40%] Meshing curve 157 (Line)
+Info    : [ 40%] Meshing curve 92 (BSpline)
+Info    : [ 40%] Meshing curve 25 (Circle)
+Info    : [ 40%] Meshing curve 67 (Line)
+Info    : [ 40%] Meshing curve 93 (Line)
+Info    : [ 50%] Meshing curve 26 (Circle)
+Info    : [ 50%] Meshing curve 94 (BSpline)
+Info    : [ 50%] Meshing curve 47 (BSpline)
+Info    : [ 50%] Meshing curve 158 (BSpline)
+Info    : [ 50%] Meshing curve 133 (BSpline)
+Info    : [ 50%] Meshing curve 95 (Line)
+Info    : [ 50%] Meshing curve 68 (BSpline)
+Info    : [ 50%] Meshing curve 96 (BSpline)
+Info    : [ 50%] Meshing curve 48 (BSpline)
+Info    : [ 50%] Meshing curve 111 (Circle)
+Info    : [ 50%] Meshing curve 97 (Line)
+Info    : [ 50%] Meshing curve 134 (BSpline)
+Info    : [ 50%] Meshing curve 49 (BSpline)
+Info    : [ 50%] Meshing curve 69 (Line)
+Info    : [ 50%] Meshing curve 98 (BSpline)
+Info    : [ 50%] Meshing curve 99 (Line)
+Info    : [ 50%] Meshing curve 184 (BSpline)
+Info    : [ 50%] Meshing curve 50 (BSpline)
+Info    : [ 50%] Meshing curve 135 (BSpline)
+Info    : [ 50%] Meshing curve 100 (BSpline)
+Info    : [ 50%] Meshing curve 70 (BSpline)
+Info    : [ 60%] Meshing curve 101 (Line)
+Info    : [ 60%] Meshing curve 51 (BSpline)
+Info    : [ 60%] Meshing curve 124 (BSpline)
+Info    : [ 60%] Meshing curve 71 (Line)
+Info    : [ 60%] Meshing curve 136 (BSpline)
+Info    : [ 60%] Meshing curve 43 (BSpline)
+Info    : [ 60%] Meshing curve 72 (BSpline)
+Info    : [ 60%] Meshing curve 159 (Line)
+Info    : [ 60%] Meshing curve 73 (Line)
+Info    : [ 60%] Meshing curve 44 (BSpline)
+Info    : [ 60%] Meshing curve 74 (BSpline)
+Info    : [ 60%] Meshing curve 45 (BSpline)
+Info    : [ 60%] Meshing curve 137 (BSpline)
+Info    : [ 60%] Meshing curve 185 (Line)
+Info    : [ 60%] Meshing curve 75 (Line)
+Info    : [ 60%] Meshing curve 76 (BSpline)
+Info    : [ 60%] Meshing curve 125 (BSpline)
+Info    : [ 60%] Meshing curve 126 (BSpline)
+Info    : [ 60%] Meshing curve 186 (BSpline)
+Info    : [ 70%] Meshing curve 46 (BSpline)
+Info    : [ 70%] Meshing curve 160 (BSpline)
+Info    : [ 70%] Meshing curve 138 (BSpline)
+Info    : [ 70%] Meshing curve 40 (BSpline)
+Info    : [ 70%] Meshing curve 41 (BSpline)
+Info    : [ 70%] Meshing curve 187 (Line)
+Info    : [ 70%] Meshing curve 121 (BSpline)
+Info    : [ 70%] Meshing curve 112 (Circle)
+Info    : [ 70%] Meshing curve 42 (BSpline)
+Info    : [ 70%] Meshing curve 161 (Line)
+Info    : [ 70%] Meshing curve 119 (BSpline)
+Info    : [ 70%] Meshing curve 188 (BSpline)
+Info    : [ 70%] Meshing curve 139 (BSpline)
+Info    : [ 70%] Meshing curve 122 (BSpline)
+Info    : [ 70%] Meshing curve 162 (BSpline)
+Info    : [ 70%] Meshing curve 120 (BSpline)
+Info    : [ 70%] Meshing curve 38 (BSpline)
+Info    : [ 70%] Meshing curve 123 (BSpline)
+Info    : [ 70%] Meshing curve 189 (Line)
+Info    : [ 70%] Meshing curve 163 (Line)
+Info    : [ 70%] Meshing curve 118 (BSpline)
+Info    : [ 70%] Meshing curve 140 (Line)
+Info    : [ 70%] Meshing curve 117 (BSpline)
+Info    : [ 80%] Meshing curve 116 (BSpline)
+Info    : [ 80%] Meshing curve 39 (BSpline)
+Info    : [ 80%] Meshing curve 164 (BSpline)
+Info    : [ 80%] Meshing curve 115 (Circle)
+Info    : [ 80%] Meshing curve 190 (Line)
+Info    : [ 80%] Meshing curve 114 (Circle)
+Info    : [ 80%] Meshing curve 165 (Line)
+Info    : [ 80%] Meshing curve 166 (BSpline)
+Info    : [ 80%] Meshing curve 36 (BSpline)
+Info    : [ 80%] Meshing curve 167 (Line)
+Info    : [ 80%] Meshing curve 191 (Line)
+Info    : [ 80%] Meshing curve 168 (BSpline)
+Info    : [ 80%] Meshing curve 37 (BSpline)
+Info    : [ 80%] Meshing curve 35 (Circle)
+Info    : [ 80%] Meshing curve 34 (Line)
+Info    : [ 80%] Meshing curve 33 (Circle)
+Info    : [ 80%] Meshing curve 169 (Line)
+Info    : [ 80%] Meshing curve 192 (Line)
+Info    : [ 90%] Meshing curve 32 (Line)
+Info    : [ 90%] Meshing curve 31 (BSpline)
+Info    : [ 90%] Meshing curve 170 (BSpline)
+Info    : [ 90%] Meshing curve 193 (Line)
+Info    : [ 90%] Meshing curve 113 (Circle)
+Info    : [ 90%] Meshing curve 171 (Line)
+Info    : [ 90%] Meshing curve 141 (Circle)
+Info    : [ 90%] Meshing curve 172 (BSpline)
+Info    : [ 90%] Meshing curve 194 (Line)
+Info    : [ 90%] Meshing curve 173 (Line)
+Info    : [ 90%] Meshing curve 195 (Line)
+Info    : [ 90%] Meshing curve 196 (Line)
+Info    : [ 90%] Meshing curve 174 (BSpline)
+Info    : [ 90%] Meshing curve 175 (Line)
+Info    : [ 90%] Meshing curve 197 (Line)
+Info    : [ 90%] Meshing curve 142 (BSpline)
+Info    : [ 90%] Meshing curve 176 (BSpline)
+Info    : [ 90%] Meshing curve 143 (Line)
+Info    : [ 90%] Meshing curve 198 (Line)
+Info    : [ 90%] Meshing curve 150 (BSpline)
+Info    : [ 90%] Meshing curve 201 (Line)
+Info    : [ 90%] Meshing curve 199 (Line)
+Info    : [ 90%] Meshing curve 151 (Line)
+Info    : [ 90%] Meshing curve 144 (BSpline)
+Info    : [ 90%] Meshing curve 200 (Line)
+Info    : [ 90%] Meshing curve 149 (Line)
+Info    : [ 90%] Meshing curve 148 (BSpline)
+Info    : [ 90%] Meshing curve 30 (BSpline)
+Info    : [ 90%] Meshing curve 147 (Line)
+Info    : [ 90%] Meshing curve 145 (Line)
+Info    : [ 90%] Meshing curve 146 (BSpline)
+Info    : [ 90%] Meshing curve 29 (BSpline)
+Info    : Done meshing 1D (Wall 0.162303s, CPU 0.936155s)
+Info    : Meshing 2D...
+Info    : [  0%] Meshing surface 10 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 54 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 28 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 1 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 37 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 19 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 63 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 46 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 64 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 20 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 11 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 29 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 55 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 65 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 12 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 21 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 30 (Cylinder, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 66 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 22 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 13 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 14 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 67 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 23 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 47 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 24 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 68 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 15 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 38 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 48 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 56 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 69 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 49 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 70 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 57 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 39 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 25 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 26 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 16 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 27 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 40 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 58 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 17 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 8 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 18 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 36 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 9 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 50 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 35 (Cylinder, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 34 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 33 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 32 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 31 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 45 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 7 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 51 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 6 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 59 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 41 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 44 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 42 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 52 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 43 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 61 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 62 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 53 (BSpline surface, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 5 (Cylinder, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 4 (Cylinder, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 3 (Plane, Frontal-Delaunay)
+Info    : [  0%] Meshing surface 2 (Cylinder, Frontal-Delaunay)
+Info    : Done meshing 2D (Wall 1.11035s, CPU 4.33345s)
+Info    : Meshing 3D...
+Info    : 3D Meshing 1 volume with 1 connected component
+Info    : Input mesh hash ba838ef0f2b1f2a5
+Info    : Creating an empty mesh with 48401 vertices
+Info    : Initialization of tet. mesh
+Info    : Delaunay of      48397 points on   8 threads - mesh.nvert: 4         
+Info    : Recovering 44 missing facet(s)
+Info    : Recover Delaunay
+Info    : All volumes of the BRep were found and colorized accordingly
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of     135838 points on   8 threads - mesh.nvert: 48401     
+Info    :           -     129357 points filtered
+Info    :           =       6481 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of     117977 points on   8 threads - mesh.nvert: 54882     
+Info    :           -     102243 points filtered
+Info    :           =      15734 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of     112588 points on   8 threads - mesh.nvert: 70616     
+Info    :           -      84018 points filtered
+Info    :           =      28570 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of     108325 points on   8 threads - mesh.nvert: 99186     
+Info    :           -      67007 points filtered
+Info    :           =      41318 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of     136550 points on   8 threads - mesh.nvert: 140504    
+Info    :           -      78163 points filtered
+Info    :           =      58387 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of     175294 points on   8 threads - mesh.nvert: 198891    
+Info    :           -     110541 points filtered
+Info    :           =      64753 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of     107217 points on   8 threads - mesh.nvert: 263644    
+Info    :           -      67915 points filtered
+Info    :           =      39302 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of      31934 points on   8 threads - mesh.nvert: 302946    
+Info    :           -      18856 points filtered
+Info    :           =      13078 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of      10024 points on   4 threads - mesh.nvert: 316024    
+Info    :           -       6515 points filtered
+Info    :           =       3509 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of       4497 points on   2 threads - mesh.nvert: 319533    
+Info    :           -       3188 points filtered
+Info    :           =       1309 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of       2951 points on   1 threads - mesh.nvert: 320842    
+Info    :           -       2199 points filtered
+Info    :           =        752 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of       1532 points on   1 threads - mesh.nvert: 321594    
+Info    :           -       1164 points filtered
+Info    :           =        368 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of        725 points on   1 threads - mesh.nvert: 321962    
+Info    :           -        579 points filtered
+Info    :           =        146 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of        333 points on   1 threads - mesh.nvert: 322108    
+Info    :           -        270 points filtered
+Info    :           =         63 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of        197 points on   1 threads - mesh.nvert: 322171    
+Info    :           -        146 points filtered
+Info    :           =         51 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of        219 points on   1 threads - mesh.nvert: 322222    
+Info    :           -        151 points filtered
+Info    :           =         68 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of        120 points on   1 threads - mesh.nvert: 322290    
+Info    :           -         88 points filtered
+Info    :           =         32 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of         40 points on   1 threads - mesh.nvert: 322322    
+Info    :           -         38 points filtered
+Info    :           =          2 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of         17 points on   1 threads - mesh.nvert: 322324    
+Info    :           -         15 points filtered
+Info    :           =          2 points added
+Info    : Computing mesh sizes...
+Info    : Done computing mesh sizes
+Info    : Delaunay of          2 points on   1 threads - mesh.nvert: 322326    
+Info    :           -          2 points filtered
+Info    :           =          0 points added
+Info    : Improving     108333 tet. on   8 thrd (S & ER)
+Info    : Improving      39253 tet. on   8 thrd (S & ER)
+Info    : Improving      33565 tet. on   8 thrd (S & ER)
+Info    : Improving      30506 tet. on   8 thrd (S & ER)
+Info    : Improving      28618 tet. on   8 thrd (S & ER)
+Info    : Improving      27405 tet. on   8 thrd (S & ER)
+Info    : Improving      26665 tet. on   8 thrd (S & ER)
+Info    : Improving      26201 tet. on   8 thrd (S & ER)
+Info    : Improving      26067 tet. on   8 thrd (S & ER)
+Info    : Improving      25900 tet. on   8 thrd (S & ER)
+Info    : Improving      25828 tet. on   8 thrd (S & ER)
+Info    : Improving      25776 tet. on   8 thrd (S & ER)
+Info    : Improving      25759 tet. on   8 thrd (GSC)
+Info    : Improving      24777 tet. on   8 thrd (S & ER)
+Info    : Improving      23624 tet. on   8 thrd (S & ER)
+Info    : Improving      22915 tet. on   8 thrd (S & ER)
+Info    : Improving      22550 tet. on   8 thrd (S & ER)
+Info    : Improving      22312 tet. on   8 thrd (S & ER)
+Info    : Improving      22184 tet. on   8 thrd (S & ER)
+Info    : Improving      22126 tet. on   8 thrd (S & ER)
+Info    : Improving      22118 tet. on   8 thrd (S & ER)
+Info    : Improving      22097 tet. on   8 thrd (S & ER)
+Info    : Improving      22096 tet. on   8 thrd (GSC)
+Info    : Improving      22146 tet. on   8 thrd (S & ER)
+Info    : Improving      21675 tet. on   8 thrd (S & ER)
+Info    : Improving      21401 tet. on   8 thrd (S & ER)
+Info    : Improving      21309 tet. on   8 thrd (S & ER)
+Info    : Improving      21217 tet. on   8 thrd (S & ER)
+Info    : Improving      21167 tet. on   8 thrd (S & ER)
+Info    : Improving      21145 tet. on   8 thrd (S & ER)
+Info    : Improving      21136 tet. on   8 thrd (S & ER)
+Info    : Improving      21132 tet. on   8 thrd (GSC)
+Info    : Improving      21218 tet. on   8 thrd (S & ER)
+Info    : Improving      21060 tet. on   8 thrd (S & ER)
+Info    : Improving      20928 tet. on   8 thrd (S & ER)
+Info    : Improving      20858 tet. on   8 thrd (S & ER)
+Info    : Improving      20813 tet. on   8 thrd (S & ER)
+Info    : Improving      20810 tet. on   8 thrd (S & ER)
+Info    : Improving      20802 tet. on   8 thrd (S & ER)
+Info    : Improving      20805 tet. on   8 thrd (GSC)
+Info    : Improving      20846 tet. on   8 thrd (S & ER)
+Info    : Improving      20778 tet. on   8 thrd (S & ER)
+Info    : Improving      20732 tet. on   8 thrd (S & ER)
+Info    : Improving      20702 tet. on   8 thrd (S & ER)
+Info    : Improving      20696 tet. on   8 thrd (S & ER)
+Info    : Improving      20689 tet. on   8 thrd (S & ER)
+Info    : Improving      20685 tet. on   8 thrd (GSC)
+Info    : Improving      20667 tet. on   8 thrd (S & ER)
+Info    : Improving      20649 tet. on   8 thrd (S & ER)
+Info    : Improving      20647 tet. on   8 thrd (S & ER)
+Info    : Improving      20645 tet. on   8 thrd (S & ER)
+Info    : Improving      20633 tet. on   8 thrd (S & ER)
+Info    : Improving      20628 tet. on   8 thrd (GSC)
+Info    :  	Final tet. mesh contains 2090445 tetrahedra
+Info    :  	Final tet. mesh contains 322326 vertices
+Info    : tEmptyMesh  	 = 	    0.136
+Info    : tVerifyBnd  	 = 	    0.014
+Info    : tBndRecovery	 = 	    0.384
+Info    : tConvertMesh	 = 	    0.021
+Info    : tRefine     	 = 	   12.115
+Info    : tOptimize   	 = 	   22.054
+Info    : Done meshing 3D (Wall 34.9092s, CPU 205.719s)
+Info    : 323054 nodes 1943289 elements
+Info    : Writing '/Users/user/Documents/Projects/RocketSenior/out/cfd/pitch6_coarse/mesh.su2'...
+Info    : Writing 1841090 elements and 322326 nodes
+Info    : Done writing '/Users/user/Documents/Projects/RocketSenior/out/cfd/pitch6_coarse/mesh.su2'
+wrote /Users/user/Documents/Projects/RocketSenior/out/cfd/pitch6_coarse/mesh.su2  (1,841,090 tets)

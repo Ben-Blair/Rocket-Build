@@ -1,0 +1,48 @@
+VALIDATION 1 -- flat rectangular wing, lift slope vs Helmbold
+     AR   VLM CLa   Helmbold    error
+   1.00     1.493      1.483    +0.7%
+   2.36     2.798      2.911    -3.9%
+   6.00     4.272      4.529    -5.7%
+
+VALIDATION 2 -- chordwise centre of pressure, fraction of MAC
+  wing                              VLM    theory
+  rectangle, AR 8                  0.242    0.25 (lifting line), ~0.24 lifting surface
+  pure delta, AR 0.5              0.454    0.50 (slender-wing theory, AR -> 0)
+  pure delta, AR 1.0              0.425    0.50 (slender-wing theory, AR -> 0)
+
+VEHICLE -- frozen baseline, Mach 0.45
+  hinge station 521.72 mm = 0.200 MAC; canard MAC 59.62 mm, MAC LE at 509.80 mm
+  Two body treatments: NONE (panels in free air) and IMAGES (slender-body image
+  vortices in an infinite cylinder -- the physically right one; NONE is shown so
+  the size of the body effect is visible, not so it can be quoted).
+
+1. CANARD HINGE MOMENT -- pitch pair at +/-6 deg, alpha 0
+  body     resolution   CN/panel /rad   CP (MAC)   arm mm   x design arm
+  NONE      10 x 6          3.848       0.402     12.05     4.04x
+  NONE      14 x 10         3.825       0.402     12.03     4.04x
+  NONE      20 x 16         3.811       0.401     11.97     4.02x
+  IMAGES    10 x 6          4.781       0.362      9.66     3.24x
+  IMAGES    14 x 10         4.766       0.360      9.51     3.19x
+  IMAGES    20 x 16         4.757       0.357      9.37     3.14x
+  design (packaging.hinge_moment): CP 0.250 MAC, arm 2.98 mm
+  The ratio in the last column multiplies EVERY hinge moment and servo-torque
+  number in the repo -- it is the fraction the moment arm was underestimated by.
+
+2. ROLL -- all four canards +5 deg about their own span axis, alpha 0
+  body     clocking          canards Cl/rad   aft fins Cl/rad   net Cl/rad   lost   design
+  NONE     interdigitated         +15.233            -9.241       +5.992   60.7%   10.5%
+  NONE     aligned                +15.233           -16.779       -1.546  110.1%   46.3%
+  IMAGES   interdigitated         +16.075           -12.467       +3.608   77.6%   10.5%
+  IMAGES   aligned                +16.075           -17.414       -1.338  108.3%   46.3%
+  'lost' = fraction of the canards' own roll authority the aft fins take back.
+  This is the classic canard-roll-control problem: the four canard tip vortices
+  all turn the same way, so between them and the body they set up a SWIRL that
+  the aft fins see as incidence opposite to the command. The VLM's wake is a rigid
+  sheet that never rolls up or moves; SU2's does both -- trust SU2 over this.
+
+3. PANEL LIFT SLOPE at alpha 2 deg, one panel, ref body area
+  panel     VLM none   VLM images   Barrowman (with its body factor)
+  canard       3.889        7.003      6.087
+  aft fin      8.552       15.510     13.640
+  Barrowman's single-fin slope includes its (1 + R/(s+R)) body factor, so the
+  IMAGES column is the like-for-like one.

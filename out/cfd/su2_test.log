@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/user/Documents/Projects/RocketSenior/cfd/run.py", line 201, in <module>
+    print(json.dumps(reduce(case_dir), indent=2))
+                     ^^^^^^^^^^^^^^^^
+  File "/Users/user/Documents/Projects/RocketSenior/cfd/run.py", line 152, in reduce
+    F = [coeff(m, "CFx"), coeff(m, "CFy"), coeff(m, "CFz")]
+         ^^^^^^^^^^^^^^^
+  File "/Users/user/Documents/Projects/RocketSenior/cfd/run.py", line 148, in coeff
+    raise KeyError(f"{name}@{marker} not in history.csv")
+KeyError: 'CFx@BODY not in history.csv'

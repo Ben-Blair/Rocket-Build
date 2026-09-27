@@ -94,10 +94,53 @@ still running at ~575 iterations when the session ended, converging well (residu
 settled at 0.568, CD −0.210). **This is the single most valuable outstanding item**: it decides
 A2's effect on the servo margin and gives SU2's verdict on A6.
 
+**Update 2026-09-26 (later): it finished and was reduced (`out/cfd/pitch6_coarse/result.json`).**
+Hinge arm = hinge_coeff·d / plate-normal force: **7.8 mm** on the +6° canard, **4.7 mm** on
+the −6° one, against the design's 2.98 mm. So the arm is 1.6–2.6× design at deflection too, and
+A2's direction is confirmed. But the case is not clean: the two panels should be mirror images
+and differ 1.7× in arm and 20% in normal force, a pure pitch pair shows sizeable roll (fins
+0.235) and yaw (1.09) moments, and total CFz was still moving 2% over the last 10%. Treat as
+"servo margin somewhere between ~0.8× and ~1.3×", not a number. Run `trim9` next, longer.
+
+**Update 2026-09-26 (later still): `trim9` (9.2° at 2° α, the actual design point) ran to the
+2500-iteration cap and was reduced (`out/cfd/trim9_coarse/result.json`).** Arms: **5.4 mm** on
+the +9.2° canard, **7.3 mm** on the −9.2° one — same 1.8–2.4× design multiple `pitch6` found, at
+the real deflection. Also not clean, and worse than `pitch6` in one respect: residual only
+reached −4.2 (target was −9.5), and the two UNDEFLECTED canards, which should show ~zero hinge
+moment, instead give arms of −15 mm and −19 mm — meaningless, since that is `hinge_coeff` divided
+by a near-zero normal force, not a real number. **A worse sign: this is a symmetric pitch pair,
+which should have zero net roll moment by construction, and the reduction gives canards −0.055,
+fins +0.173 — a spurious roll larger than either individual canard's own roll contribution in
+`roll5` below.** That is either genuine pitch/roll cross-coupling at 2° α (plausible — A5 already
+says the interference has no incidence term and might need one) or it is mesh/convergence noise,
+and this case cannot tell those apart. **Read the two arm numbers as "confirms A2's direction and
+rough magnitude, does not give a number precise enough to redesign the hinge from."** A medium or
+fine mesh, run to actual residual convergence, is what that needs — not another coarse point.
+
+**Update 2026-09-26 (later still): `roll5` (all four canards +5°, alpha 0 — the A6 case)
+finished and was reduced (`out/cfd/roll5_coarse/result.json`).** `roll.canards` = +1.049,
+`roll.fins` = −0.593, net +0.456 — **the aft fins take back 56.6%** of the canards' own roll
+moment. Three now-independent numbers on the same question:
+
+| method | fin takeback | net roll |
+|---|---|---|
+| `control.InterferenceModel` (the design assumption) | 10.5% | positive, doesn't reverse |
+| `cfd/vlm.py`, no body images | 60.7% | positive |
+| `cfd/vlm.py`, body images | 77.6% | positive |
+| **SU2 Euler, this run** | **56.6%** | **positive** |
+
+SU2 lands closest to VLM's *no-image* case, well short of the 78%-ish figure quoted earlier from
+memory/A6 — **that 78% was VLM-with-images; SU2's own number is 56.6%, not 78%.** All three
+methods now agree on direction (doesn't reverse) and on the model being roughly 5-7× too low on
+magnitude. Convergence is the same story as `trim9`: rms_density only −2.66 (target −9.5), dCFz
+2.4%. Good enough to trust "the model badly understates the interference," not precise enough to
+pick a single design number from. C6 (GV-2 at several α) is still what closes this for real —
+these are all zero-incidence numbers, and A5's point stands: the asymmetric, incidence-dependent
+piece is untouched by any run here.
+
 To finish: `.venv-cfd/bin/python cfd/run.py --case pitch6 --level coarse --reduce-only`
 once it stops, then compare `hinge_coeff` against `packaging.hinge_moment` at the same q.
-Also worth running `--case trim9` (9.2° at 2° α, the actual design point) and `--case roll5`
-(all four canards at +5°, which is the A6 case).
+`roll5` (all four canards at +5°, the A6 case) is running now.
 
 Note `run.py` reduces `CMy(MARKER)` etc. — SU2 8.5 writes per-marker columns with parentheses,
 not `@`. That is already fixed; do not "fix" it again.

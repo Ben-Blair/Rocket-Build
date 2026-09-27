@@ -22,3 +22,11 @@ pcb/**/.mcp.json
 pcb/**/__pycache__/
 pcb/**/output/*.json
 pcb/**/*.kicad_prl
+
+# SU2 case outputs: mesh + volume solution are large and regenerable from cfd/mesh.py /
+# cfd/run.py. Keep result.json, meta.json, config.cfg, history.csv, the .log files, and
+# surface.vtu (small, used for the renders in out/cfd/renders/).
+.venv-cfd/
+out/cfd/*/mesh.su2
+out/cfd/*/restart.dat
+out/cfd/*/vol_solution.vtu
