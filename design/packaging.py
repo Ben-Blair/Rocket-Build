@@ -428,6 +428,21 @@ def hinge_moment(
     return normal_force * (cp_frac - hinge_frac) * mean_chord
 
 
+# CFD-informed correction, 2026-09-26 (docs/15-open-work.md A2/B1). Two independent methods
+# -- a resolution-converged VLM and SU2 Euler at alpha=3 deg, no deflection -- put the real
+# canard chordwise CP at 0.327-0.357 MAC, not the 0.25 hinge_moment() defaults to: a 10:1
+# taper, 42 deg swept delta carries its load further aft than thin-airfoil 0.25c does. The
+# deflected SU2 runs (pitch6, trim9) landed in the same range but are not converged enough
+# to pick a single number from (residual -4 to -5 against a -9.5 target, and trim9 shows a
+# spurious roll moment a symmetric pitch pair should not have at all).
+#
+# CP_FRAC_CFD_INFORMED is the midpoint of that range: an INTERIM, documented estimate, not a
+# replacement default. Compute hinge_moment(..., cp_frac=CP_FRAC_CFD_INFORMED) ALONGSIDE the
+# design-assumption call, never instead of it, until the servo bench test (docs/15 C1) or a
+# converged deflected CFD run gives a real number to freeze against.
+CP_FRAC_CFD_INFORMED = 0.34
+
+
 def torque_margin(required: float, servo: Servo, gear_ratio: float = 1.0, derate: float = 0.4) -> float:
     """Ratio of available to required torque.
 

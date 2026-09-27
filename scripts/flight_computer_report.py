@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from design import estimation as est, flight_computer as fc
+from design import estimation as est, flight_computer as fc, packaging
 from design.configure import DEFLECTION_LIMIT_DEG, ROLL_COMMAND_CAP_DEG, baseline, evaluate
 
 MM = 1000.0
@@ -128,7 +128,11 @@ def main() -> None:
         f"{fc.BATTERY_USABLE_FRACTION:.0%} depth")
     say(f"  MARGIN                  {p.margin:7.1f}x")
     say()
-    say(f"  servo torque margin     {p.stall_torque_margin:7.2f}x on STALL torque")
+    say(f"  servo torque margin     {p.stall_torque_margin:7.2f}x on STALL torque "
+        f"(design cp_frac=0.25)")
+    say(f"  servo torque margin     {p.stall_torque_margin_cfd:7.2f}x on STALL torque -- "
+        f"CFD-INFORMED, interim (cp_frac={packaging.CP_FRAC_CFD_INFORMED}, docs/15 A2/B1;")
+    say(f"                          not a bench-verified number -- see docs/15 C1)")
     say(f"  servo duty margin       {p.continuous_duty_margin:7.2f}x on the datasheet's own "
         f"CONTINUOUS band ({fc.SERVO_CONTINUOUS_KGFCM:.1f} kgf.cm)")
     say(f"  peak pack current       {p.peak_pack_a:7.2f} A -- what sizes the C-rating, the "

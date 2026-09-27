@@ -310,6 +310,24 @@ def peak_hinge_moment(ev, elevation_deg: float = LAUNCH_ELEVATION_DEG) -> float:
         ev.rocket, probe, probe.mass, DEFLECTION_LIMIT_DEG).hinge_moment_per_panel)
 
 
+def peak_hinge_moment_cfd_informed(ev, elevation_deg: float = LAUNCH_ELEVATION_DEG) -> float:
+    """Same as `peak_hinge_moment`, at `packaging.CP_FRAC_CFD_INFORMED` instead of the 0.25
+    design assumption -- see the comment there. Not a replacement number, a second one to
+    look at alongside the first."""
+    from dataclasses import replace
+
+    from . import horizontal
+    from .configure import DEFLECTION_LIMIT_DEG
+
+    worst = max(ev.flight.points, key=lambda p: p.q)
+    hz = horizontal.fly(ev.rocket, ev.params.motor, ev.masses,
+                        elevation_deg=elevation_deg,
+                        deflection_deg=DEFLECTION_LIMIT_DEG, dt=0.01)
+    probe = replace(worst, q=max(hz.max_q, worst.q))
+    return abs(control.pitch_authority(
+        ev.rocket, probe, probe.mass, DEFLECTION_LIMIT_DEG).hinge_moment_per_panel_cfd)
+
+
 @dataclass
 class PowerBudget:
     logic_ma_3v3: float
@@ -332,6 +350,8 @@ class PowerBudget:
     flight_seconds: float
     continuous_duty_margin: float
     stall_torque_margin: float
+    hinge_moment_nm_cfd: float          # packaging.CP_FRAC_CFD_INFORMED -- see there
+    stall_torque_margin_cfd: float
 
 
 def power_budget(ev, servo_key: str = "kst_x08_plus") -> PowerBudget:
@@ -339,6 +359,7 @@ def power_budget(ev, servo_key: str = "kst_x08_plus") -> PowerBudget:
     servo = packaging.SERVOS[servo_key]
     n_servo = ev.rocket.canards.count
     hm = peak_hinge_moment(ev)
+    hm_cfd = peak_hinge_moment_cfd_informed(ev)
 
     logic_ma = sum(p.current_ma for p in (MCU, IMU, MAG, BARO, GNSS, FLASH))
     logic_w = logic_ma / 1000.0 * 3.3
@@ -377,6 +398,8 @@ def power_budget(ev, servo_key: str = "kst_x08_plus") -> PowerBudget:
         control_seconds=ctrl_s, flight_seconds=flight_s,
         continuous_duty_margin=SERVO_CONTINUOUS_KGFCM / max(hm * KGFCM_PER_NM, 1e-9),
         stall_torque_margin=packaging.torque_margin(hm, servo),
+        hinge_moment_nm_cfd=hm_cfd,
+        stall_torque_margin_cfd=packaging.torque_margin(hm_cfd, servo),
     )
 
 

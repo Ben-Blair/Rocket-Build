@@ -227,6 +227,37 @@ ATT_KD 0.35` were only ever run against a slew-only actuator — the same blind 
 the roll instability. The pitch plant is slower (3.6 Hz, ζ 0.079), so it is likely less
 severe, but no one has checked. Do the roll_bandwidth.py analysis for pitch.
 
+**C8. DONE 2026-09-26 (diagnosis only, not a hardware fix): the servo torque margin risk is
+now visible in the standard reports, not just in this doc.** `packaging.CP_FRAC_CFD_INFORMED
+= 0.34` (midpoint of the SU2/VLM 0.327-0.357 MAC range) flows through `control.pitch_authority`
+as `hinge_moment_per_panel_cfd`, and `baseline.py` / `flight_computer_report.py` now print it
+next to the design-assumption margin instead of only reporting the optimistic one:
+
+```
+torque margin   2.03x  OK        (design cp_frac=0.25)
+torque margin   0.73x  FAIL      CFD-informed, interim (cp_frac=0.34)
+```
+
+**Decision, 2026-09-26: lowering `DEFLECTION_LIMIT_DEG` is OFF THE TABLE as a fix.** Ben's
+call — the vehicle's turning performance is the point of the project (see
+`vehicle-goal-aggressive-manoeuvre` memory), and trading it away to paper over an unverified
+CFD number is backwards. That leaves, in order of how much else they disturb:
+
+1. **Gear the servo.** ~2.7:1 restores nominal 2.0x at the interim 0.73x number. Naive slew
+   (667/2.7 ≈ 243 deg/s) still clears the roll bandwidth requirement in `roll_bandwidth.py`
+   section 4 on paper — but a real gear stage adds backlash/compliance that could eat into
+   the 30 ms `SERVO_LAG_S` assumption those gains are built on. Needs bench verification of
+   the GEARED assembly, not just the bare servo.
+2. **A bigger real servo.** Checked the catalog — nothing exists. The only other datasheet
+   part, MKS HV6100, is *weaker* than the KST X08 Plus, not stronger.
+3. **Move the hinge aft toward the real CP.** Bay rebuild (C3) — shaft, bearings, all four
+   servo mounts are dimensioned off the current 0.20c station.
+4. **Do nothing yet.** The servo bench test (C1) measures the real torque and lag directly;
+   the 0.4 stall derate in `torque_margin()` is itself an assumption ("measure your actual
+   part"), so 0.73x could be pessimistic as well as the CP location being pessimistic.
+
+No hardware direction has been chosen yet. All four preserve `DEFLECTION_LIMIT_DEG`.
+
 ---
 
 ## D. Notes for whoever picks this up

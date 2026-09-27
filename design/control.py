@@ -392,6 +392,7 @@ class AuthorityResult:
     static_margin_cal: float
     pitch_natural_freq_hz: float
     hinge_moment_per_panel: float  # signed: + restoring, - divergent (see packaging.hinge_moment)
+    hinge_moment_per_panel_cfd: float  # same, at packaging.CP_FRAC_CFD_INFORMED -- see there
 
 
 def pitch_authority(
@@ -428,15 +429,17 @@ def pitch_authority(
         max(-cm_alpha, 1e-9) * point.q * rocket.reference_area * d / inertia.pitch
     )
 
-    from .packaging import hinge_moment
+    from .packaging import CP_FRAC_CFD_INFORMED, hinge_moment
 
-    hm = hinge_moment(
+    hm_args = (
         point.q,
         rocket.canards.planform_area_single,
         rocket.canards.mean_chord,
         panel_cna * rocket.reference_area / rocket.canards.planform_area_single,
         local_alpha,
     )
+    hm = hinge_moment(*hm_args)
+    hm_cfd = hinge_moment(*hm_args, cp_frac=CP_FRAC_CFD_INFORMED)
 
     return AuthorityResult(
         deflection_deg=deflection_deg,
@@ -450,6 +453,7 @@ def pitch_authority(
         static_margin_cal=stab.static_margin_cal,
         pitch_natural_freq_hz=omega_n / (2.0 * math.pi),
         hinge_moment_per_panel=hm,
+        hinge_moment_per_panel_cfd=hm_cfd,
     )
 
 

@@ -26,7 +26,8 @@ from design.configure import (
 )
 from design import recovery
 from design.packaging import (
-    SERVO_GEOMETRY, SERVOS, check_direct_drive, check_flat_mount, torque_margin,
+    CP_FRAC_CFD_INFORMED, SERVO_GEOMETRY, SERVOS, check_direct_drive, check_flat_mount,
+    torque_margin,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -224,7 +225,15 @@ def main() -> None:
     print(f"  hinge balance       {balance}")
     print(f"  usable servo torque {servo.stall_torque * 0.4 * GEAR_RATIO:.4f} N m "
           f"(stall x 0.4 derate, gear {GEAR_RATIO:.1f}:1)")
-    print(f"  torque margin       {margin:.1f}x  {'OK' if margin > 2.0 else 'MARGINAL'}")
+    print(f"  torque margin       {margin:.1f}x  {'OK' if margin > 2.0 else 'MARGINAL'}"
+          f"  (design cp_frac=0.25)")
+    hm_cfd = worst.hinge_moment_per_panel_cfd
+    margin_cfd = torque_margin(hm_cfd, servo, GEAR_RATIO)
+    print(f"  torque margin       {margin_cfd:.2f}x  "
+          f"{'OK' if margin_cfd > 2.0 else 'MARGINAL' if margin_cfd > 1.0 else 'FAIL'}"
+          f"  CFD-INFORMED, interim (cp_frac={CP_FRAC_CFD_INFORMED}, docs/15 A2/B1 -- SU2 and")
+    print(f"                      VLM independently put the canard CP at 0.33-0.36 MAC, not "
+          f"0.25; NOT bench-verified, see docs/15 C1)")
 
     # The hinge is a MECHANISM, and the torque margin above is only its easiest question.
     # The same panel that makes 0.06 N m about the hinge makes 25 N at the bearing, and
@@ -647,6 +656,8 @@ def main() -> None:
     print(f"  SERVO DUTY          {fc_pwr.stall_torque_margin:.2f}x on stall torque but "
           f"{fc_pwr.continuous_duty_margin:.2f}x on the datasheet's CONTINUOUS band -- a margin "
           f"no torque check in this project could see")
+    print(f"  SERVO DUTY (CFD)    {fc_pwr.stall_torque_margin_cfd:.2f}x on stall torque, "
+          f"CFD-informed cp_frac={CP_FRAC_CFD_INFORMED} (interim, docs/15 A2/B1/C1)")
     print(f"  logging             {fc_log.bytes_per_s / 1000:.1f} kB/s, "
           f"{fc_log.total_bytes / 1e6:.2f} MB/flight against "
           f"{fc_log.onchip_usable_bytes / 1e6:.2f} MB on-chip -- "
